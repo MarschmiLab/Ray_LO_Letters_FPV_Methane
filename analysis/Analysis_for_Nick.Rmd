@@ -1,0 +1,2857 @@
+---
+title: "Water Column and Sediment Methanogens & Methanotrophs in FSP ponds"
+author: "sophiaaredas"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    code_folding: show
+    highlight: default
+    keep_md: yes
+    theme: journal
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+      toc_depth: 3
+editor_options: 
+  chunk_output_type: console
+  markdown: 
+    wrap: 72
+bibliography: nick_paper.bib
+---
+
+# Purpose
+
+We will create a figure to show the difference in methanogens and
+methanotrophs in FSP and control ponds at different depths and between
+sample types. 
+
+Additionally, I have written the methods and results in this document
+which will be added to the google document.
+
+```{r setup, include=FALSE}
+# For width of code chunks and scroll bar 
+options(width=250)
+
+knitr::opts_chunk$set(eval = TRUE, 
+                      echo = TRUE, 
+                      include = TRUE,
+                      warning = FALSE,
+                      collapse = FALSE,
+                      message = FALSE,
+                      dpi=300, dev = "png",
+                      engine = "R", # Chunks will always have R code, unless noted
+                      error = TRUE,
+                      fig.path="../figures/Nick_Analysis_GHGs/",  
+                      fig.align = "center") 
+```
+
+# Load packages
+
+```{r load-packages}
+# Efficiently load packages 
+pacman::p_load(phyloseq, ggpubr, tidyverse, patchwork, ggh4x, speedyseq, rstatix, dplyr, purrr, vegan, ANCOMBC, cowplot, grid, install = FALSE)
+
+source("code/functions.R") # contains scale_reads
+source("code/colors_and_shapes.R")
+
+# Set our seed for reproducibility
+set.seed(999)
+
+```
+
+# Load in Data
+
+Loading in our scaled phyloseq objects for each sample type. Each sample
+type (water and sediment) has been scaled down to the minimum reads
+separately. We scale down to the minimum number of reads to
+standardize/normalize our data to allow for more accurate comparisons
+between reads to account for uneven sequencing depth across samples (may
+arise to do seequencing runs or library prep efficiency, etc.)
+
+And we will add in our metadata as well!
+
+```{r load-metadata}
+# water physeq with absolute abundance counts
+load("data/06A_Water_Compositional_Analysis_SA/full_abs_physeq.RData")
+
+# sediment scaled physeq
+load("data/06B_Sediment_Compositional_Analysis_SA/scaled_sed_physeq.RData")
+
+# physeq with water (unincorporated cell counts) + sediment samples = 188 samples total
+load("data/04_Phylogenetics_SA/new_archaea_rooted_physeq.RData")
+
+
+# load in metadata
+load("data/06A_Water_Compositional_Analysis_SA/metadata.RData")
+```
+
+# Prepare Phyloseq Objects
+Here we will work with our two sample types (water and sediment) for the entire July 11th, 2024 year. Microbes identified as methane cyclers were determined at the Order level on taxonomic classfication.
+
+We incorporated total cell counts from flow cytometry for water samples (full_abs_physeq.RData)
+For our sediment samples, we do not have absolute abundance measures so we will need to calculate the relative abundance and rarify our samples to the minimum read depth (20822)
+
+### Water - All time points
+```{r water-phyloseq-24}
+# filter for all time points in 2024
+water_physeq_24 <- subset_samples(full_abs_physeq, Year == "2024")
+
+# prune taxa 
+water_physeq_24 <- water_physeq_24 %>% 
+  prune_taxa(taxa_sums(.) > 0,.)
+
+# melt physeq into data frame for all taxa
+water_physeq_ch4 <- water_physeq_24 %>% 
+  psmelt() # melt into dataframe
+
+# melt physeq into data frame for just methane cyclers at Order level
+
+# pull unique methane cycler taxonomic information 
+methane_cyclers_distinct <- water_physeq_24 %>% 
+  psmelt() %>% # melt into dataframe 
+  dplyr::filter(str_detect(Order, "^Meth")) %>% # filtering for methanogens / methanotroph
+  distinct(Phylum,Class, Order)
+methane_cyclers_distinct
+
+# create a vector of our methanogens and methanotrophs at the Order level
+methanogens <- c("Methanosarcinales_A_2632", "Methanomicrobiales", "Methanobacteriales", "Methanomassiliicoccales", "Methanofastidiosales", "Methanotrichales", "Methanocellales")
+methanotrophs <- c("Methylococcales", "Methylacidiphilales", "Methylomirabilales")
+
+# filter phyloseq
+methane_cyclers_filt <- water_physeq_24%>% 
+  psmelt() %>% # melt into dataframe 
+  dplyr::filter(Order %in% c(methanogens, methanotrophs)) %>% 
+  mutate(
+    Methanotroph_Methanogen = case_when(
+      Order %in% methanogens ~ "Methanogen",
+      Order %in% methanotrophs ~ "Methanotroph",
+      TRUE ~ "Other"))
+methane_cyclers_filt
+
+
+# 2. Create phyloseq for methane cyclers filtered data frame
+
+# put into wide format for OTU table
+otu_wide_ch4 <- methane_cyclers_filt %>% 
+  select(ASV, Sample, Abundance) %>% 
+  pivot_wider(names_from = Sample, values_from = Abundance, values_fill = 0) # pivot wider
+
+
+# convert to matrix and OTU/ASV names
+otu_mat_ch4 <- as.matrix(otu_wide_ch4[, -1])
+rownames(otu_mat_ch4) <- otu_wide_ch4$ASV
+otu_table_ch4 <- otu_table(otu_mat_ch4, taxa_are_rows = TRUE)
+
+
+# create tax table
+tax_ch4 <- methane_cyclers_filt %>% 
+  select(OTU, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, ASVseqs) %>% 
+  distinct(ASV, .keep_all = TRUE) %>%
+  column_to_rownames("OTU")
+
+tax_ch4_mat <- as.matrix(tax_ch4)
+
+tax_ch4_table <- tax_table(tax_ch4_mat)
+
+# sample data
+sam_data_ch4 <- methane_cyclers_filt
+
+# Convert back to sample_data
+sam_data_ch4 <- sam_data_ch4 %>% 
+  select(DNA_ID, Sample, Pond, Depth_Class, solar_progress, everything()) %>%
+  distinct(Sample, .keep_all = TRUE) %>%  # one row per sample
+  select(-c(Abundance, OTU, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, ASVseqs)) %>% 
+  mutate(
+    Depth_Class = factor(Depth_Class, levels = c("S", "B")),
+    solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open")) %>% 
+  column_to_rownames("Sample") %>% 
+  sample_data()
+
+# create all time point phyloseq object
+water_ch4_physeq <- phyloseq(
+  otu_table(otu_table_ch4, taxa_are_rows = TRUE),
+  tax_ch4_table,
+  sam_data_ch4
+)
+water_ch4_physeq
+
+# save phyloseq object
+save(water_ch4_physeq, file = "data/FSP_2024_Nick/water_ch4_physeq.RData")
+
+
+# tax glom at Order level for methane cyclers phyloseq
+water_physeq_ch4_order <- water_ch4_physeq %>% 
+  tax_glom(taxrank = "ASV") %>% 
+  psmelt() %>% 
+  filter(Order %in% c(methanogens, methanotrophs)) %>% 
+  mutate(
+    Methanotroph_Methanogen = case_when(
+      Order %in% methanogens ~ "Methanogen",
+      Order %in% methanotrophs ~ "Methanotroph"
+    )
+  ) %>% 
+  group_by(Pond, solar_progress, Depth_Class, Methanotroph_Methanogen, JDate) %>% 
+  summarize(
+    total_cells_ml = sum(Abundance, na.rm = TRUE),
+    .groups = "drop"
+  )
+water_physeq_ch4_order 
+
+
+# create df for plotting 
+methano_water_df <- water_physeq_ch4_order %>% 
+  select(Pond, Methanotroph_Methanogen, total_cells_ml, Depth_Class, solar_progress, JDate) %>%
+  mutate(
+    Depth_Class = case_when(
+    Depth_Class == "S"  ~ "Surface Water",
+    Depth_Class == "B"  ~ "Bottom Water"
+    ),
+    Depth_Class = factor(Depth_Class, levels = c("Surface Water", "Bottom Water")),
+    solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open"),
+    solar_methano = paste(solar_progress, Methanotroph_Methanogen, sep = " "),
+    solar_methano = factor(
+      solar_methano,
+      levels = c("FPV Methanogen", "Open Methanogen", "FPV Methanotroph", "Open Methanotroph")
+    ))
+
+# save methane cycler order data frame
+save(water_physeq_ch4_order, file = "data/FSP_2024_Nick/water_physeq_ch4_order.RData")
+
+# write out to excel file for plotting main figure
+write.csv(methano_water_df, "data/FSP_2024_Nick/watercol_microbial_communities.csv")
+```
+We created:
+1. **water_ch4_physeq** that has all 2024 time points and filtered for *only* methane cyclers
+
+2. **water_physeq_ch4_order** ASV agglomerated with total cell counts for methane cyclers
+
+3. **methano_water_df** data frame that will be used for plotting that includes total cell counts and reformatted names such as depth and solar treatment. This was also saved as a .csv file called "watercol_microbial_communities.csv"
+
+### Sediment - All Time Points
+We do not have absolute abundance counts for our sediment samples so we will need to rarefy to the minimum sequencing depth (20822 reads)
+```{r sed-phyloseq-24}
+# filter phyloseq for only sediment samples
+sed_phy <- subset_samples(new_archaea_rooted_physeq, SampleType == "Sediment")
+
+# subset samples that were switched
+sed_physeq <- subset_samples(sed_phy, !(sample_names(sed_phy) %in% c("SA_D046", "SA_D047")))
+
+# prune taxa 
+sed_phy <- sed_phy %>% 
+  prune_taxa(taxa_sums(.) > 0,.)
+
+# Intuition check of number of sequences per sample
+min(sample_sums(sed_phy)) ## min = 20822
+
+# scale water_physeq to minimum number of reads
+scaled_sed_physeq <- 
+  sed_phy %>% 
+  scale_reads(round = "matround")
+
+# melt physeq into data frame for all time points 
+scaled_sed_physeq_24 <- scaled_sed_physeq 
+
+# pull unique methane cycler taxonomic information 
+methane_cyclers_distinct <- scaled_sed_physeq_24 %>% 
+  psmelt() %>% # melt into dataframe 
+  dplyr::filter(str_detect(Order, "^Meth")) %>% # filtering for methanogens / methanotroph
+  distinct(Phylum,Class,Order)
+methane_cyclers_distinct
+
+# create a vector of our methanogens and methanotrophs at the Order level
+methanogens <- c("Methanosarcinales_A_2632", "Methanomicrobiales", "Methanobacteriales", "Methanomassiliicoccales", "Methanotrichales", "Methanocellales", "Methanomethylicales")
+methanotrophs <- c("Methylococcales", "Methylacidiphilales", "Methylomirabilales")
+
+# calculate relative abundance and identify methane cycler
+methano_sed_phy <- scaled_sed_physeq_24 %>%
+  speedyseq::tax_glom(taxrank = "ASV") %>% 
+  # Calculate the relative abundance
+  speedyseq::transform_sample_counts(function(x) {x/sum(x)}) %>%
+  psmelt() %>%
+  filter(Order %in% c(methanogens, methanotrophs)) %>%
+  mutate(
+    Methanotroph_Methanogen = case_when(
+      Order %in% methanogens ~ "Methanogen",
+      Order %in% methanotrophs ~ "Methanotroph"
+    ),
+    solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open"),
+    Depth_Class = "Sediment"
+  )
+
+# summarize order abundance of methane cycler in sediments
+methano_sed_df <- methano_sed_phy %>%
+  group_by(Pond, solar_progress, Depth_Class, Methanotroph_Methanogen, Date_Collected) %>%
+  summarize(order_abund = sum(Abundance), .groups = "drop")
+
+# convert time to Julian date
+methano_sed_df$JDate <- lubridate::yday(methano_sed_df$Date_Collected)
+
+# save .RData
+save(methano_sed_df, file = "data/FSP_2024_Nick/methano_sed_df.RData")
+
+
+# write out to excel file 
+write.csv(methano_sed_df, "data/FSP_2024_Nick/sed_microbial_communities.csv")
+
+
+
+# 2. Create phyloseq for methane cyclers filtered data frame
+
+# put into wide format for OTU table
+otu_wide_sed <- methano_sed_phy %>% 
+  select(ASV, Sample, Abundance) %>% 
+  pivot_wider(names_from = Sample, values_from = Abundance, values_fill = 0) # pivot wider
+
+
+# convert to matrix and OTU/ASV names
+otu_mat_sed <- as.matrix(otu_wide_sed[, -1])
+rownames(otu_mat_sed) <- otu_wide_sed$ASV
+otu_table_sed <- otu_table(otu_mat_sed, taxa_are_rows = TRUE)
+
+
+# create tax table
+tax_sed <- methano_sed_phy %>% 
+  select(OTU, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, ASVseqs, Methanotroph_Methanogen) %>% 
+  distinct(OTU, .keep_all = TRUE) %>%
+  column_to_rownames("OTU")
+
+tax_sed_mat <- as.matrix(tax_sed)
+
+tax_sed_table <- tax_table(tax_sed_mat)
+
+
+# convert to sample data from melted phyloseq object - note no methanotroph_methanogen information as thats in tax_table
+sam_data_sed <- methano_sed_phy %>%
+  select(DNA_ID, Sample, Pond, solar_progress, Date_Collected) %>%
+  distinct(Sample, .keep_all = TRUE) %>%
+  mutate(
+    Depth_Class = "Sediment",
+    JDate = lubridate::yday(Date_Collected)
+  ) %>%
+  select(Sample, DNA_ID, Pond, solar_progress, Depth_Class, Date_Collected, JDate) %>%
+  column_to_rownames("Sample") %>%
+  sample_data()
+
+
+# create all time points sediment phyloseq object
+scaled_sed_ch4_physeq <- phyloseq(
+  otu_table(otu_table_sed, taxa_are_rows = TRUE),
+  tax_sed_table,
+  sam_data_sed
+)
+scaled_sed_ch4_physeq
+
+# save phyloseq object
+save(scaled_sed_ch4_physeq, file = "data/FSP_2024_Nick/scaled_sed_ch4_physeq.RData")
+
+```
+We created:
+1. **scaled_sed_ch4_physeq** phyloseq object that was scaled down to minimum read depth (20822)
+
+2. **methano_sed_phy** agglomerated at ASV level and also includes renaming of objects like depth class as well as methane cycler identification. 
+
+3. **methano_sed_df** dataframe calculated with relative abundance counts
+
+### Sediment - Methanogen + Methanotroph Phyloseqs
+To see how our methanogens and methanotrophs differ in our sediment communities we will create two separate physeqs for methanogen and methanotrophs
+
+#### Create Methanogen Phyloseq
+```{r sed-methanogen-physeq}
+# pull unique methane cycler taxonomic information 
+methane_cyclers_distinct <- scaled_sed_physeq_24 %>% 
+  psmelt() %>% # melt into dataframe 
+  dplyr::filter(str_detect(Order, "^Methano")) %>% # filtering for methanogens / methanotroph
+  distinct(Phylum,Class,Order)
+methane_cyclers_distinct
+
+# create a vector of our methanogens and methanotrophs at the Order level
+methanogens <- c("Methanosarcinales_A_2632", "Methanomicrobiales", "Methanobacteriales", "Methanomassiliicoccales", "Methanotrichales", "Methanocellales", "Methanomethylicales")
+
+# calculate relative abundance and identify methane cycler
+methanogen_sed_phy <- scaled_sed_physeq_24 %>%
+  speedyseq::tax_glom(taxrank = "ASV") %>% 
+  # Calculate the relative abundance
+  speedyseq::transform_sample_counts(function(x) {x/sum(x)}) %>%
+  psmelt() %>%
+  filter(Order %in% c(methanogens)) %>% # filtering for methanogens only
+  mutate(
+    Methanotroph_Methanogen = case_when(
+      Order %in% methanogens ~ "Methanogen",
+      Order %in% methanotrophs ~ "Methanotroph"
+    ),
+    solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open"),
+    Depth_Class = "Sediment"
+  )
+
+# intuition check 
+unique(methanogen_sed_phy$Methanotroph_Methanogen)
+
+# summarize order abundance of methanogen in sediments
+methanogen_sed_df <- methanogen_sed_phy %>%
+  group_by(Pond, solar_progress, Methanotroph_Methanogen, Date_Collected, Depth_Class) %>%
+  summarize(order_abund = sum(Abundance), .groups = "drop")
+
+# add Julian Date
+methanogen_sed_df$JDate <- lubridate::yday(methanogen_sed_df$Date_Collected)
+
+# save .RData
+save(methanogen_sed_df, file = "data/FSP_2024_Nick/methanogen_sed_df.RData")
+
+
+
+
+
+# create phyloseq object for methanogens 
+
+# put into wide format for OTU table
+otu_wide_sed <- methanogen_sed_phy %>% 
+  select(ASV, Sample, Abundance) %>% 
+  pivot_wider(names_from = Sample, values_from = Abundance, values_fill = 0) # pivot wider
+
+
+# convert to matrix and OTU/ASV names
+otu_mat_sed <- as.matrix(otu_wide_sed[, -1])
+rownames(otu_mat_sed) <- otu_wide_sed$ASV
+otu_table_sed <- otu_table(otu_mat_sed, taxa_are_rows = TRUE)
+
+
+# create tax table
+tax_sed <- methanogen_sed_phy %>% 
+  select(OTU, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, ASVseqs, Methanotroph_Methanogen) %>% 
+  distinct(OTU, .keep_all = TRUE) %>%
+  column_to_rownames("OTU")
+
+tax_sed_mat <- as.matrix(tax_sed)
+
+tax_sed_table <- tax_table(tax_sed_mat)
+
+
+# convert to sample data from melted phyloseq object
+sam_data_sed <- methanogen_sed_phy %>%
+  select(DNA_ID, Sample, Pond, solar_progress, Date_Collected) %>%
+  distinct(Sample, .keep_all = TRUE) %>%
+  mutate(
+    Depth_Class = "Sediment",
+    JDate = lubridate::yday(Date_Collected)
+  ) %>%
+  select(Sample, DNA_ID, Pond, solar_progress, Depth_Class, Date_Collected, JDate) %>%
+  column_to_rownames("Sample") %>%
+  sample_data()
+
+
+# create methanogen sediment phyloseq object
+scaled_methanogen_sed_physeq <- phyloseq(
+  otu_table(otu_table_sed, taxa_are_rows = TRUE),
+  tax_sed_table,
+  sam_data_sed
+)
+scaled_methanogen_sed_physeq
+
+# save phyloseq object
+save(scaled_methanogen_sed_physeq, file = "data/FSP_2024_Nick/scaled_methanogen_sed_physeq.RData")
+```
+We created:
+1. **scaled_methanogen_sed_physeq** which has been specifically filtered for methanogens and saved as a phyloseq object
+
+
+#### Create Methanotroph Phyloseq
+```{r sed-methanotroph-phyloseq}
+# pull unique methane cycler taxonomic information 
+methane_cyclers_distinct <- scaled_sed_physeq_24 %>% 
+  psmelt() %>% # melt into dataframe 
+  dplyr::filter(str_detect(Order, "^Methyl")) %>% # filtering for methanogens / methanotroph
+  distinct(Phylum,Class,Order)
+methane_cyclers_distinct
+
+# create a vector of our methanogens and methanotrophs at the Order level
+methanotrophs <- c("Methylococcales", "Methylacidiphilales", "Methylomirabilales")
+
+# calculate relative abundance and identify methane cycler
+methanotroph_sed_phy <- scaled_sed_physeq_24 %>%
+  speedyseq::tax_glom(taxrank = "ASV") %>% 
+  # Calculate the relative abundance
+  transform_sample_counts(function(x) {x/sum(x)}) %>%
+  psmelt() %>%
+  filter(Order %in% c(methanotrophs)) %>% # filtering for only methanotrophs
+  mutate(
+    Methanotroph_Methanogen = case_when(
+      Order %in% methanogens ~ "Methanogen",
+      Order %in% methanotrophs ~ "Methanotroph" # filtering for just methanotrophs
+    ),
+    solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open"),
+    Depth_Class = "Sediment"
+  )
+
+# summarize order abundance of methanotrophs in sediments
+methanotroph_sed_df <- methanotroph_sed_phy %>%
+  group_by(Pond, solar_progress, Methanotroph_Methanogen, Date_Collected, Depth_Class) %>%
+  summarize(order_abund = sum(Abundance), .groups = "drop")
+
+# add julian date
+methanotroph_sed_df$JDate <- lubridate::yday(methanotroph_sed_df$Date_Collected)
+
+# save .RData
+save(methanotroph_sed_df, file = "data/FSP_2024_Nick/methanotroph_sed_df.RData")
+
+
+
+
+
+
+
+# Create phyloseq for sediment methanogens
+
+# put into wide format for OTU table
+otu_wide_sed <- methanotroph_sed_phy %>% 
+  select(ASV, Sample, Abundance) %>% 
+  pivot_wider(names_from = Sample, values_from = Abundance, values_fill = 0) # pivot wider
+
+
+# convert to matrix and OTU/ASV names
+otu_mat_sed <- as.matrix(otu_wide_sed[, -1])
+rownames(otu_mat_sed) <- otu_wide_sed$ASV
+otu_table_sed <- otu_table(otu_mat_sed, taxa_are_rows = TRUE)
+
+
+# create tax table
+tax_sed <- methanotroph_sed_phy %>% 
+  select(OTU, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, ASVseqs, Methanotroph_Methanogen) %>% 
+  distinct(OTU, .keep_all = TRUE) %>%
+  column_to_rownames("OTU")
+
+tax_sed_mat <- as.matrix(tax_sed)
+
+tax_sed_table <- tax_table(tax_sed_mat)
+
+
+# convert to sample data from melted phyloseq object
+sam_data_sed <- methanotroph_sed_phy %>%
+  select(DNA_ID, Sample, Pond, solar_progress, Date_Collected) %>%
+  distinct(Sample, .keep_all = TRUE) %>%
+  mutate(
+    Depth_Class = "Sediment",
+    JDate = lubridate::yday(Date_Collected)
+  ) %>%
+  select(Sample, DNA_ID, Pond, solar_progress, Depth_Class, Date_Collected, JDate) %>%
+  column_to_rownames("Sample") %>%
+  sample_data()
+
+
+# create all taxa phyloseq object
+scaled_methanotroph_sed_physeq <- phyloseq(
+  otu_table(otu_table_sed, taxa_are_rows = TRUE),
+  tax_sed_table,
+  sam_data_sed
+)
+scaled_methanotroph_sed_physeq
+
+# save phyloseq object
+save(scaled_methanotroph_sed_physeq, file = "data/FSP_2024_Nick/scaled_methanotroph_sed_physeq.RData")
+```
+We created:
+1. **scaled_methanotroph_sed_physeq** which has been specifically filtered for methanotrophs and saved as a phyloseq object
+
+
+# Normality of Methane Cyclers in Ponds
+**Is our data normally distributed?**
+
+Lets configure our dataframe and then check to see how our data is distributed with Q-Q plots, density histogram, and Shapiro-Wilk test.
+
+We will split this up by sample type where we will do water first then sediments in next chunk
+
+### Water
+```{r normality-water}
+# factor solar progress
+methano_water_df$solar_progress <- factor(
+  methano_water_df$solar_progress,
+  levels = c("FPV", "Open"))
+
+# now add interaction column to our df
+methano_water_df <- methano_water_df %>%
+  mutate(group = interaction(Methanotroph_Methanogen, Depth_Class, sep = " "))
+
+# qq plot to visualize normality
+ggplot(methano_water_df, aes(sample = total_cells_ml)) +
+  stat_qq() +
+  stat_qq_line() +
+  facet_wrap(~ group, scales = "free") +
+  theme_minimal() +
+  labs(title = "Q-Q Plots: Order Abundance by Group")
+
+# lets plot density histogram by group too
+ggplot(methano_water_df, aes(x = total_cells_ml, fill = group)) +
+  geom_histogram(aes(y = ..density..), bins = 30, alpha = 0.5, color = "black") +
+  geom_density(alpha = 0.6) +
+  facet_wrap(~ group, scales = "free") +
+  theme_minimal() +
+  labs(title = "Histogram and Density of Order Abundance by Group",
+       x = "Order Absolute Cell Abundance\n(cells per ml)",
+       y = "Density") +
+  theme(legend.position = "none")
+
+# now lets plot density histogram by further facetting by treatment
+ggplot(methano_water_df, aes(x = total_cells_ml, fill = group)) +
+  geom_histogram(aes(y = ..density..), bins = 30, alpha = 0.5, color = "black") +
+  geom_density(alpha = 0.6) +
+  facet_wrap(~ group + solar_progress, scales = "free") +
+  theme_minimal() +
+  labs(title = "Histogram and Density of Order Abundance by Group and Solar Progress",
+       x = "Order Absolute Cell Abundance\n(cells per ml)",
+       y = "Density") +
+  theme(legend.position = "none")
+
+# shapiro test
+methano_water_df %>%
+  group_by(group) %>%
+  summarise(
+    shapiro_p = shapiro.test(total_cells_ml)$p.value,
+    n = n()
+  )
+
+```
+Based on our data with the qq plots we see that the points more or less fit the line. but when we investigate further with the density histograms, it does not look like a clear unimodal distribution distribution but lets check this out further with a Shapiro-Wilk test. When we run our Shapiro-Wilk test to also test for a normal distribution if p > 0.05 the data is likely normal but if p < 0.05 then the data is not normal.
+
+A tibble: 4 × 3
+  group                         shapiro_p     n
+  <fct>                             <dbl> <int>
+1 Methanogen Surface Water   0.0000000754    24
+2 Methanotroph Surface Water 0.0000159       24
+3 Methanogen Bottom Water    0.000000408     24
+4 Methanotroph Bottom Water  0.000135        24
+
+The data is not normal 
+
+
+### Sediment - Normality 
+We will be running this for all 2024 time points 
+```{r normality-sed}
+# level
+methano_sed_df$solar_progress <- factor(
+  methano_sed_df$solar_progress,
+  levels = c("FPV", "Open"))
+
+methano_sed_df <- methano_sed_df %>%
+  mutate(group = interaction(Methanotroph_Methanogen, Depth_Class, sep = " "))
+
+
+# qq plot to visualize normality
+ggplot(methano_sed_df, aes(sample = order_abund)) +
+  stat_qq() +
+  stat_qq_line() +
+  facet_wrap(~ group, scales = "free") +
+  theme_minimal() +
+  labs(title = "Q-Q Plots: Order Abundance by Group")
+
+# lets plot density histogram by group too
+ggplot(methano_sed_df, aes(x = order_abund, fill = group)) +
+  geom_histogram(aes(y = ..density..), bins = 30, alpha = 0.5, color = "black") +
+  geom_density(alpha = 0.6) +
+  facet_wrap(~ group, scales = "free") +
+  theme_minimal() +
+  labs(title = "Histogram and Density of Order Rel Abundance by Group",
+       x = "Order Abundance",
+       y = "Density") +
+  theme(legend.position = "none")
+
+# now lets plot density histogram by further facetting by treatment
+ggplot(methano_sed_df, aes(x = order_abund, fill = group)) +
+  geom_histogram(aes(y = ..density..), bins = 30, alpha = 0.5, color = "black") +
+  geom_density(alpha = 0.6) +
+  facet_wrap(~ group + solar_progress, scales = "free") +
+  theme_minimal() +
+  labs(title = "Histogram and Density of Order Abundance by Group and Solar Progress",
+       x = "Order Abundance",
+       y = "Density") +
+  theme(legend.position = "none")
+
+# shapiro test
+methano_sed_df %>%
+  group_by(group) %>%
+  summarise(
+    shapiro_p = shapiro.test(order_abund)$p.value,
+    n = n()
+  )
+```
+Based on our data with the qq plots and the density histograms, data does not seem to be clearly normally distributed. Shapiro-Wilk test to also test for a normal distribution if p > 0.05 the data is likely normal but if p < 0.05 then the data is not normal.
+
+A tibble: 2 × 3
+  group                 shapiro_p     n
+  <fct>                     <dbl> <int>
+1 Methanogen Sediment    0.576       23
+2 Methanotroph Sediment  0.000296    23
+
+methanotrophs are not normally distributed but but methanogens are which is interesting. but will still go with two-sample Wilcoxon tests
+
+
+# Generate Figures
+
+## Main Text - Figure 4
+In this plot we will calculate the absolute abundance of methane cyclers in water column and the relative abundance in sediments to see methane cyclers overtime and with a box plot to show abundance as well.
+
+There is probably a better way to do this but I individually plotted surface, bottom, sediment depths for each methanogen and methanotroph for overtime and box plots.
+
+For the water column cell counts we will demonstrate this by thousand cells per ml
+```{r fig-4}
+# water over time plot 
+
+# 1. lets plot surface water 
+# surface methanogens
+methanogen_surfwater24 <- methano_water_df %>%
+  dplyr::filter(Depth_Class == "Surface Water",
+                Methanotroph_Methanogen == "Methanogen") %>% 
+  group_by(JDate, Pond, solar_progress, total_cells_ml, Methanotroph_Methanogen) %>%
+  ggplot(aes(x = JDate, y = total_cells_ml/1e3, color = solar_progress))+
+  geom_line(aes(group = interaction(Pond, Methanotroph_Methanogen)), 
+            alpha = 0.2) +
+  geom_smooth(aes(group = solar_progress), se = FALSE) +
+  geom_point(aes(shape = Pond), size = 2) +
+  #ggh4x::facet_grid2(~Methanotroph_Methanogen, scales = "free_y") +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  scale_x_continuous(
+    breaks = seq(180, 240, by = 20), # even ticks
+    limits = c(170, 260)) +
+  labs(
+    x = NULL,
+    y = "Surface Water \n (Thousand Cells per ml)"
+  ) +
+  theme_classic() +
+  theme(
+    axis.title.y = element_text(size = 8),
+    legend.position = "none"
+  ) +
+  guides(color = "none", shape = "none")
+methanogen_surfwater24
+
+# surface methanotrophs
+methanotrophs_surfwater24 <- methano_water_df %>%
+  dplyr::filter(Depth_Class == "Surface Water",
+                Methanotroph_Methanogen == "Methanotroph") %>% 
+  group_by(JDate, Pond, solar_progress, total_cells_ml, Methanotroph_Methanogen) %>%
+  ggplot(aes(x = JDate, y = total_cells_ml/1e3, color = solar_progress))+
+  geom_line(aes(group = interaction(Pond, Methanotroph_Methanogen)), 
+            alpha = 0.2) +
+  geom_smooth(aes(group = solar_progress), se = FALSE) +
+  geom_point(aes(shape = Pond), size = 2) +
+  #ggh4x::facet_grid2(~Methanotroph_Methanogen, scales = "free_y") +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  scale_x_continuous(
+    breaks = seq(180, 240, by = 20), # even ticks
+    limits = c(170, 260)) +
+  labs(
+    x = NULL,
+    y = "Surface Water \n (Thousand Cells per ml)"
+  ) +
+  theme_classic() +
+  theme(
+    axis.title.y = element_text(size = 8),
+    legend.position = "none"
+  ) +
+  guides(color = "none", shape = "none")
+methanotrophs_surfwater24
+
+# now bottom water methanogens
+methanogen_bot_water24 <- methano_water_df %>%
+  dplyr::filter(Depth_Class == "Bottom Water", 
+                Methanotroph_Methanogen == "Methanogen") %>% 
+  group_by(JDate, Pond, solar_progress, total_cells_ml, Methanotroph_Methanogen) %>%
+  ggplot(aes(x = JDate, y = total_cells_ml/1e3, color = solar_progress))+
+  geom_line(aes(group = interaction(Pond, Methanotroph_Methanogen)), 
+            alpha = 0.2) +
+  geom_smooth(aes(group = solar_progress), se = FALSE) +
+  geom_point(aes(shape = Pond), size = 2) +
+  #ggh4x::facet_grid2(~Methanotroph_Methanogen, scales = "free_y") +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  scale_x_continuous(
+    breaks = seq(180, 240, by = 20), # even ticks
+    limits = c(170, 260)) +
+  labs(
+    x = NULL,
+    y = "Bottom Water \n (Thousand Cells per ml)"
+  ) +
+  theme_classic() +
+  theme(
+    axis.title.y = element_text(size = 8),
+    legend.position = "none"
+  ) +
+  guides(color = "none", shape = "none")
+methanogen_bot_water24
+
+# bottom methanotrophs
+methanotroph_bot_water24 <- methano_water_df %>%
+  dplyr::filter(Depth_Class == "Bottom Water",
+                Methanotroph_Methanogen == "Methanotroph") %>% 
+  group_by(JDate, Pond, solar_progress, total_cells_ml, Methanotroph_Methanogen) %>%
+  ggplot(aes(x = JDate, y = total_cells_ml/1e3, color = solar_progress))+
+  geom_line(aes(group = interaction(Pond, Methanotroph_Methanogen)), 
+            alpha = 0.2) +
+  geom_smooth(aes(group = solar_progress), se = FALSE) +
+  geom_point(aes(shape = Pond), size = 2) +
+  #ggh4x::facet_grid2(~Methanotroph_Methanogen, scales = "free_y") +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  scale_x_continuous(
+    breaks = seq(180, 240, by = 20), # even ticks
+    limits = c(170, 260)) +
+  labs(
+    x = NULL,
+    y = "Bottom Water \n (Thousand Cells per ml)"
+  ) +
+  theme_classic() +
+  theme(
+    axis.title.y = element_text(size = 8),
+    legend.position = "none"
+  ) +
+  guides(color = "none", shape = "none")
+methanotroph_bot_water24
+
+
+# sediment methanogens 
+methano_sed_24 <- methano_sed_df %>%
+  filter(Depth_Class == "Sediment",
+         Methanotroph_Methanogen == "Methanogen") %>%
+  group_by(JDate, order_abund, Pond, solar_progress, Methanotroph_Methanogen) %>%
+  ggplot(aes(x = JDate, y = order_abund, color = solar_progress)) +
+  geom_line(aes(group = interaction(Pond, Methanotroph_Methanogen)), 
+            alpha = 0.2) +
+  geom_smooth(aes(group = solar_progress), se = FALSE) +
+  geom_point(aes(shape = Pond), size = 2) +
+  #ggh4x::facet_grid2(.~Methanotroph_Methanogen, scales = "free_y") +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  scale_x_continuous(
+    breaks = seq(180, 240, by = 20), # even ticks
+    limits = c(170, 260)) +
+  labs(
+    x = "Day of Year",
+    y = "Sediment \nRelative Abundance (%)"
+  ) +
+  theme_classic() +
+  theme(
+    axis.title.y = element_text(size = 8),
+    legend.position = "none"
+  ) +
+  guides(color = "none", shape = "none")
+methano_sed_24
+
+# sediment methanotroph 
+methanotroph_sed_24 <- methano_sed_df %>%
+  filter(Depth_Class == "Sediment",
+         Methanotroph_Methanogen == "Methanotroph") %>%
+  # group_by(JDate, order_abund, Pond, solar_progress, Methanotroph_Methanogen) %>%
+  ggplot(aes(x = JDate, y = order_abund, color = solar_progress)) +
+  geom_line(aes(group = interaction(Pond, Methanotroph_Methanogen)), 
+            alpha = 0.2) +
+  geom_smooth(aes(group = solar_progress), se = FALSE) +
+  geom_point(aes(shape = Pond), size = 2) +
+  #ggh4x::facet_grid2(.~Methanotroph_Methanogen, scales = "free_y") +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  scale_x_continuous(
+  breaks = seq(180, 240, by = 20),
+  limits = c(170, 260)
+) +
+  labs(
+    x = "Day of Year",
+    y = "Sediment \nRelative Abundance (%)"
+  ) +
+  theme_classic() +
+  theme(
+    axis.title.y = element_text(size = 8),
+    legend.position = "none"
+  ) +
+  guides(color = "none", shape = "none")
+methanotroph_sed_24
+
+
+# all together - methanogens
+methanogen_surfwater24 / methanogen_bot_water24 / methano_sed_24
+
+methanotrophs_surfwater24 / methanotroph_bot_water24 / methanotroph_sed_24
+
+
+# box plots by depth and methane cycler
+
+# 1. calculate pvalue for water column all together
+stat.test <- methano_water_df %>% 
+  group_by(Methanotroph_Methanogen, Depth_Class) %>% 
+  wilcox_test(total_cells_ml ~ solar_progress, 
+              p.adjust.method = "fdr",
+              exact = FALSE) %>% 
+  add_significance() %>% 
+  mutate(
+    group = interaction(Methanotroph_Methanogen, Depth_Class, sep = " "),
+    y.position = 0.35,
+    p.label = signif(p, digits = 2))
+stat.test
+
+
+# A. filter for methanogen surface water
+stat_gen_surf <- stat.test %>%
+  filter(Methanotroph_Methanogen == "Methanogen",
+         Depth_Class == "Surface Water")
+
+# surface methanogen
+box_gen_surf <- methano_water_df %>% 
+  dplyr::filter(Depth_Class == "Surface Water",
+                Methanotroph_Methanogen == "Methanogen") %>% 
+  ggplot(aes(x = solar_progress, y = total_cells_ml/1e3, color = solar_progress)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.2, color = "black", position = position_dodge(0.6)) + 
+  geom_point(aes(shape = Pond),
+             alpha =2,
+             position = position_jitterdodge(jitter.width = .1, dodge.width = .3),
+             size = 3) +
+  # ggh4x::facet_nested(~ solar_progress,
+  #                     scales = "free") +
+  #scale_fill_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
+  scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
+  scale_shape_manual(values = pond_shapes) +
+  # stat_pvalue_manual( # p = 0.73
+  #   stat_gen_surf,
+  #   label = "p.label",
+  #   y.position = 9.5,
+  #   tip.length = 0,
+  #   bracket.size = 0,
+  #   size = 3
+  # ) +
+  theme_classic() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.line.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    legend.position = "none"
+  )
+box_gen_surf
+
+# B. filter for methanotroph surface water
+stat_troph_surf <- stat.test %>%
+  filter(Methanotroph_Methanogen == "Methanotroph",
+         Depth_Class == "Surface Water")
+
+# surface methanotroph
+box_troph_surf <- methano_water_df %>% 
+  dplyr::filter(Depth_Class == "Surface Water",
+                Methanotroph_Methanogen == "Methanotroph") %>% 
+  ggplot(aes(x = solar_progress, y = total_cells_ml/1e3, color = solar_progress)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.2, color = "black", position = position_dodge(0.6)) +  
+  geom_point(aes(shape = Pond),
+             alpha = 2,
+             position = position_jitterdodge(jitter.width = .1, dodge.width = .3),
+             size = 3) +
+  # ggh4x::facet_nested(~ solar_progress,
+  #                     scales = "free") +
+  #scale_fill_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
+  scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
+  scale_shape_manual(values = pond_shapes) +
+  # stat_pvalue_manual( # p = 0.0073
+  #   stat_troph_surf,
+  #   label = "p.label",
+  #   y.position = 1.5,  # or set a fixed numeric if you prefer
+  #   tip.length = 0,
+  #   bracket.size = 0,
+  #   size = 2
+  # ) +
+  # guides(
+  #   fill = "none",
+  #   color = "none",
+  #   shape = guide_legend(
+  #     nrow = 2,
+  #     byrow = TRUE,
+  #     title.position = "left",
+  #     override.aes = list(size = 2.5))
+  # ) +
+  theme_classic() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.line.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    legend.position = "none"
+  )
+box_troph_surf
+
+# B. filter for methanogen bottom water
+stat_gen_bot <- stat.test %>%
+  filter(Methanotroph_Methanogen == "Methanogen",
+         Depth_Class == "Bottom Water")
+# bottom methanogen
+box_gen_bot <- methano_water_df %>% 
+  dplyr::filter(Depth_Class == "Bottom Water",
+                Methanotroph_Methanogen == "Methanogen") %>% 
+  ggplot(aes(x = solar_progress, y = total_cells_ml/1e3, color = solar_progress)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.2, color = "black", position = position_dodge(0.6)) + 
+  geom_point(aes(shape = Pond),
+             alpha = 2,
+             position = position_jitterdodge(jitter.width = .1, dodge.width = .3),
+             size = 3) +
+  # ggh4x::facet_nested(~ solar_progress,
+  #                     scales = "free") +
+  #scale_fill_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
+  scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
+  scale_shape_manual(values = pond_shapes) +
+  # stat_pvalue_manual( # p = 0.66
+  #   stat_gen_bot,
+  #   label = "p.label",
+  #   tip.length = 0,
+  #   y.position = .095,
+  #   size = 2,
+  #   bracket.size = 0,
+  #   inherit.aes = FALSE
+  # ) +
+  # guides(
+  #   fill = "none",
+  #   color = "none",
+  #   shape = guide_legend(
+  #     nrow = 2,
+  #     byrow = TRUE,
+  #     title.position = "left",
+  #     override.aes = list(size = 2.5))
+  # ) +
+  theme_classic() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.line.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    legend.position = "none"
+  )
+box_gen_bot
+
+# C. filter for methanotroph bottom water
+stat_troph_bot <- stat.test %>%
+  filter(Methanotroph_Methanogen == "Methanotroph",
+         Depth_Class == "Bottom Water")
+
+# bottom methanotrophs
+box_troph_bot <- methano_water_df %>% 
+  dplyr::filter(Depth_Class == "Bottom Water",
+                Methanotroph_Methanogen == "Methanotroph") %>% 
+  ggplot(aes(x = solar_progress, y = total_cells_ml/1e3, color = solar_progress)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.2, color = "black", position = position_dodge(0.6)) +  
+  geom_point(aes(shape = Pond),
+             alpha = 2,
+             position = position_jitterdodge(jitter.width = .1, dodge.width = .3),
+             size = 3) +
+  # ggh4x::facet_nested(~ solar_progress,
+  #                     scales = "free") +
+  #scale_fill_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
+  scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
+  scale_shape_manual(values = pond_shapes) +
+  # stat_pvalue_manual( # p = 0.012
+  #   stat_troph_bot,
+  #   label = "p.label",
+  #   y.position = 0.75,
+  #   tip.length = 0,
+  #   size = 2,
+  #   bracket.size = 0,
+  #   inherit.aes = FALSE
+  # ) +
+  # guides(
+  #   fill = "none",
+  #   color = "none",
+  #   shape = guide_legend(
+  #     nrow = 2,
+  #     byrow = TRUE,
+  #     title.position = "left",
+  #     override.aes = list(size = 2.5))
+  # ) +
+  theme_classic() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.line.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    legend.position = "none"
+  )
+box_troph_bot
+
+# 2. calculate pvalue for sediment
+stat.test <- methano_sed_df %>% 
+  group_by(Methanotroph_Methanogen, Depth_Class) %>% 
+  wilcox_test(order_abund ~ solar_progress, 
+              p.adjust.method = "fdr",
+              exact = FALSE) %>% 
+  add_significance() %>% 
+  mutate(
+    group = interaction(Methanotroph_Methanogen, Depth_Class, sep = " "),
+    y.position = 0.35,
+    p.label = signif(p, digits = 2))
+stat.test
+
+# D. calculate stats for sediment methanogen
+stat_gen_sed <- stat.test %>%
+  filter(Methanotroph_Methanogen == "Methanogen",
+         Depth_Class == "Sediment")
+
+# sediment methanogen
+box_gen_sed <- methano_sed_df %>% 
+  dplyr::filter(Methanotroph_Methanogen == "Methanogen") %>% 
+  ggplot(aes(x = solar_progress, y = order_abund, color = solar_progress)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.2, color = "black", position = position_dodge(0.6)) +  
+  geom_point(aes(shape = Pond),
+             alpha = 2,
+             position = position_jitterdodge(jitter.width = .1, dodge.width = .3),
+             size = 3) +
+  scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
+  scale_shape_manual(values = pond_shapes) +
+  # stat_pvalue_manual( # p = 0.48
+  #   stat_gen_sed,
+  #   label = "p.label",
+  #   y.position = 0.3,
+  #   tip.length = 0,
+  #   bracket.size = 0,
+  #   size = 2
+  # ) +
+  # guides(
+  #   fill = "none",
+  #   color = "none",
+  #   shape = guide_legend(
+  #     nrow = 2,
+  #     byrow = TRUE,
+  #     title.position = "left",
+  #     override.aes = list(size = 2.5))
+  # ) +
+  theme_classic() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.line.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    legend.position = "none"
+  )
+box_gen_sed
+
+# E. calculate stats for sediment methanotroph
+stat_troph_sed <- stat.test %>%
+  filter(Methanotroph_Methanogen == "Methanotroph",
+         Depth_Class == "Sediment")
+
+# sediment trophs
+box_troph_sed <- methano_sed_df %>% 
+  dplyr::filter(Methanotroph_Methanogen == "Methanotroph") %>% 
+  ggplot(aes(x = solar_progress, y = order_abund, color = solar_progress)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.2, color = "black", position = position_dodge(0.6)) +  
+  geom_point(aes(shape = Pond),
+             alpha = 2,
+             position = position_jitterdodge(jitter.width = .1, dodge.width = .3),
+             size = 3) +
+  scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
+  scale_shape_manual(values = pond_shapes) +
+  # stat_pvalue_manual( # p = 0.74
+  #   stat_troph_sed,
+  #   label = "p.label",
+  #   y.position = .11,
+  #   tip.length = 0,
+  #   size = 2,
+  #   bracket.size = 0,
+  #   inherit.aes = FALSE
+  # ) +
+  # guides(
+  #   fill = "none",
+  #   color = "none",
+  #   shape = guide_legend(
+  #     nrow = 2,
+  #     byrow = TRUE,
+  #     title.position = "left",
+  #     override.aes = list(size = 2.5))
+  # ) +
+  theme_classic() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.line.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    legend.position = "none"
+  )
+box_troph_sed
+
+
+# plot finals
+surf_depths <- 
+  ggarrange(methanogen_surfwater24, box_gen_surf, methanotrophs_surfwater24, box_troph_surf,
+  nrow = 2, 
+  ncol = 2,
+  align = "hv",
+  widths = c(2, 1))
+surf_depths
+
+ggsave(
+  "analysis/FSP_Nick_Analysis/figures/surf_depths.png",
+  surf_depths,
+  width = 7,            
+  height = 5,         
+  units = "in",
+  dpi = 600            
+)
+
+bot_depths <- ggarrange(methanogen_bot_water24, box_gen_bot, methanotroph_bot_water24, box_troph_bot,
+  nrow = 2, 
+  ncol = 2,
+  align = "hv",
+  widths = c(2, 1))
+bot_depths
+
+ggsave(
+  "analysis/FSP_Nick_Analysis/figures/bot_depths.png",
+  bot_depths,
+  width = 7,            
+  height = 5,         
+  units = "in",
+  dpi = 600            
+)
+
+sed_depths <-
+  ggarrange(methano_sed_24, box_gen_sed, methanotroph_sed_24, box_troph_sed,
+  nrow = 2, 
+  ncol = 2,
+  align = "hv",
+  widths = c(2, 1))
+sed_depths
+
+ggsave(
+  "analysis/FSP_Nick_Analysis/figures/sed_depths.png",
+  sed_depths,
+  width = 7,            
+  height = 5,         
+  units = "in",
+  dpi = 600              # high resolution for print
+)
+
+# extract legend 
+legend_plot <- methano_sed_df %>% # dummy plot 
+  dplyr::filter(Methanotroph_Methanogen == "Methanotroph") %>% 
+  ggplot(aes(x = solar_progress, y = order_abund, color = solar_progress)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.2, position = position_dodge(0.6)) +  
+  geom_point(aes(shape = Pond),
+             alpha = 2,
+             position = position_jitterdodge(jitter.width = .1, dodge.width = .3),
+             size = 2) +
+  # ggh4x::facet_nested(~ solar_progress,
+  #                     scales = "free") +
+  #scale_fill_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
+  scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
+  scale_shape_manual(values = pond_shapes) +
+  # stat_pvalue_manual(
+  #   stat_troph_sed,
+  #   label = "p.label",
+  #   y.position = .11,
+  #   tip.length = 0,
+  #   size = 2,
+  #   bracket.size = 0,
+  #   inherit.aes = FALSE
+  # ) +
+  guides(
+    fill = "none",
+    color = "none",
+    shape = guide_legend(
+      nrow = 2,
+      byrow = TRUE,
+      title.position = "left",
+      override.aes = list(size = 2.5))
+  ) +
+  theme_classic() +
+  theme(
+    legend.position = "bottom",
+    legend.title = element_text(hjust = 0.5),
+    legend.box = "horizontal",
+    legend.justification = "center"
+  )
+legend_plot
+
+legend_only <- ggpubr::get_legend(legend_plot) # extract legend
+
+# now we will need to add it to sediments to plot legend only wont plot by itself
+sed_depths_leg <- ggarrange(methano_sed_24, box_gen_sed, methanotroph_sed_24, box_troph_sed,
+            ncol = 2,
+            nrow = 3,
+            legend_only,
+            align = "hv"
+)
+
+# Display
+sed_depths_leg  # so here we will do a little cropping in Illustrator to make it look right. 
+
+ggsave(
+  "analysis/FSP_Nick_Analysis/figures/sed_depths_leg.png",
+  sed_depths_leg,
+  width = 7,            
+  height = 5,         
+  units = "in",
+  dpi = 600              # high resolution for print
+)
+
+
+# or lets try two (technically 4 columns) where on the left we have methanogens and right is methanotrophs. they will still be going from surface, bottom, sediments with box plot on the right but we will have a box around methanogens and methanotrophs
+
+
+# 1. plot final methanogens
+methanogen_final <- 
+  ggarrange(methanogen_surfwater24, box_gen_surf, 
+            methanogen_bot_water24, box_gen_bot,
+            methano_sed_24, box_gen_sed,
+  nrow = 3, 
+  ncol = 2,
+  align = "hv",
+  labels = c("A.", "B.", "C.", "D.", "E.", "F."),
+  font.label = list(size =10),
+  widths = c(1, .5))
+methanogen_final
+
+# want to add space for title in methanogen plot
+space <- nullGrob()
+
+# now plot with extra space
+methanogen_final <- ggarrange(
+  space, 
+  methanogen_final, 
+  ncol = 1,
+  heights = c(0.1, 1)  
+)
+
+# 2. draw box around methanogens
+grid.newpage()
+grid.draw(methanogen_final)
+grid.rect(gp = gpar(col = "black", fill = NA, lwd = 2))  # draw border
+grid.text(label = "Methanogens", x = 0.5, y = 0.99, just = c("center", "top"),
+          gp = gpar(fontface = "bold", cex = .9))
+
+
+# 1. plot final methanotrophs
+methanotroph_final <- 
+  ggarrange(methanotrophs_surfwater24, box_troph_surf, 
+            methanotroph_bot_water24, box_troph_bot,
+            methanotroph_sed_24, box_troph_sed,
+  nrow = 3, 
+  ncol = 2,
+  align = "hv",
+  labels = c("A.", "B.", "C.", "D.", "E.", "F."),
+  font.label = list(size =10),
+  widths = c(1, .5))
+methanotroph_final
+
+# want to add space for title in methanogen plot
+space <- nullGrob()
+
+# now plot with extra space
+methanotroph_final <- ggarrange(
+  space, 
+  methanotroph_final, 
+  ncol = 1,
+  heights = c(0.09, 1)  
+)
+methanotroph_final
+
+# 2. draw box around methanogens
+grid.newpage()
+grid.draw(methanotroph_final)
+grid.rect(gp = gpar(col = "black", fill = NA, lwd = 2))  # draw border
+grid.text(label = "Methanotrophs", x = 0.5, y = 0.99, just = c("center", "top"),
+          gp = gpar(fontface = "bold", cex = .9))
+
+```
+now we have created our main text figure. the only thing is that i dont have the p values in th eifgure because nick has his italicized and sized a certain way and i want to make sure our plot aesthetics match.
+
+
+# Supplemental Figures
+Here are the supplemental figures (and bonus figures) for the manuscript. 
+
+## Figure S1 - Water and Sediment Bray-Curtis PCoA
+
+### S1A — Water PCoA 
+```{r s1a-pcoa-water}
+# water methane cyclers
+
+# Calculate Bray-Curtis Dissimilarity 
+water_BC_pcoa <- 
+  ordinate(
+    physeq = water_ch4_physeq,
+    method = "PCoA",
+    distance = "bray", 
+    binary = FALSE
+  )
+
+# PCoA of water samples color by treatment shape by pond
+s1a_water_pcoa <- plot_ordination(
+  physeq = water_ch4_physeq,
+  ordination = water_BC_pcoa,
+  color = "solar_progress",
+  shape = "Pond",
+  title = "Water Column Methane Cyclers") + 
+  geom_point(size = 5, alpha = 0.5, aes(fill = solar_progress, color = solar_progress, shape = Pond)) + 
+  scale_fill_manual(values = solar_colors) + 
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  guides(color = guide_legend(nrow = 1, 
+                              title = NULL,
+                              override.aes = list(size = 2.7)),
+         fill = "none",
+         shape = guide_legend(nrow = 2, 
+                              byrow = TRUE,
+                              title = NULL,
+                              override.aes = list(size = 2.7))) +
+  theme_classic() +
+  theme(
+    legend.position = c(0.01, 0.01),  # inside bottom-left
+    legend.justification = c(.01, .01),  
+    legend.spacing = unit(0.01, "cm"),
+    legend.spacing.x = unit(0.1, "cm"),
+    legend.background = element_rect(color = NA, fill = NA),
+    legend.key.width = unit(0.2, "cm"),
+    legend.key.height = unit(0.4, "cm"),
+    legend.text = element_text(size = 6),
+    legend.box.just = "center",
+    legend.box.background = element_rect(size = 0.2, linetype = "solid", color = "black"),
+    legend.margin = margin(1, 2, 1, 1))
+s1a_water_pcoa
+
+# ggsave(s3_ch4_pcoa, width = 8, height = 7, units = "in",
+#         filename = "analysis/FSP_Nick_Analysis/figures/s1a_water_pcoa.png")
+```
+
+### S1B- Sediment PCoA
+This is all methane cylcers in sediment communities
+```{r s1b-pcoa-sediments}
+# plot 1 all taxa sediments 
+
+# use physeq object for just methane cyclers 
+scaled_sed_physeq <- scaled_sed_ch4_physeq
+
+# Calculate Bray-Curtis Dissimilarity 
+scaled_sed_BC_pcoa <- 
+  ordinate(
+    physeq = scaled_sed_physeq,
+    method = "PCoA",
+    distance = "bray", 
+    binary = FALSE
+  )
+
+
+# PCoA of sediments color by treatment shaped by pond
+s1b_sed_pcoa <- plot_ordination(
+  physeq = scaled_sed_physeq,
+  ordination = scaled_sed_BC_pcoa,
+  color = "solar_progress",
+  shape = "Pond",
+  title = "Sediment Methane Cyclers") + 
+  geom_point(size = 5, alpha = 0.5, aes(color = solar_progress, fill = solar_progress, shape = Pond)) + 
+  scale_color_manual(values = solar_colors) + 
+  scale_fill_manual(values = solar_colors) + 
+  scale_shape_manual(values = pond_shapes) +
+  guides(color = "none",
+         fill = "none",
+         shape = "none")+
+  theme_classic() 
+  # theme(
+  # legend.position = c(0.82, 0.01),  # inside bottom-left
+  # legend.justification = c(0, 0),  # anchor the legend's top-left corner there
+  # legend.spacing = unit(0.1, "cm"),
+  # legend.background = element_rect(color = NA, fill = NA),
+  # legend.box.background = element_rect(size = 0.1, linetype = "solid", color = "black"),
+  # legend.text = element_text(size = 6),
+  # legend.margin = margin(2, 2, 2, 2))
+s1b_sed_pcoa
+
+# ggsave(sed_pond_solar_pcoa, width = 8, height = 7, units = "in",
+#         filename = "analysis/FSP_Nick_Analysis/figures/sed_pond_solar_pcoa.png")
+```
+Sediment samples are still distinct from other and separate along first axis
+
+### Generaate S1 Plots
+Water + Sediments together
+```{r fig-s1}
+fig_s1 <- 
+  ggarrange(s1a_water_pcoa, s1b_sed_pcoa,
+  nrow = 1, 
+  ncol = 2,
+  labels = c("A.", "B."),
+  font.label = list(size =12),
+  align = "hv") # aligns axis 
+fig_s1
+
+ggsave(fig_s1, width = 12.4, height = 6, dpi = 300,
+        filename = "analysis/FSP_Nick_Analysis/figures/fig_s1.png")
+```
+
+## S1 -  Bray-Curtis PCoA PERMANOVA
+PERMANOVA (Permutational Multivariate Analysis of Variance) is a non-parametric, permutation-based test used to compare groups of objects based on a distance matrix. The goal is to test the null hypothesis that the centroids and dispersion of groups are equivalent in the space defined by the dissimilarity measure. 
+
+### Water 
+Here we are performing a PERMANOVA on the water column methane cyclers throughout the entire sampling season
+```{r permanova-water}
+# set seed 
+set.seed(0909199)
+
+# calculate Bray-Curtis PERMANOVA using phyloseq distance
+water_bray <- phyloseq::distance(water_ch4_physeq, method = "bray", binary = FALSE)
+
+# pull out metadata 
+metadata <- water_ch4_physeq %>%
+  sample_data() %>%
+  data.frame()
+
+# Permutational Multivariate Analysis of Variance Using Distance Matrices
+# aka PERMANOVA using the adonis2 function from vegan 
+
+
+#1. Test the individual terms for significance
+# Testing if the centroids of solar progress are different: significant p = 0.001 ***
+adonis2(water_bray ~ solar_progress, data = metadata, by = "terms")
+
+# Now testing to see if centroids of depth_class are different: not significant p = 0.19
+adonis2(water_bray ~ Depth_Class, data = metadata, by = "terms")
+
+# Does pond matter? significant p = 0.001 ***
+adonis2(water_bray ~ Pond, data = metadata, by = "terms")
+
+# Does date matter? significant p = 0.001 ***
+adonis2(water_bray ~ as.factor(JDate), data = metadata, by = "terms")
+
+#2. Test the terms together
+# Now lets see the effect of each pond by date_collected and solar progress
+adonis2(water_bray ~ solar_progress * Pond * JDate, data = metadata, by = "terms")
+```
+With our PERMANOVA we find that treatment (solar_progress), day of year sampled (JDate - Julian date), and Pond is significant but depth class alone is not.
+
+When we create a model with treatment, pond, and date these are all significant (p < 0.001 ***). 
+- Solar progress is responsible for explaining  11.4% of variance and has a strong structuring effect on the water column community composition. This has the highest F value meaning that the between group differences are larger than within group variance (F = 8.2)
+
+- Pond is also significant explains 12.4% of variance but is weaker than treatment (solar_progress) (F = 2.4). Even though it explains more variation than treatment, there is more variation in ponds than between ponds. 
+
+- Date (JDate) is also strong and explains 9.6% of variance and is also weighted heavier (F = 6.9). The temporal effect is seen in the first axis as time progresses throughout the season.
+
+- The interaction between treatment and date explains 7.6% of variance and is an important but moderate factor in its effect size for structuring community (F = 5.5)
+
+However, the interaction of pond and date explains 8.1% of variance but is not the most important for explaining the variance in our water column methane cyclers (F = 1.5, p = 0.031 *)
+
+Together the PERMANOVA explains only about half the variance seen with 50.05% remaining
+
+### Sediments 
+Here we are performing a PERMANOVA on the sediment methane cyclers throughout the entire sampling season
+```{r permanova-sediments}
+# set seed 
+set.seed(0909199)
+
+# calculate Bray-Curtis PERMANOVA using phyloseq distance
+sed_bray <- phyloseq::distance(scaled_sed_physeq, method = "bray", binary = FALSE)
+
+# pull out metadata 
+metadata <- scaled_sed_physeq %>%
+  sample_data() %>%
+  data.frame()
+
+# Permutational Multivariate Analysis of Variance Using Distance Matrices
+# aka PERMANOVA using the adonis2 function from vegan 
+
+
+#1. Test the individual terms for significance
+# Testing if the centroids of solar progress are different: significant p = 0.001 ***
+adonis2(sed_bray ~ solar_progress, data = metadata, by = "terms")
+
+# Does pond matter? significant p = 0.001 ***
+adonis2(sed_bray ~ Pond, data = metadata, by = "terms")
+
+# Does date matter? significant p = 0.001 ***
+adonis2(sed_bray ~ as.factor(JDate), data = metadata, by = "terms")
+
+#2. Test the terms together
+# Now lets see the effect of each pond by date_collected and solar progress
+adonis2(sed_bray ~ solar_progress * Pond * JDate, data = metadata, by = "terms")
+```
+With our PERMANOVA we find that treatment (solar_progress), day of year sampled (JDate - Julian date), and Pond is significant factors.
+
+When we create a model with treatment, pond, and date these are all significant (p < 0.001 ***). 
+- treatment = solar_progress is important for explaining 11.6% of variation and has the largest effect on structuring the community (F = 9.99). This explains the separation along the first axis
+
+- pond explains the most variation (26.4%) and also has a substantial effect on structuring the community (F = 5.7) 
+
+- Date explains 9.9% of variation and also has temporal effect (F = 8.5) that shapes communities
+
+Comparing treatment and date we see that it is not that improtant and only explains 2.5% of variance (F = 2.1, p = 0.045*). But pond and date is more important as that explains 10.0% of variance but not the strongest effect (F = 2.1, p = 0.002)
+
+This explains 60.4% of variance with 39.6% in the residuals. 
+
+## S1 - Betadispr
+We are running betadispr to test variances/dispersions
+
+When computing PERMANOVA, we must also perform betadispr analysis when analyzing beta diversity in microbial ecology. We must do it after PERMANOVA because we need to look into the assumption of PERMANOVA which is the homogeneity of group dispersions aka variances. If this assumption is violated then the PERMANOVA results might be driven by dispersion rather than true differences in community composition.
+
+Always run betadisper() and permutest() after PERMANOVA to test whether the groups have similar within-group variation.
+
+It works by first taking ina. distance matrix and calculates the centroid of each group in multivariate space (note it does not test for significane). After computing within-group distances, we will run permutest() to see whether those dispersiosn differ significantly between groups using PERMANOVA
+
+The permutest works like this: - null hypothesis (H0): all groups have equal multivariate dispersion and a compute a new F-statistic for each permutation.
+
+The p-value is the proportion of permutations where the F is as extreme or more extreme than the observed F.
+The result from permutest() is a robust non-parametric p-value testing whether dispersion differs across groups.
+If p > 0.05 (not significant), the PERMANOVA result is reliable.
+
+If p = 0.05 (significant), be cautious—group differences may be due to dispersion, not composition! However, not all is lost as we may expect this to be biologically true.
+
+adonis - compares centroids to see if significant difference. betadispr - compares variance/distance from centroid
+
+### Water
+```{r betadispr-water}
+# set seed 
+set.seed(0909199)
+
+# calculate Bray-Curtis PERMANOVA using phyloseq distance
+water_bray <- phyloseq::distance(water_ch4_physeq, method = "bray", binary = FALSE)
+
+# pull out metadata 
+metadata <- water_ch4_physeq %>%
+  sample_data() %>%
+  data.frame()
+
+# Homogeneity of Disperson test with beta dispr
+
+## Bray-Curtis
+betadispr_water_pond <- betadisper(water_bray, metadata$Pond)
+betadispr_water_solar <- betadisper(water_bray, metadata$solar_progress)
+betadispr_water_depth <- betadisper(water_bray, metadata$Depth_Class)
+betadispr_water_JDate <- betadisper(water_bray, metadata$JDate)
+
+# permutest() performs a non-parametric permutation test, which is robust and valid for the kind of data used in beta diversity analysis (e.g., dissimilarity matrices).
+permutest(betadispr_water_pond) # not significant p = 0.269 
+
+permutest(betadispr_water_solar) # significant p = 0.009 **
+
+permutest(betadispr_water_depth) # not significant p = 0.406 
+
+permutest(betadispr_water_JDate) # significant p = 0.007 **
+```
+With betadispr we find the PERMANOVA results are mostly valid where pond variation is consistent. The PERMANOVA and betadispr find that depth is not significant meaning that depth doesnt structure the community. This makes sense between the ponds are so shallow so they are more likely to be similar.
+
+But treatment and date are significant meaning the differences may be due to dispersion and not composition. This could be because of temporal reasons where communities change over time with the season.
+
+### Sediment 
+```{r betadispr-sed}
+# set seed 
+set.seed(0909199)
+
+# calculate Bray-Curtis PERMANOVA using phyloseq distance
+sed_bray <- phyloseq::distance(scaled_sed_physeq, method = "bray", binary = FALSE)
+
+# pull out metadata 
+metadata <- scaled_sed_physeq %>%
+  sample_data() %>%
+  data.frame()
+
+# Homogeneity of Disperson test with beta dispr
+
+## Bray-Curtis
+betadispr_sed_pond <- betadisper(sed_bray, metadata$Pond)
+betadispr_sed_solar <- betadisper(sed_bray, metadata$solar_progress)
+betadispr_sed_JDate <- betadisper(sed_bray, metadata$JDate)
+
+# permutest() performs a non-parametric permutation test, which is robust and valid for the kind of data used in beta diversity analysis (e.g., dissimilarity matrices).
+permutest(betadispr_sed_pond) # not significant p = 0.756
+
+permutest(betadispr_sed_solar) # not significant p = 0.203
+
+permutest(betadispr_sed_JDate) # not significant p = 0.196
+```
+With betadispr we find the PERMANOVA results are are valid as pond, treatment, and date are not significant but significant in the PERMANOVA. Thus our PERMANOVA result is reliable and the differences between groups are due to location/centroids of groups rather than differences in variation within groups 
+
+## S2 - Sediment Community Methane Cyclers: Methanogen and Methanotrophs
+We want to see who is structuring the community within the sediments. In water column it is clear that methanotrophs are, but what about in sediment communities?
+
+First we will plot sediment methanogens and then methanotrophs in this same chunk
+```{r s2-sed-pcoa}
+# 1. methanogens
+
+# Calculate Bray-Curtis Dissimilarity 
+scaled_sed_methanogen_BC_pcoa <- 
+  ordinate(
+    physeq = scaled_methanogen_sed_physeq,
+    method = "PCoA",
+    distance = "bray", 
+    binary = FALSE
+  )
+
+
+# PCoA of sediments color by treatment shaped by pond
+s2a_sed_gen <- plot_ordination(
+  physeq = scaled_methanogen_sed_physeq,
+  ordination = scaled_sed_methanogen_BC_pcoa,
+  color = "solar_progress",
+  shape = "Pond",
+  title = "Sediment Methanogens") + 
+  geom_point(size = 5, alpha = 0.5, aes(color = solar_progress, fill = solar_progress, shape = Pond)) + 
+  scale_color_manual(values = solar_colors) + 
+  scale_fill_manual(values = solar_colors) + 
+  scale_shape_manual(values = pond_shapes) +
+  guides(color = guide_legend(nrow = 1, 
+                              title = NULL,
+                              override.aes = list(size = 2.7)),
+         fill = "none",
+         shape = guide_legend(nrow = 2, 
+                              byrow = TRUE,
+                              title = NULL,
+                              override.aes = list(size = 2.7))) +
+  theme_classic() +
+  theme(
+    legend.position = c(0.01, 0.01),  # inside bottom-left
+    legend.justification = c(.01, .01),  
+    legend.spacing = unit(0.01, "cm"),
+    legend.spacing.x = unit(0.1, "cm"),
+    legend.background = element_rect(color = NA, fill = NA),
+    legend.key.width = unit(0.2, "cm"),
+    legend.key.height = unit(0.4, "cm"),
+    legend.text = element_text(size = 6),
+    legend.box.just = "center",
+    legend.box.background = element_rect(size = 0.2, linetype = "solid", color = "black"),
+    legend.margin = margin(1, 2, 1, 1))
+s2a_sed_gen
+
+# ggsave(sed_pond_solar_pcoa_gens, width = 8, height = 7, units = "in",
+#         filename = "analysis/figures/Nick_Analysis_GHGs/sed_pond_solar_pcoa.png")
+
+
+
+# 2. methanotrophs
+
+# Calculate Bray-Curtis Dissimilarity 
+scaled_sed_methanotroph_BC_pcoa <- 
+  ordinate(
+    physeq = scaled_methanotroph_sed_physeq,
+    method = "PCoA",
+    distance = "bray", 
+    binary = FALSE
+  )
+
+
+# PCoA of sediments color by treatment shaped by pond
+s2b_sed_troph <- plot_ordination(
+  physeq = scaled_methanotroph_sed_physeq,
+  ordination = scaled_sed_methanotroph_BC_pcoa,
+  color = "solar_progress",
+  shape = "Pond",
+  title = "Sediment Methanotrophs") + 
+  geom_point(size = 5, alpha = 0.5, aes(color = solar_progress, fill = solar_progress, shape = Pond)) + 
+  scale_color_manual(values = solar_colors) + 
+  scale_fill_manual(values = solar_colors) + 
+  scale_shape_manual(values = pond_shapes) +
+  guides(color = "none",
+         fill = "none",
+         shape = "none")+
+  theme_classic()
+s2b_sed_troph
+
+# ggsave(sed_pond_solar_pcoa_trophs, width = 8, height = 7, units = "in",
+#         filename = "analysis/figures/Nick_Analysis_GHGs/sed_pond_solar_pcoa_trophs.png")
+
+# plot together 
+fig_s2 <- 
+  ggarrange(s2a_sed_gen, s2b_sed_troph,
+  nrow = 1, 
+  ncol = 2,
+  labels = c("A.", "B."),
+  font.label = list(size =12),
+  align = "hv") # aligns axis 
+fig_s2
+
+ggsave(fig_s2, width = 12.4, height = 6, dpi = 300,
+        filename = "analysis/FSP_Nick_Analysis/figures/fig_s2.png")
+```
+Sediment samples are still distinct from other and separate along first axis
+
+## S2-  Sediment Methogens/trophs Bray-Curtis PCoA PERMANOVA
+PERMANOVA (Permutational Multivariate Analysis of Variance) is a non-parametric, permutation-based test used to compare groups of objects based on a distance matrix. The goal is to test the null hypothesis that the centroids and dispersion of groups are equivalent in the space defined by the dissimilarity measure. 
+
+Here we are performing a PERMANOVA on the sediment methanogen and methanotrophs
+```{r permanova-sed-ch4-cyclr}
+# set seed 
+set.seed(0909199)
+
+#1. methanogen
+# calculate Bray-Curtis PERMANOVA using phyloseq distance
+sed_gen_bray <- phyloseq::distance(scaled_methanogen_sed_physeq, method = "bray", binary = FALSE)
+
+# pull out metadata 
+metadata <- scaled_methanogen_sed_physeq %>%
+  sample_data() %>%
+  data.frame()
+
+# Permutational Multivariate Analysis of Variance Using Distance Matrices
+# aka PERMANOVA using the adonis2 function from vegan 
+
+
+#1. Test the individual terms for significance
+# Testing if the centroids of solar progress are different: significant p = 0.001 ***
+adonis2(sed_gen_bray ~ solar_progress, data = metadata, by = "terms")
+
+
+# Does pond matter? significant p = 0.001 ***
+adonis2(sed_gen_bray ~ Pond, data = metadata, by = "terms")
+
+# Does date matter? significant p = 0.001 ***
+adonis2(sed_gen_bray ~ as.factor(JDate), data = metadata, by = "terms")
+
+#2. Test the terms together
+# Now lets see the effect of each pond by date_collected and solar progress
+adonis2(sed_gen_bray ~ solar_progress * Pond * JDate, data = metadata, by = "terms")
+
+
+#1. methanotrophs
+# calculate Bray-Curtis PERMANOVA using phyloseq distance
+sed_troph_bray <- phyloseq::distance(scaled_methanotroph_sed_physeq, method = "bray", binary = FALSE)
+
+# pull out metadata 
+metadata <- scaled_methanotroph_sed_physeq %>%
+  sample_data() %>%
+  data.frame()
+
+# Permutational Multivariate Analysis of Variance Using Distance Matrices
+# aka PERMANOVA using the adonis2 function from vegan 
+
+
+#1. Test the individual terms for significance
+# Testing if the centroids of solar progress are different: significant p = 0.002 **
+adonis2(sed_troph_bray ~ solar_progress, data = metadata, by = "terms")
+
+# Does pond matter? significant p = 0.001 ***
+adonis2(sed_troph_bray ~ Pond, data = metadata, by = "terms")
+
+# Does date matter? significant p = 0.001 ***
+adonis2(sed_troph_bray ~ as.factor(JDate), data = metadata, by = "terms")
+
+#2. Test the terms together
+# Now lets see the effect of each pond by date_collected and solar progress
+adonis2(sed_troph_bray ~ solar_progress * Pond * JDate, data = metadata, by = "terms")
+```
+**Methanogens**
+With our PERMANOVA we find that treatment (solar_progress), day of year sampled (JDate - Julian date), and Pond is significant 
+
+Treatment explains 11.8% of the variance and has the largest effect size (F = 10.5) but pond explains the most variation, 28.2%, and contributes to the community but weaker than treatment (F = 6.22). JDate explains 9.0% of variation but is the second most important term for its weight contributing to structuring thet community. 
+
+Solar progress and time explains 2.5% of the variation but is not a strong contributer to the community. Pond and time explais 10% of variation but has a smaller effect on community structure.
+
+Together this explains 62% of the variation.
+
+**Methanotrophs**
+With our PERMANOVA we see that Pond explains the most variance (20.4%) but does not have a strong effect on community structure (F = 3.9). There is a temporal effect along the first axis due to time that explains 13.1% of data and is a strong factor for shaping the community (F = 10.0). Treatment is important for explaining 10.1% of variance and is teh second most important factor for shaping the community which we kinda see along the second axis (F = 7.7)
+
+The interactions of pond and date explain 9.7% of the variance but is not an important factor for shaping our community (F = 1.9). 
+
+The interaction of solar treatment and pond is > 0.05 (p = 0.095) indicating that their interaction is not strong and important for shaping the community. while it does answer 2.2% of variation, it has the smallest effect size (F = 1.7) 
+
+Together these variables explain 56% of the data
+
+## Betadispr
+```{r betadispr-sed-ch4-cycler}
+# set seed 
+set.seed(0909199)
+
+# 1. methanogens 
+# calculate Bray-Curtis PERMANOVA using phyloseq distance
+sed_gen_bray <- phyloseq::distance(scaled_methanogen_sed_physeq, method = "bray", binary = FALSE)
+
+# pull out metadata 
+metadata <- scaled_methanogen_sed_physeq %>%
+  sample_data() %>%
+  data.frame()
+
+# Homogeneity of Disperson test with beta dispr
+
+## Bray-Curtis
+betadispr_sed_pond <- betadisper(sed_gen_bray, metadata$Pond)
+betadispr_sed_solar <- betadisper(sed_gen_bray, metadata$solar_progress)
+betadispr_sed_JDate <- betadisper(sed_gen_bray, metadata$JDate)
+
+# permutest() performs a non-parametric permutation test, which is robust and valid for the kind of data used in beta diversity analysis (e.g., dissimilarity matrices).
+permutest(betadispr_sed_pond) # not significant p = 0.659
+
+permutest(betadispr_sed_solar) # not significant p = 0.067
+
+permutest(betadispr_sed_JDate) # not significant p = 0.44
+
+
+# 2. methanotrophs 
+# calculate Bray-Curtis PERMANOVA using phyloseq distance
+sed_troph_bray <- phyloseq::distance(scaled_methanotroph_sed_physeq, method = "bray", binary = FALSE)
+
+# pull out metadata 
+metadata <- scaled_methanotroph_sed_physeq %>%
+  sample_data() %>%
+  data.frame()
+
+# Homogeneity of Disperson test with beta dispr
+
+## Bray-Curtis
+betadispr_sed_pond <- betadisper(sed_troph_bray, metadata$Pond)
+betadispr_sed_solar <- betadisper(sed_troph_bray, metadata$solar_progress)
+betadispr_sed_JDate <- betadisper(sed_troph_bray, metadata$JDate)
+
+# permutest() performs a non-parametric permutation test, which is robust and valid for the kind of data used in beta diversity analysis (e.g., dissimilarity matrices).
+permutest(betadispr_sed_pond) # not significant p = 0.515
+
+permutest(betadispr_sed_solar) # not significant p = 0.682
+
+permutest(betadispr_sed_JDate) # significant p = 0.007
+```
+**Methanogens**
+With betadispr we find the PERMANOVA results are are valid as pond, treatment, and date are not significant but significant in the PERMANOVA. Thus our PERMANOVA result is reliable and the differences between groups are due to location/centroids of groups rather than differences in variation within groups 
+
+**Methanotrophs**
+With betadispr we find the PERMANOVA results are are valid as pond and treatment are not significant but significant in the PERMANOVA. Thus our PERMANOVA result is reliable and the differences between groups are due to location/centroids of groups rather than differences in variation within groups 
+
+However, date is statistically significant in PERMANOVA and in the betadispr indicating that theres variability in within the sampling dates so there are likely differences in community composition and probably heterogeneity over time. 
+
+
+## Bonus fig differential abundance - ASV Level
+Now we will calculate the differential abundance between our water and sediment samples. First I will try to do the original methane cyclers in water and sediments. but i may also further break it down into sediment methane cycler type.
+
+### Water
+```{r diff-abund-water}
+# set seed
+set.seed(09091999)
+
+# filter out for ASVs with zero variances 
+water_ch4_phy_bc <- water_ch4_physeq %>% 
+  subset_samples(Year == "2024") %>% 
+  filter_taxa(., function(x) {
+    group_var <- sample_data(.)$solar_progress
+    all(tapply(x, group_var, var, na.rm = TRUE) > 0)
+  }, prune = TRUE)
+
+
+# relevel solar_progress
+water_ch4_phy_bc@sam_data$solar_progress <- factor(water_ch4_phy_bc@sam_data$solar_progress, levels = c("No Solar", "Solar"))
+
+# run ancombc2 for water methane cyclers
+# water_ch4_asv_output <- ancombc2(data = water_ch4_phy_bc,
+#                                  tax_level = "ASV", # Test for each phylum
+#                                  fix_formula = "solar_progress", # Use Comp_Group_Hier to estimate diff. abundance
+#                                  p_adj_method = "holm", # Adjust with Holm-Bonferroni correction; recommended by authors
+#                                  pseudo_sens = TRUE, # Run sensitivity test to make sure taxa isn't sensitive to psuedo-count choice
+#                                  prv_cut = 0.1, # Prevalence filter of 10%
+#                                  group = "solar_progress", # Use Comp_Group_Hier as groups when doing pairwise comparisons
+#                                  struc_zero = TRUE, # Do not detect structural zeroes
+#                                  alpha = 0.05, # Significance threshold of 0.05
+#                                  n_cl = 5, # Use 5 threads
+#                                  verbose = FALSE, # Don't print verbose output
+#                                  global = TRUE, # Run a global test (sorta like an ANOVA to first find if a given ASV is sig diff)
+#                                  pairwise = FALSE) # Run pairwise tests between groups (sorta like a post-hoc test like Tukey)
+
+
+# save(water_ch4_asv_output, file = "data/FSP_2024_Nick/water_ch4_asv_output.RData")
+
+load("data/FSP_2024_Nick/water_ch4_asv_output.RData")
+
+
+# plot ASV differential abundance
+water_ch4_fsp <- water_ch4_asv_output$res %>%
+  select(taxon, starts_with("lfc"), starts_with("diff"), starts_with("passed_ss")) %>%
+  pivot_longer(cols = !taxon, names_to = "metric", values_to = "value") %>%
+  separate_wider_delim(cols = metric, delim = "_", names = c("variable", "Comparison"), too_many = "merge") %>%
+  mutate(Comparison = str_remove(Comparison, "\\(Intercept\\)")) %>% 
+  mutate(Comparison = str_remove(Comparison, "ss_")) %>%
+  pivot_wider(id_cols = c("taxon","Comparison"), names_from = variable, values_from = value) %>%
+  mutate(Comparison = str_remove(Comparison, "treatment"),
+         Comparison = str_replace(Comparison, "_treatment", ";")) %>%
+  separate_wider_delim(Comparison, delim = ";", names = c("Ref1", "Ref2"), too_few = "align_start") %>%
+  filter(!is.na(Ref1) & Ref1 != "") %>%
+  mutate(
+    Ref2 = ifelse(is.na(Ref2), "No Solar", Ref2), # relevel with basegroup which is no solar 
+    Comparison = paste0(Ref1, " : ", Ref2)) %>% 
+  dplyr::filter(diff == 1, passed == 1, abs(lfc) > 1) %>% # play around with log fold change
+  select(ASV = taxon, Comparison, lfc, passed)
+
+# join by tax table
+clean_water_ch4 <-  water_ch4_fsp %>% left_join(., as.data.frame(water_ch4_physeq@tax_table), by = "ASV")
+
+# plot log fold changes
+clean_water_ch4 %>% 
+  ggplot(aes(x = ASV, y = lfc, fill = Order)) +
+  geom_col() +
+  #scale_fill_manual(values = phylum_colors) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom") + 
+  ggtitle("Water Column ASV Log-fold Change in FPV Ponds") 
+
+# plot differentially abundant ASVs overtime 
+
+#1. tax glom at ASV level
+water_ch4_asv_df <- water_ch4_physeq %>% 
+  tax_glom(taxrank = "ASV") %>% 
+  psmelt() %>% 
+  mutate(
+    Depth_Class = case_when(
+      Depth_Class == "S" ~ "Surface Water",
+      Depth_Class == "B" ~ "Bottom Water"),
+    Depth_Class = factor(Depth_Class, levels = c("Surface Water", "Bottom Water")))
+
+#2. plot asvs overtime 
+
+# methanogen = ASV_1063; Methanobacteriales order
+# methanotroph = ASV 13,141,32,44; Methylococcales order
+# get metadata from water physeq 
+metadata <- water_ch4_physeq %>%
+  sample_data() %>%
+  data.frame() %>% 
+  mutate(
+    Depth_Class = case_when(
+      Depth_Class == "S" ~ "Surface Water",
+      Depth_Class == "B" ~ "Bottom Water"),
+    Depth_Class = factor(Depth_Class, levels = c("Surface Water", "Bottom Water")))
+    
+# plot Methanogen overtime
+water_ch4_asv1063 <- water_ch4_asv_df %>% 
+  dplyr::filter(ASV == "ASV_1063") %>%
+  group_by(JDate, Pond, Depth_Class, solar_progress) %>% 
+  summarize(
+    total_cells_ml = sum(Abundance)) %>%
+  ggplot(aes(x = as.factor(JDate), y = total_cells_ml, color = solar_progress, shape = Pond)) +
+  geom_line(aes(group = interaction(Pond, Depth_Class)), 
+            alpha = 0.2) +
+  geom_smooth(aes(group = solar_progress), se = FALSE) +
+  geom_point(aes(shape = Pond), size = 2) +
+  ggh4x::facet_grid2(~Depth_Class) +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  labs(
+    x = "Date Collected",
+    y = "Total Cells per ml",
+    title = "Methanobacteriales (ASV_1063)\nIncrease in FPV Ponds"
+  ) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1, vjust = 1),
+        legend.position = "bottom") +
+  scale_x_discrete(guide = guide_axis(angle = 60)) +
+  theme_bw()
+water_ch4_asv1063 
+
+# methanotrophs 
+
+# create list of methanotroph asvs 
+water_ch4_methanotrophs <- c("ASV_13", "ASV_141", "ASV_32", "ASV_44")
+
+# now plot overtime
+water_ch4_trophs <- water_ch4_asv_df %>% 
+  dplyr::filter(ASV %in% water_ch4_methanotrophs) %>% 
+  group_by(JDate, Pond, Depth_Class, solar_progress, ASV) %>% 
+  summarize(
+    total_cells_ml = sum(Abundance)) %>%
+  ggplot(aes(x = as.factor(JDate), y = total_cells_ml, color = solar_progress, shape = Pond)) +
+  geom_line(aes(group = interaction(Pond, Depth_Class)), 
+            alpha = 0.2) +
+  geom_smooth(aes(group = solar_progress), se = FALSE) +
+  geom_point(aes(shape = Pond), size = 2) +
+  ggh4x::facet_grid2(Depth_Class~ASV) +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  labs(
+    x = "Date Collected",
+    y = "Total Cells per ml",
+    title = "Differentially Abundant Methylococcales ASVs in FPV Ponds"
+  ) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1, vjust = 1),
+        legend.position = "bottom") +
+  scale_x_discrete(guide = guide_axis(angle = 60)) +
+  theme_bw()
+water_ch4_trophs
+```
+When we look at the water column of just our methane cyclers, we see that there are only log fold change increases. It is no suprise that Methylococcales has 4 differentially abundant ASVs, but ASV 32 is a log fold change just shy of 3! I am kinda shocked that the Methanobacteriales ASV 1063 is differentially abundant in the water column of solar ponds...
+
+### Sediment
+First we are running this analysis with all methane cyclers.
+```{r diff-abund-sediment}
+# set seed
+set.seed(09091999)
+
+# filter out for ASVs with zero variances 
+scaled_sed_ch4_physeq_bc <- scaled_sed_ch4_physeq %>% 
+  filter_taxa(., function(x) {
+    group_var <- sample_data(.)$solar_progress
+    all(tapply(x, group_var, var, na.rm = TRUE) > 0)
+  }, prune = TRUE)
+
+
+# relevel solar_progress 
+scaled_sed_ch4_physeq_bc@sam_data$solar_progress <- factor(scaled_sed_ch4_physeq_bc@sam_data$solar_progress, levels = c("Open", "FPV"))
+
+# run ancombc2 for all sediment methane cyclers
+# sed_ch4_asv_output <- ancombc2(data = scaled_sed_ch4_physeq_bc,
+#                                  tax_level = "ASV", # Test for each phylum
+#                                  fix_formula = "solar_progress", # Use Comp_Group_Hier to estimate diff. abundance
+#                                  p_adj_method = "holm", # Adjust with Holm-Bonferroni correction; recommended by authors
+#                                  pseudo_sens = TRUE, # Run sensitivity test to make sure taxa isn't sensitive to psuedo-count choice
+#                                  prv_cut = 0.1, # Prevalence filter of 10%
+#                                  group = "solar_progress", # Use Comp_Group_Hier as groups when doing pairwise comparisons
+#                                  struc_zero = TRUE, # Do not detect structural zeroes
+#                                  alpha = 0.05, # Significance threshold of 0.05
+#                                  n_cl = 5, # Use 5 threads
+#                                  verbose = FALSE, # Don't print verbose output
+#                                  global = TRUE, # Run a global test (sorta like an ANOVA to first find if a given ASV is sig diff)
+#                                  pairwise = FALSE) # Run pairwise tests between groups (sorta like a post-hoc test like Tukey)
+
+
+# save(sed_ch4_asv_output, file = "data/FSP_2024_Nick/sed_ch4_asv_output.RData")
+
+load("data/FSP_2024_Nick/sed_ch4_asv_output.RData")
+
+
+# plot ASV differential abundance
+sed_ch4_fsp <- sed_ch4_asv_output$res %>%
+  select(taxon, starts_with("lfc"), starts_with("diff"), starts_with("passed_ss")) %>%
+  pivot_longer(cols = !taxon, names_to = "metric", values_to = "value") %>%
+  separate_wider_delim(cols = metric, delim = "_", names = c("variable", "Comparison"), too_many = "merge") %>%
+  mutate(Comparison = str_remove(Comparison, "\\(Intercept\\)")) %>% 
+  mutate(Comparison = str_remove(Comparison, "ss_")) %>%
+  pivot_wider(id_cols = c("taxon","Comparison"), names_from = variable, values_from = value) %>%
+  mutate(Comparison = str_remove(Comparison, "treatment"),
+         Comparison = str_replace(Comparison, "_treatment", ";")) %>%
+  separate_wider_delim(Comparison, delim = ";", names = c("Ref1", "Ref2"), too_few = "align_start") %>%
+  filter(!is.na(Ref1) & Ref1 != "") %>%
+  mutate(
+    Ref2 = ifelse(is.na(Ref2), "Open", Ref2), # relevel with basegroup which is no solar 
+    Comparison = paste0(Ref1, " : ", Ref2)) %>% 
+  dplyr::filter(diff == 1, passed == 1, abs(lfc) > 1) %>% # play around with log fold change
+  select(ASV = taxon, Comparison, lfc, passed)
+
+# join by tax table
+clean_sed_ch4 <-  sed_ch4_fsp %>% left_join(., as.data.frame(scaled_sed_ch4_physeq@tax_table), by = "ASV")
+
+# plot log fold changes
+clean_sed_ch4 %>% 
+  ggplot(aes(x = ASV, y = lfc, fill = Order)) +
+  geom_col() +
+  #scale_fill_manual(values = phylum_colors) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom") + 
+  ggtitle("Sediment CH4 Cycler ASV Log-fold Change in FPV Ponds") 
+
+# plot differentially abundant ASVs overtime 
+
+#1. tax glom at ASV level, calculate abundance
+methano_sed_asv_df <- methano_sed_phy 
+
+#2. plot asv overtime 
+
+# methanogen = ASV_4603; Methanosarcinales_A_2632 order
+
+# get metadata from water physeq 
+metadata <- scaled_sed_ch4_physeq %>%
+  sample_data() %>%
+  data.frame()
+
+
+# plot Methanogen overtime
+sed_ch4_asv4603 <- methano_sed_asv_df %>% 
+  dplyr::filter(ASV == "ASV_4603") %>%
+  group_by(Pond, solar_progress, Date_Collected, ASV) %>% 
+  summarize(
+    asv_abund = sum(Abundance), 
+    .groups = "drop") %>%
+  ggplot(aes(x = as.factor(Date_Collected), y = asv_abund, color = solar_progress)) +
+  geom_line(aes(group = interaction(Pond, ASV)), 
+            alpha = 0.2) +
+  geom_smooth(aes(group = solar_progress), se = FALSE) +
+  geom_point(aes(shape = Pond), size = 2) +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  labs(
+    x = "Date Collected",
+    y = "Relative Abundance",
+    title = "Dif Abund Sed Methanosarcinales_A_2632 (ASV_4603) in FPV Ponds"
+  ) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1, vjust = 1),
+        legend.position = "bottom") +
+  scale_x_discrete(guide = guide_axis(angle = 60)) +
+  theme_bw()
+sed_ch4_asv4603
+
+```
+There is a differentially abundant ASV Methanosarcinales_A_2632 that is increased in solar ponds! When we plot the abundance overtime this ASV is barely in the community but it is higher in solar ponds. Doesnt really feel worth it to report considering its a minor contribution to community.
+
+## S3 - Community Composition
+I am plotting water and sediment community compositions together in this chunk
+```{r s3-com-composition}
+# pull out metadata 
+metadata <- water_ch4_physeq %>%
+  sample_data() %>%
+  data.frame() %>% 
+  select(-Methanotroph_Methanogen)
+
+# sediment + water methane cyclers 11 total 
+methanogens <- c("Methanosarcinales_A_2632", "Methanomicrobiales", "Methanobacteriales", "Methanomassiliicoccales", "Methanofastidiosales", "Methanotrichales", "Methanocellales", "Methanomethylicales")
+methanotrophs <- c("Methylococcales", "Methylacidiphilales", "Methylomirabilales")
+
+
+# create df for plotting
+water_ch4_order_df <- water_ch4_physeq %>% 
+  tax_glom(taxrank = "ASV") %>% 
+  psmelt() %>% 
+  mutate(
+    Methanotroph_Methanogen = case_when(
+      Order %in% methanogens ~ "Methanogen",
+      Order %in% methanotrophs ~ "Methanotroph",
+      TRUE ~ NA_character_
+    )
+  ) %>% 
+  select(DNA_ID, Abundance, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, Methanotroph_Methanogen) %>% 
+  left_join(metadata, by = "DNA_ID") %>% 
+  mutate(
+    Depth_Class = case_when(
+    Depth_Class == "S"  ~ "Surface Water",
+    Depth_Class == "B"  ~ "Bottom Water"),
+    Depth_Class = factor(Depth_Class, levels = c("Surface Water", "Bottom Water")),
+    solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open")) %>% 
+  dplyr::filter(Date_Collected.x == "2024-07-11") %>% 
+  group_by(Order, JDate, Pond, Depth_Class, solar_progress, Methanotroph_Methanogen, DNA_ID) %>% 
+  summarize(Abundance = sum(Abundance)) 
+  
+
+# community composition - water absolute abundances
+
+
+# water color scheme for taxa
+ch4_colors <- c("Methanobacteriales" = "#2E624D",
+                  "Methanocellales" = "#558D7B", 
+                  "Methanofastidiosales" =  "#148F77",
+                  "Methanomassiliicoccales" = "#009E73",
+                  "Methanomicrobiales" = "#43BA8F",
+                  "Methanosarcinales_A_2632" =  "#48C9B0",
+                  "Methanomethylicales" = "#90CEC0",
+                  "Methanotrichales" = "#A3E4D7",
+                  "Methylococcales"= "#7D3560",
+                  "Methylomirabilales" = "#CC79A7",
+                  "Methylacidiphilales"= "#EFB6D6"
+                  )
+
+ch4_legend_ord <- c("Methanobacteriales",
+                  "Methanocellales", 
+                  "Methanofastidiosales",
+                  "Methanomassiliicoccales",
+                  "Methanomicrobiales",
+                  "Methanosarcinales_A_2632",
+                  "Methanomethylicales",
+                  "Methanotrichales",
+                  "Methylococcales",
+                  "Methylomirabilales",
+                  "Methylacidiphilales"
+                  )
+
+# create absolute abundance community comp plot
+waterch4_ord_cc_fpv <- water_ch4_order_df %>% 
+  ggplot(aes(x = Pond, y = Abundance/1e3, fill = Order)) + 
+  geom_col(width = .99) +
+  facet_grid(rows = vars(Depth_Class), cols = vars(solar_progress), scales = "free_x") +
+  #ggh4x::facet_nested(~solar_progress+Depth_Class,space = "free", scales = "free_x") +
+  scale_fill_manual(values = ch4_colors) +
+ # scale_x_continuous(expand = expansion(mult = 0),
+ # labels = scales::label_comma()) +
+  labs(y = "Absolute Abundance (10³ cells/ml)") + 
+  scale_x_discrete(expand = c(0, 0)) +
+  # theme(axis.line.x = element_blank(),
+  #       axis.text.x = element_blank(),
+  #       axis.ticks.y = element_blank(),
+  #       axis.title.y = element_blank(),
+  #       plot.margin = unit(c(0,0,0,0), "null"),
+  #       axis.text.x = element_text(size = 10),
+  #       axis.title.x = element_text(size = 12),
+  #       legend.text = element_text(size = 8),
+  #       legend.title = element_text(size = 12),
+  #       legend.box.background = element_rect(linetype = "solid", color = "black")) + 
+  theme_classic() +
+  theme(strip.background = element_blank(),
+        # axis.text.x = element_text(angle=90, vjust=0.5),
+        strip.text.x.top = element_text(size = 11, face = "bold"),
+        strip.text.y.right = element_text(size = 10, face = "bold"),
+        axis.text.x = element_blank(),
+        axis.title.y = element_text(size = 9),
+        axis.title.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.line = element_blank(),
+        legend.key.width=unit(0.3,"cm"),
+        legend.key.height=unit(0.3,"cm"), 
+        legend.position = "none", 
+        legend.title=element_text(size=10),
+        legend.text=element_text(size=9),
+        panel.border = element_rect(color = "black", 
+                            fill = NA, size = 1))+
+  guides(fill = guide_legend(title.position = "left",
+                             nrow=5, ncol= 3)) 
+waterch4_ord_cc_fpv
+
+
+
+# relative sediment abundance
+
+# calculate relative abundance and identify methane cyclers
+methano_sed_phy <- scaled_sed_physeq_24 %>%
+  speedyseq::tax_glom(taxrank = "ASV") %>% 
+  # Calculate the relative abundance
+  speedyseq::transform_sample_counts(function(x) {x/sum(x)}) %>%
+  psmelt() %>%
+  filter(Order %in% c(methanogens, methanotrophs)) %>%
+  mutate(
+    Methanotroph_Methanogen = case_when(
+      Order %in% methanogens ~ "Methanogen",
+      Order %in% methanotrophs ~ "Methanotroph"
+    ),
+    solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open"),
+    Depth_Class = "Sediment")  %>% 
+  group_by(Order, Date_Collected, Pond, Depth_Class, solar_progress, Methanotroph_Methanogen, DNA_ID) %>% 
+  summarize(Abundance = sum(Abundance)) 
+
+
+# relative community plot 
+sedch4_order_cc <-  methano_sed_phy %>% 
+  dplyr::filter(Date_Collected == "2024-07-11") %>% 
+  ggplot(aes(x = Pond, y = Abundance, fill = Order)) + 
+  geom_col(width = .99) +
+  facet_grid(rows = vars(Depth_Class), cols = vars(solar_progress), scales = "free_x") +
+  scale_fill_manual(values = ch4_colors) +
+  scale_x_discrete(expand = c(0, 0)) + 
+  labs(
+    y = "Relative Abundance (%)",
+    x = "Pond"
+  ) +
+  theme_classic() +
+  theme(strip.background = element_blank(),
+        strip.text.x.top = element_blank(),
+        strip.text.y.right = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(angle=90, vjust=0.5),
+        axis.title.y = element_text(size = 9),
+        axis.line = element_blank(),
+        legend.key.width=unit(0.3,"cm"),
+        legend.key.height=unit(0.3,"cm"), 
+        legend.position = "none", 
+        legend.title=element_text(size=10),
+        legend.text=element_text(size=9),
+        panel.border = element_rect(color = "black", 
+                            fill = NA, size = 1))+
+  guides(fill = guide_legend(title.position = "left",
+                             nrow=7, ncol= 3))
+    
+sedch4_order_cc
+
+# plot community plots together
+community <- ggarrange(waterch4_ord_cc_fpv, sedch4_order_cc,
+            ncol = 1,
+            nrow = 2,
+            align = "v")
+community
+
+# combine water and sediment df for legend to export
+leg_water <- water_ch4_order_df %>% 
+  select(Abundance, Order, Methanotroph_Methanogen)
+leg_sed <- methano_sed_phy %>% 
+  select(Abundance, Order, Methanotroph_Methanogen)
+
+illegal_bind <- rbind(leg_water, leg_sed)
+
+
+
+# plot illegally bound df to get legend of all 11 methane cycler species
+legend_ch4 <- illegal_bind %>% 
+  mutate(Order = factor(Order, levels = ch4_legend_ord)) %>%
+  ggplot(aes(x = Order, y = Abundance, fill = Order)) +
+  geom_col(width = .99) +
+  scale_fill_manual(values = ch4_colors) +
+  guides(
+    fill = guide_legend(
+      title = "Order",
+      ncol = 3,
+      byrow = FALSE
+    )
+  ) +
+  theme(legend.key.width=unit(0.3,"cm"),
+        legend.key.height=unit(0.3,"cm"),
+        legend.position = "bottom",
+        legend.title=element_text(size=10),
+        legend.text = element_text(size = 9)) 
+legend_ch4
+
+
+# get legends
+legend_only <- cowplot::get_legend(legend_ch4)
+
+# theres randomly 5 grob objects and only the 3rd one has something?
+legend_list <- cowplot::get_plot_component(legend_ch4, "guide-box", return_all = TRUE)
+
+# extract legend grob
+legend_only <- legend_list[[3]]
+
+# Side by side
+combined_legends <- plot_grid(
+  waterch4_ord_cc_fpv,
+  sedch4_order_cc,
+  legend_only, 
+  ncol = 1,
+  align = "v",
+  axis = "l",
+  rel_heights = c(1, 1, .5)
+)
+combined_legends
+
+# now lets begin to save our image
+png("analysis/FSP_Nick_Analysis/figures/s3_community_comp.png", width = 3900, height = 4000, res = 600)
+
+grid.newpage()
+grid.draw(combined_legends)
+grid.text(label = "Methanogens", x = 0.4, y = 0.17, just = c("center", "bottom"),
+          gp = gpar(fontface = "bold", cex = .9))
+grid.text(label = "Methanotrophs", x = 0.81, y = 0.17, just = c("center", "bottom"),
+          gp = gpar(fontface = "bold", cex = .9))
+
+dev.off()
+
+```
+
+
+# Bonus code
+### 1: relative abundances
+This is code that I previously ran but I am having a hard time deleting it will not be evaluated
+```{r dream-figure, eval = FALSE}
+# calculate pvalue
+stat.test <- methano_water_sed_711 %>% # methano_water_sed_711 no longer exists
+  dplyr::filter(str_detect(Depth_Class, "Water")) %>% 
+  group_by(Methanotroph_Methanogen, Depth_Class) %>% 
+  wilcox_test(order_abund ~ solar_progress, 
+              p.adjust.method = "fdr",
+              exact = FALSE) %>% 
+  add_significance() %>% 
+  mutate(
+    group = interaction(Methanotroph_Methanogen, Depth_Class, sep = " "),
+    y.position = 0.35,
+    p.label = signif(p, digits = 2))
+stat.test
+
+# water column absolute abundance
+p7 <- methano_water_sed_711 %>% 
+  dplyr::filter(str_detect(Depth_Class, "Water")) %>% 
+  ggplot(aes(x = solar_progress, y = order_abund, fill = solar_progress, color = solar_progress)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.2) +  
+  geom_point(aes(shape = Pond),
+             alpha = 2,
+             position = position_jitterdodge(jitter.width = .9, dodge.width = .65),
+             size = 2) +
+  ggh4x::facet_nested(~ Methanotroph_Methanogen + Depth_Class,
+                      scales = "free") +
+  scale_fill_manual(values = c("Open" = "#B3C493", "FPV" = "#005373")) +
+  scale_color_manual(values = c("Open" = "#B3C493", "FPV" = "#005373")) +
+  scale_shape_manual(values = pond_shapes) +
+  labs(y = "Relative Abundance (%)") +
+  stat_pvalue_manual(
+    stat.test,
+    label = "p.label",
+    group = "group",
+    y.position = .08,
+    tip.length = 0,
+    size = 3,
+    bracket.size = 0,
+    inherit.aes = FALSE
+  ) +
+  guides(
+    fill = "none",
+    color = "none",
+    shape = guide_legend(
+      nrow = 2,
+      byrow = TRUE,
+      title.position = "left",
+      override.aes = list(size = 2.5))
+  ) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(angle = 60, hjust = 1),
+    legend.position = "bottom"
+  )
+p7
+
+
+# sediment relative abundance
+stat.test <- methano_water_sed_711 %>% 
+  dplyr::filter(str_detect(Depth_Class, "Sediment")) %>% 
+  group_by(Methanotroph_Methanogen, Depth_Class) %>% 
+  wilcox_test(order_abund ~ solar_progress, 
+              p.adjust.method = "fdr",
+              exact = FALSE) %>% 
+  add_significance() %>% 
+  mutate(
+    group = interaction(Methanotroph_Methanogen, Depth_Class, sep = " "),
+    y.position = 0.35,
+    p.label = signif(p, digits = 2))
+stat.test
+
+sed_ch4 <- methano_water_sed_711 %>% 
+  dplyr::filter(str_detect(Depth_Class, "Sediment")) %>% 
+  ggplot(aes(x = solar_progress, y = order_abund, fill = solar_progress, color = solar_progress)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.2) +  
+  geom_point(aes(shape = Pond),
+             alpha = 2,
+             position = position_jitterdodge(jitter.width = .9, dodge.width = .65),
+             size = 2) +
+  ggh4x::facet_nested(~ Methanotroph_Methanogen,
+                      scales = "free") +
+  scale_fill_manual(values = c("Open" = "#B3C493", "FPV" = "#005373")) +
+  scale_color_manual(values = c("Open" = "#B3C493", "FPV" = "#005373")) +
+  scale_shape_manual(values = pond_shapes) +
+  labs(y = "Methanogen and Methanotroph Relative Abundance") +
+  stat_pvalue_manual(
+    stat.test,
+    label = "p.label",
+    group = "group",
+    y.position = .35,
+    tip.length = 0,
+    size = 3,
+    bracket.size = 0,
+    inherit.aes = FALSE
+  ) +
+  guides(
+    fill = "none",
+    color = "none",
+    shape = guide_legend(
+      nrow = 2,
+      byrow = TRUE,
+      title.position = "left",
+      override.aes = list(size = 2.5))
+  ) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(angle = 60, hjust = 1),
+    legend.position = "bottom"
+  )
+sed_ch4
+
+p7 + sed_ch4
+
+
+# alternative plots to match nicks vision
+### methanogen water
+pmethanogen_water <- methano_water_sed_711 %>% 
+  dplyr::filter(str_detect(Depth_Class, "Water")) %>% 
+  dplyr::filter(str_detect(Methanotroph_Methanogen, "Methanogen"))
+p7 <- methano_water_sed_711 %>% 
+  dplyr::filter(str_detect(Depth_Class, "Water")) %>% 
+  ggplot(aes(x = solar_progress, y = order_abund, fill = solar_progress, color = solar_progress)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.2) +  
+  geom_point(aes(shape = Pond),
+             position = position_jitterdodge(jitter.width = .9, dodge.width = .65),
+             size = 2) +
+  ggh4x::facet_nested(~ Methanotroph_Methanogen + Depth_Class,
+                      scales = "free") +
+  scale_fill_manual(values = c("Open" = "#B3C493", "FPV" = "#005373")) +
+  scale_color_manual(values = c("Open" = "#B3C493", "FPV" = "#005373")) +
+  scale_shape_manual(values = pond_shapes) +
+  labs(y = "Relative Abundance (%)") +
+  stat_pvalue_manual(
+    stat.test,
+    label = "p.label",
+    group = "group",
+    y.position = .08,
+    tip.length = 0,
+    size = 3,
+    bracket.size = 0,
+    inherit.aes = FALSE
+  ) +
+  guides(
+    fill = "none",
+    color = "none",
+    shape = guide_legend(
+      nrow = 2,
+      byrow = TRUE,
+      title.position = "left",
+      override.aes = list(size = 2.5))
+  ) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(angle = 60, hjust = 1),
+    legend.position = "bottom"
+  )
+p7
+```
+
+
+### 2. 4 box plots 
+this just had the 4 boxplots made with a function but not evaluated
+```{r plot-abundances-water, eval = FALSE, include=FALSE}
+# factor levels before we plot so FPV is on left and Open is on the right
+methano_water_sed_711$solar_progress <- factor(methano_water_sed_711$solar_progress, 
+                                               levels = c("FPV", "Open"))
+
+# lets make function to plot methanos
+make_boxplot_methano <- function(data, depth_class, methano) {
+  data %>%
+    filter(
+      Depth_Class == depth_class,
+      Methanotroph_Methanogen == methano
+    ) %>%
+    ggplot(aes(
+      x = solar_progress,
+      y = order_abund
+    )) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.2) +
+    geom_point(
+      aes(shape = Pond, color = solar_progress),
+      position = position_jitterdodge(jitter.width = 0.84, dodge.width = 0.65),
+      size = 3
+    ) +
+    scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
+    scale_y_continuous(
+      limits = c(0, 0.10),  # set y-axis range
+      breaks = seq(0, 0.10, by = 0.05)  # Consistent tick marks
+    ) +
+    labs(
+      title = paste(depth_class),
+      y = "Methanogen\nRelative Abundance (%)",  # Label for every y-axis
+      x = NULL
+    ) +
+    theme_classic() +
+    theme(
+      axis.text.x = element_blank(),
+      axis.title.y = element_text(size = 8),
+      legend.position = "none",
+      plot.title = element_text(size = 10, hjust = 0.5)
+    )
+}
+
+# now lets do the same but for methanotrophs
+make_boxplot_trophs <- function(data, depth_class, methano) {
+  data %>%
+    filter(
+      Depth_Class == depth_class,
+      Methanotroph_Methanogen == methano
+    ) %>%
+    ggplot(aes(
+      x = solar_progress,
+      y = order_abund
+      # fill = solar_progress,
+    )) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.2, color = "black") +
+    geom_point(
+      aes(shape = Pond, color = solar_progress),
+      position = position_jitterdodge(jitter.width = 0.84, dodge.width = 0.65),
+      size = 3 
+    ) +
+    scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
+    scale_y_continuous(
+      limits = c(0, 0.10),  # Fixed y-axis range
+      breaks = seq(0, 0.10, by = 0.05)  # Consistent tick marks
+    ) +
+    labs(
+      title = paste(depth_class),
+      y = "Methanotroph\nRelative Abundance (%)",  # Label for every y-axis
+      x = NULL
+    ) +
+    theme_classic() +
+    theme(
+      axis.text.x = element_blank(),
+      axis.title.y = element_text(size = 8),
+      legend.position = "none",
+      plot.title = element_text(size = 10, hjust = 0.5)
+    )
+}
+
+# make all the plots 
+p1 <- make_boxplot_methano(methano_water_sed_711, "Surface Water", "Methanogen")
+p2 <- make_boxplot_trophs(methano_water_sed_711, "Surface Water", "Methanotroph")
+p3 <- make_boxplot_methano(methano_water_sed_711, "Bottom Water", "Methanogen")
+p4 <- make_boxplot_trophs(methano_water_sed_711, "Bottom Water", "Methanotroph")
+
+# plot the final plot
+final_water <- 
+  ggarrange(p1, p2, p3, p4,
+  nrow = 2, 
+  ncol = 2,
+  labels = c("A.", "B.", "C.", "D."),
+  font.label = list(size =10),
+  align = "hv") # aligns axis 
+final_water
+
+```
+
+### Sediment - Relative Abundance
+```{r sed-relAbund}
+# factor levels before we plot so FPV is on left and Open is on the right
+methano_water_sed_711$solar_progress <- factor(methano_water_sed_711$solar_progress, 
+                                               levels = c("FPV", "Open"))
+
+# lets make function to plot methanos
+make_boxplot_methano <- function(data, depth_class, methano) {
+  data %>%
+    filter(
+      Depth_Class == depth_class,
+      Methanotroph_Methanogen == methano
+    ) %>%
+    ggplot(aes(
+      x = solar_progress,
+      y = order_abund
+    )) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.2) +
+    geom_point(
+      aes(shape = Pond, color = solar_progress),
+      position = position_jitterdodge(jitter.width = 0.84, dodge.width = 0.65),
+      size = 3
+    ) +
+    scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
+    scale_y_continuous(
+      limits = c(0, 0.37),  # set y-axis range
+      breaks = seq(0, 0.3, by = 0.15)  # Consistent tick marks
+    ) +
+    labs(
+      title = paste(depth_class),
+      y = "Methanogen\nRelative Abundance (%)",  # Label for every y-axis
+      x = NULL
+    ) +
+    theme_classic() +
+    theme(
+      legend.position = "none",
+      axis.title.y = element_text(size = 8),
+      plot.title = element_text(size = 10, hjust = 0.5)
+    )
+}
+
+# now lets do the same but for methanotrophs
+make_boxplot_trophs <- function(data, depth_class, methano) {
+  data %>%
+    filter(
+      Depth_Class == depth_class,
+      Methanotroph_Methanogen == methano
+    ) %>%
+    ggplot(aes(
+      x = solar_progress,
+      y = order_abund
+      # fill = solar_progress,
+    )) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.2, color = "black") +
+    geom_point(
+      aes(shape = Pond, color = solar_progress),
+      position = position_jitterdodge(jitter.width = 0.84, dodge.width = 0.65),
+      size = 3 
+    ) +
+    scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
+    scale_y_continuous(
+      limits = c(0, 0.37),  # Fixed y-axis range
+      breaks = seq(0, 0.3, by = 0.15)  # tick marks
+    ) +
+    labs(
+      title = paste(depth_class),
+      y = "Methanotroph\nRelative Abundance (%)", 
+      x = NULL
+    ) +
+    theme_classic() +
+    theme(
+      legend.position = "none",
+      axis.title.y = element_text(size = 8),
+      plot.title = element_text(size = 10, hjust = 0.5)
+    )
+}
+
+# make all the plots 
+p1 <- make_boxplot_methano(methano_water_sed_711, "Sediment", "Methanogen")
+p2 <- make_boxplot_trophs(methano_water_sed_711, "Sediment", "Methanotroph")
+
+
+# plot the final plot
+final_sed <- ggarrange(
+  p1, p2,
+  nrow = 2, ncol = 2,
+  align = "hv") # aligns axis 
+final_sed
+
+# ok lies not final plot BUT we are getting there we just need to add our legend
+
+# extract only the legend
+legend <- make_boxplot_methano(methano_water_sed_711, "Sediment", "Methanogen") +
+  theme(
+    legend.position = "bottom",
+    legend.title = element_text(hjust = 0.5),  # 0.5 centers title
+    legend.box = "horizontal",  # proper alignment
+    legend.justification = "center"  # entire legend is centered
+  ) +
+  guides(
+    color = "none", # we dont want color to be in legend
+    shape = guide_legend(
+      title.position = "top",  # make sure pond is above symbolx
+      nrow = 2,
+      byrow = TRUE, # want FPV in first row
+      override.aes = list(size = 2.5)
+    )
+  )
+legend
+
+# only get legend
+shared_legend <- ggpubr::get_legend(legend)
+
+# make plots without legends
+p1 <- make_boxplot_methano(methano_water_sed_711, "Sediment", "Methanogen")
+p2 <- make_boxplot_trophs(methano_water_sed_711, "Sediment", "Methanotroph")
+
+# now lets arrange plots 
+final_sed <- ggarrange(
+  ggarrange(p1, p2, 
+            ncol = 2, 
+            labels = c("E.", "F."),
+            font.label = list(size =10)),
+  nrow = 2,
+  shared_legend,
+  heights = c(2, 1)  # Adjust legend height (10:1 ratio)
+)
+
+# Display
+final_sed
+
+# paper worthy plot
+final_plot <- final_water / final_sed
+
+final_plot
+```
+### Analysis Notes
+
+**Water Samples** When we filter for our methanotrophs and methanogens
+at the **Order level** (we still have Phylum and Class level
+information) we see that we have:
+
+Methanogens: Methanosarciniales, Methanomicrobiales, Methanobacteriales,
+Methanomassiliicoccales, Methanofastidiosales Methanotrophs:
+Methylococcales, Methylacidiphilales, Methylomirabilales
+
+Methanogens are Archaea and start with "Methano" in the order name.
+Methanotrophs are bacteria.
+
+When identifying methanotrophs it is important to remember that all
+methanotrophs are methylotrophs (consume methanole, methylamine, or
+formate as energy source but **not methane**) but not all methylotophs
+are methanotrophs. Methanotrophs are a subset of methylotrophs but
+consume methane as their sole carbon and energy source. Methanotrophs
+typically start with "Methyl" in their order name but verified through
+literature review and public databases.
+
+Putative methanogens and methanotrophs were identified based on
+taxonomic classification and verified through literature review and
+publically available databases (NCBI).
+
+**Sediment Samples** Just like our water samples, we will filter for
+methanogens and methanotrophs at the **Order level** which we have:
+
+Methanogens: Methanosarciniales, Methanomicrobiales, Methanobacteriales,
+Methanocellales, Methanomassiliicoccales, Methanomethyliales,
+Methanofastidiosales
+
+Methanotrophs: Methylococcales, Methylomirabilales, Methylacidiphilales
+
+
+Putative methanogens and methanotrophs were identified based on
+taxonomic classification and verified through literature review and
+publically available databases (NCBI).
+
+# Reproducibility
+```{r reproducibility}
+# Reproducibility
+devtools::session_info()
+```
+
