@@ -17,7 +17,6 @@ editor_options:
   chunk_output_type: console
   markdown: 
     wrap: 72
-bibliography: nick_paper.bib
 ---
 
 # Purpose
@@ -41,9 +40,7 @@ knitr::opts_chunk$set(eval = TRUE,
                       message = FALSE,
                       dpi=300, dev = "png",
                       engine = "R", # Chunks will always have R code, unless noted
-                      error = TRUE,
-                      fig.path="../figures/",  
-                      fig.align = "center") 
+                      error = TRUE) 
 ```
 
 # Load packages
@@ -72,16 +69,16 @@ And we will add in our metadata as well!
 
 ```{r load-metadata}
 # water physeq with absolute abundance counts
-load("data/full_abs_physeq.RData")
+load("data/00_load_data/full_abs_physeq.RData")
 
 # sediment scaled physeq
-load("data/scaled_sed_physeq.RData")
+load("data/00_load_data/scaled_sed_physeq.RData")
 
 # physeq with water (unincorporated cell counts) + sediment samples = 188 samples total
-load("data/new_archaea_rooted_physeq.RData")
+load("data/00_load_data/new_archaea_rooted_physeq.RData")
 
 # load in metadata
-load("data/metadata.RData")
+load("data/00_load_data/metadata.RData")
 ```
 
 # Prepare Phyloseq Objects
@@ -175,7 +172,7 @@ water_ch4_physeq <- phyloseq(
 water_ch4_physeq
 
 # save phyloseq object
-save(water_ch4_physeq, file = "data/water_ch4_physeq.RData")
+save(water_ch4_physeq, file = "data/01_phyloseq/water_ch4_physeq.RData")
 
 
 # tax glom at Order level for methane cyclers phyloseq
@@ -214,10 +211,10 @@ methano_water_df <- water_physeq_ch4_order %>%
     ))
 
 # save methane cycler order data frame
-save(water_physeq_ch4_order, file = "data/water_physeq_ch4_order.RData")
+save(water_physeq_ch4_order, file = "data/01_phyloseq/water_physeq_ch4_order.RData")
 
 # write out to excel file for plotting main figure
-write.csv(methano_water_df, "data/watercol_microbial_communities.csv")
+write.csv(methano_water_df, "data/01_phyloseq/watercol_microbial_communities.csv")
 ```
 We created:
 1. **water_ch4_physeq** that has all 2024 time points and filtered for *only* methane cyclers
@@ -232,7 +229,7 @@ We do not have absolute abundance counts for our sediment samples so we will nee
 # filter phyloseq for only sediment samples
 sed_phy <- subset_samples(new_archaea_rooted_physeq, SampleType == "Sediment")
 
-# subset samples that were switched
+# subset samples 
 sed_physeq <- subset_samples(sed_phy, !(sample_names(sed_phy) %in% c("SA_D046", "SA_D047")))
 
 # prune taxa 
@@ -286,11 +283,11 @@ methano_sed_df <- methano_sed_phy %>%
 methano_sed_df$JDate <- lubridate::yday(methano_sed_df$Date_Collected)
 
 # save .RData
-save(methano_sed_df, file = "data/methano_sed_df.RData")
+save(methano_sed_df, file = "data/01_phyloseq/methano_sed_df.RData")
 
 
 # write out to excel file 
-write.csv(methano_sed_df, "data/sed_microbial_communities.csv")
+write.csv(methano_sed_df, "data/01_phyloseq/sed_microbial_communities.csv")
 
 
 
@@ -341,7 +338,7 @@ scaled_sed_ch4_physeq <- phyloseq(
 scaled_sed_ch4_physeq
 
 # save phyloseq object
-save(scaled_sed_ch4_physeq, file = "data/scaled_sed_ch4_physeq.RData")
+save(scaled_sed_ch4_physeq, file = "data/01_phyloseq/scaled_sed_ch4_physeq.RData")
 
 ```
 We created:
@@ -394,7 +391,7 @@ methanogen_sed_df <- methanogen_sed_phy %>%
 methanogen_sed_df$JDate <- lubridate::yday(methanogen_sed_df$Date_Collected)
 
 # save .RData
-save(methanogen_sed_df, file = "data/methanogen_sed_df.RData")
+save(methanogen_sed_df, file = "data/01_phyloseq/methanogen_sed_df.RData")
 
 
 
@@ -447,7 +444,7 @@ scaled_methanogen_sed_physeq <- phyloseq(
 scaled_methanogen_sed_physeq
 
 # save phyloseq object
-save(scaled_methanogen_sed_physeq, file = "data/scaled_methanogen_sed_physeq.RData")
+save(scaled_methanogen_sed_physeq, file = "data/01_phyloseq/scaled_methanogen_sed_physeq.RData")
 ```
 We created:
 1. **scaled_methanogen_sed_physeq** which has been specifically filtered for methanogens and saved as a phyloseq object
@@ -490,7 +487,7 @@ methanotroph_sed_df <- methanotroph_sed_phy %>%
 methanotroph_sed_df$JDate <- lubridate::yday(methanotroph_sed_df$Date_Collected)
 
 # save .RData
-save(methanotroph_sed_df, file = "data/methanotroph_sed_df.RData")
+save(methanotroph_sed_df, file = "data/01_phyloseq/methanotroph_sed_df.RData")
 
 
 
@@ -545,7 +542,7 @@ scaled_methanotroph_sed_physeq <- phyloseq(
 scaled_methanotroph_sed_physeq
 
 # save phyloseq object
-save(scaled_methanotroph_sed_physeq, file = "data/scaled_methanotroph_sed_physeq.RData")
+save(scaled_methanotroph_sed_physeq, file = "data/01_phyloseq/scaled_methanotroph_sed_physeq.RData")
 ```
 We created:
 1. **scaled_methanotroph_sed_physeq** which has been specifically filtered for methanotrophs and saved as a phyloseq object
@@ -712,7 +709,7 @@ methanogen_surfwater24 <- methano_water_df %>%
     limits = c(170, 260)) +
   labs(
     x = NULL,
-    y = "Surface Water (10³ cells/ml)"
+    y = "Surface Water\n(10³ cells/ml)"
   ) +
   theme_classic() +
   theme(
@@ -740,7 +737,7 @@ methanotrophs_surfwater24 <- methano_water_df %>%
     limits = c(170, 260)) +
   labs(
     x = NULL,
-    y = "Surface Water (10³ cells/ml)"
+    y = "Surface Water\n(10³ cells/ml)"
   ) +
   theme_classic() +
   theme(
@@ -768,7 +765,7 @@ methanogen_bot_water24 <- methano_water_df %>%
     limits = c(170, 260)) +
   labs(
     x = NULL,
-    y = "Bottom Water (10³ cells/ml)"
+    y = "Bottom Water\n(10³ cells/ml)"
   ) +
   theme_classic() +
   theme(
@@ -796,7 +793,7 @@ methanotroph_bot_water24 <- methano_water_df %>%
     limits = c(170, 260)) +
   labs(
     x = NULL,
-    y = "Bottom Water (10³ cells/ml)"
+    y = "Bottom Water\n(10³ cells/ml)"
   ) +
   theme_classic() +
   theme(
@@ -825,7 +822,7 @@ methano_sed_24 <- methano_sed_df %>%
     limits = c(170, 260)) +
   labs(
     x = "Day of Year",
-    y = "Sediment Relative Abundance (%)"
+    y = "Sediment\nRelative Abundance (%)"
   ) +
   theme_classic() +
   theme(
@@ -854,7 +851,7 @@ methanotroph_sed_24 <- methano_sed_df %>%
 ) +
   labs(
     x = "Day of Year",
-    y = "Sediment Relative Abundance (%)"
+    y = "Sediment\nRelative Abundance (%)"
   ) +
   theme_classic() +
   theme(
@@ -865,9 +862,9 @@ methanotroph_sed_24 <- methano_sed_df %>%
 methanotroph_sed_24
 
 
-# all together - methanogens
+# quick plot methanogens
 methanogen_surfwater24 / methanogen_bot_water24 / methano_sed_24
-
+# quick plot methanotrophs
 methanotrophs_surfwater24 / methanotroph_bot_water24 / methanotroph_sed_24
 
 
@@ -1226,16 +1223,7 @@ sed_depths_leg <- ggarrange(methano_sed_24, box_gen_sed, methanotroph_sed_24, bo
 )
 
 # Display
-sed_depths_leg  # so here we will do a little cropping in Illustrator to make it look right. 
-
-ggsave(
-  "figures/sed_depths_leg.png",
-  sed_depths_leg,
-  width = 7,            
-  height = 5,         
-  units = "in",
-  dpi = 600              # high resolution for print
-)
+sed_depths_leg
 
 
 # or lets try two (technically 4 columns) where on the left we have methanogens and right is methanotrophs. they will still be going from surface, bottom, sediments with box plot on the right but we will have a box around methanogens and methanotrophs
@@ -1266,12 +1254,15 @@ methanogen_final <- ggarrange(
 )
 
 # 2. draw box around methanogens
+png("figures/fig4/methanogens.png", width = 4000, height = 4000, res = 600)
+
 grid.newpage()
 grid.draw(methanogen_final)
 grid.rect(gp = gpar(col = "black", fill = NA, lwd = 2))  # draw border
 grid.text(label = "Methanogens", x = 0.5, y = 0.99, just = c("center", "top"),
           gp = gpar(fontface = "bold", cex = .9))
 
+dev.off()
 
 # 1. plot final methanotrophs
 methanotroph_final <- 
@@ -1281,7 +1272,7 @@ methanotroph_final <-
   nrow = 3, 
   ncol = 2,
   align = "hv",
-  labels = c("A.", "B.", "C.", "D.", "E.", "F."),
+  labels = c("G.", "H.", "I.", "J.", "K.", "L."),
   font.label = list(size =10),
   widths = c(1, .5))
 methanotroph_final
@@ -1299,15 +1290,19 @@ methanotroph_final <- ggarrange(
 methanotroph_final
 
 # 2. draw box around methanogens
+png("figures/fig4/methanotrophs.png", width = 4000, height = 4000, res = 600)
+
 grid.newpage()
 grid.draw(methanotroph_final)
 grid.rect(gp = gpar(col = "black", fill = NA, lwd = 2))  # draw border
 grid.text(label = "Methanotrophs", x = 0.5, y = 0.99, just = c("center", "top"),
           gp = gpar(fontface = "bold", cex = .9))
 
-# write the code to save this i just had manually saved it before
+dev.off()
+
+# then i was planning on exporting these images and putting them together in Illustrator
 ```
-now we have created our main text figure. the only thing is that i dont have the p values in th eifgure because nick has his italicized and sized a certain way and i want to make sure our plot aesthetics match.
+now we have created our main text figure. the only thing is that i dont have the p values in the figure because nick has his italicized and sized a certain way and i want to make sure our plot aesthetics match.
 
 
 # Supplemental Figures
@@ -1362,8 +1357,8 @@ s1a_water_pcoa <- plot_ordination(
     legend.margin = margin(1, 2, 1, 1))
 s1a_water_pcoa
 
-# ggsave(s3_ch4_pcoa, width = 8, height = 7, units = "in",
-#         filename = "analysis/FSP_Nick_Analysis/figures/s1a_water_pcoa.png")
+# ggsave(s1a_water_pcoa, width = 8, height = 7, units = "in",
+#         filename = "figures/s1a/s1a_water_pcoa.png")
 ```
 
 ### S1B- Sediment PCoA
@@ -1409,8 +1404,8 @@ s1b_sed_pcoa <- plot_ordination(
   # legend.margin = margin(2, 2, 2, 2))
 s1b_sed_pcoa
 
-# ggsave(sed_pond_solar_pcoa, width = 8, height = 7, units = "in",
-#         filename = "analysis/FSP_Nick_Analysis/figures/sed_pond_solar_pcoa.png")
+# ggsave(s1b_sed_pcoa, width = 8, height = 7, units = "in",
+#         filename = "figures/s1b/s1b_sed_pcoa.png")
 ```
 Sediment samples are still distinct from other and separate along first axis
 
@@ -1427,7 +1422,7 @@ fig_s1 <-
 fig_s1
 
 ggsave(fig_s1, width = 12.4, height = 6, dpi = 300,
-        filename = "figures/fig_s1.png")
+        filename = "figures/s1/fig_s1.png")
 ```
 
 ## S1 -  Bray-Curtis PCoA PERMANOVA
@@ -1709,7 +1704,7 @@ fig_s2 <-
 fig_s2
 
 ggsave(fig_s2, width = 12.4, height = 6, dpi = 300,
-        filename = "figures/fig_s2.png")
+        filename = "figures/s2/fig_s2.png")
 ```
 Sediment samples are still distinct from other and separate along first axis
 
@@ -1892,9 +1887,9 @@ water_ch4_phy_bc@sam_data$solar_progress <- factor(water_ch4_phy_bc@sam_data$sol
 #                                  pairwise = FALSE) # Run pairwise tests between groups (sorta like a post-hoc test like Tukey)
 
 
-# save(water_ch4_asv_output, file = "data/FSP_2024_Nick/water_ch4_asv_output.RData")
+# save(water_ch4_asv_output, file = "data/02_diff_abund/water_ch4_asv_output.RData")
 
-load("data/water_ch4_asv_output.RData")
+load("data/02_diff_abund/water_ch4_asv_output.RData")
 
 
 # plot ASV differential abundance
@@ -2043,9 +2038,9 @@ scaled_sed_ch4_physeq_bc@sam_data$solar_progress <- factor(scaled_sed_ch4_physeq
 #                                  pairwise = FALSE) # Run pairwise tests between groups (sorta like a post-hoc test like Tukey)
 
 
-# save(sed_ch4_asv_output, file = "data/FSP_2024_Nick/sed_ch4_asv_output.RData")
+# save(sed_ch4_asv_output, file = "data/02_diff_abund/sed_ch4_asv_output.RData.RData")
 
-load("data/FSP_2024_Nick/sed_ch4_asv_output.RData")
+load("data/02_diff_abund/sed_ch4_asv_output.RData")
 
 
 # plot ASV differential abundance
@@ -2081,7 +2076,20 @@ clean_sed_ch4 %>%
 # plot differentially abundant ASVs overtime 
 
 #1. tax glom at ASV level, calculate abundance
-methano_sed_asv_df <- methano_sed_phy 
+# calculate relative abundance and identify methane cyclers
+methano_sed_asv_df <- scaled_sed_physeq_24 %>%
+  speedyseq::tax_glom(taxrank = "ASV") %>% 
+  # Calculate the relative abundance
+  speedyseq::transform_sample_counts(function(x) {x/sum(x)}) %>%
+  psmelt() %>%
+  filter(Order %in% c(methanogens, methanotrophs)) %>%
+  mutate(
+    Methanotroph_Methanogen = case_when(
+      Order %in% methanogens ~ "Methanogen",
+      Order %in% methanotrophs ~ "Methanotroph"
+    ),
+    solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open"),
+    Depth_Class = "Sediment")  
 
 #2. plot asv overtime 
 
@@ -2109,7 +2117,7 @@ sed_ch4_asv4603 <- methano_sed_asv_df %>%
   scale_shape_manual(values = pond_shapes) +
   labs(
     x = "Date Collected",
-    y = "Relative Abundance",
+    y = "Relative Abundance (%)",
     title = "Dif Abund Sed Methanosarcinales_A_2632 (ASV_4603) in FPV Ponds"
   ) +
   theme(axis.text.x = element_text(angle = 30, hjust = 1, vjust = 1),
@@ -2288,6 +2296,7 @@ sedch4_order_cc
 community <- ggarrange(waterch4_ord_cc_fpv, sedch4_order_cc,
             ncol = 1,
             nrow = 2,
+            labels = c("A.", "B."),
             align = "v")
 community
 
@@ -2339,12 +2348,13 @@ combined_legends <- plot_grid(
   ncol = 1,
   align = "v",
   axis = "l",
+  labels = c("A.", "B."),
   rel_heights = c(1, 1, .5)
 )
 combined_legends
 
 # now lets begin to save our image
-png("analysis/FSP_Nick_Analysis/figures/s3_community_comp.png", width = 3900, height = 4000, res = 600)
+png("figures/s3/s3_community_comp.png", width = 3900, height = 4000, res = 600)
 
 grid.newpage()
 grid.draw(combined_legends)
