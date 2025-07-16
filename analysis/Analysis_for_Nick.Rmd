@@ -1323,9 +1323,9 @@ now we have created our main text figure. the only thing is that i dont have the
 # Supplemental Figures
 Here are the supplemental figures (and bonus figures) for the manuscript. 
 
-# Figure S1
+# Figure 3
 
-## S1 -  Bray-Curtis PCoA PERMANOVA
+## Fig 3: PERMANOVA
 
 PERMANOVA (Permutational Multivariate Analysis of Variance) is a non-parametric, permutation-based test used to compare groups of objects based on a distance matrix. The goal is to test the null hypothesis that the centroids and dispersion of groups are equivalent in the space defined by the dissimilarity measure. 
 
@@ -1429,7 +1429,7 @@ Comparing treatment and date we see that it is not that improtant and only expla
 
 This explains 60.4% of variance with 39.6% in the residuals. 
 
-## S1 - Betadispr
+## Fig 3: Betadisper
 We are running betadispr to test variances/dispersions
 
 When computing PERMANOVA, we must also perform betadispr analysis when analyzing beta diversity in microbial ecology. We must do it after PERMANOVA because we need to look into the assumption of PERMANOVA which is the homogeneity of group dispersions aka variances. If this assumption is violated then the PERMANOVA results might be driven by dispersion rather than true differences in community composition.
@@ -1490,10 +1490,10 @@ With betadispr we find the PERMANOVA results are are valid as pond, treatment, a
 
 
 
-## Plot S1: Water and Sediment Bray-Curtis PCoA
+## Fig 3: PCoA
 
-### S1A — Water PCoA 
-```{r s1a-pcoa-water}
+### Fig 3A: Water PCoA 
+```{r fig3a-pcoa-water}
 # water methane cyclers
 
 # Calculate Bray-Curtis Dissimilarity 
@@ -1505,6 +1505,44 @@ water_BC_pcoa <-
     binary = FALSE
   )
 
+
+
+#### Grab the data for the plot 
+water_all_ord_df <- 
+  plot_ordination(
+  physeq = water_ch4_physeq,
+  ordination = water_BC_pcoa,
+  color = "solar_progress",
+  shape = "Pond",
+  title = "Water Methane Cyclers",
+  justDF = TRUE)
+
+
+### Now, plot Figure 3A: WATER 
+fig3a_water_pcoa <- 
+  ggplot(data = water_all_ord_df, 
+       aes(x = Axis.1, 
+           y = Axis.2,
+           color = solar_progress,
+           shape = Pond)) + 
+  geom_point(size = 4, alpha = 0.8, stroke = 1) +
+  scale_shape_manual(values = pond_shapes) + 
+  scale_color_manual(values = solar_colors) +
+  labs(color = "Treatment",
+       shape = "Pond",
+       x = "Axis.1 [23.7%]",
+       y = "Axis.2 [11.7%]",
+       title = "Water Methane Cyclers") + 
+  theme(legend.position = "bottom",
+        legend.spacing = unit(0, "cm"),
+        legend.box.background = element_blank())
+
+# Show the plot
+fig3a_water_pcoa
+
+
+
+
 # PCoA of water samples color by treatment shape by pond
 s1a_water_pcoa <- plot_ordination(
   physeq = water_ch4_physeq,
@@ -1512,7 +1550,8 @@ s1a_water_pcoa <- plot_ordination(
   color = "solar_progress",
   shape = "Pond",
   title = "Water Column Methane Cyclers") + 
-  geom_point(size = 5, alpha = 0.5, aes(fill = solar_progress, color = solar_progress, shape = Pond)) + 
+  geom_point(size = 5, alpha = 0.5, 
+             aes(fill = solar_progress, color = solar_progress, shape = Pond)) + 
   scale_fill_manual(values = solar_colors) + 
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) +
@@ -1545,9 +1584,9 @@ s1a_water_pcoa
 #         filename = "figures/s1a/s1a_water_pcoa.png")
 ```
 
-### S1B- Sediment PCoA
+### Fig 3B: Sediment PCoA
 This is all methane cylcers in sediment communities
-```{r s1b-pcoa-sediments}
+```{r fig3b-pcoa-sediments}
 # plot 1 all taxa sediments 
 
 # use physeq object for just methane cyclers 
@@ -1563,20 +1602,58 @@ scaled_sed_BC_pcoa <-
   )
 
 
-# PCoA of sediments color by treatment shaped by pond
-s1b_sed_pcoa <- plot_ordination(
+#### Grab the data for the plot 
+sed_all_ord_df <- 
+  plot_ordination(
   physeq = scaled_sed_physeq,
   ordination = scaled_sed_BC_pcoa,
   color = "solar_progress",
   shape = "Pond",
-  title = "Sediment Methane Cyclers") + 
-  geom_point(size = 5, alpha = 0.5, aes(color = solar_progress, fill = solar_progress, shape = Pond)) + 
+  title = "Sediment Methane Cyclers",
+  justDF = TRUE)
+
+
+
+fig3b_sed_pcoa <- 
+  ggplot(data = sed_all_ord_df, 
+       aes(x = Axis.1, 
+           y = Axis.2,
+           color = solar_progress,
+           shape = Pond)) + 
+  geom_point(size = 4, alpha = 0.8, stroke = 1) +
+  scale_shape_manual(values = pond_shapes) + 
+  scale_color_manual(values = solar_colors) +
+  labs(color = "Treatment",
+       shape = "Pond",
+       x = "Axis.1 [32%]",
+       y = "Axis.2 [15.5%]",
+       title = "Sediment Methane Cyclers") + 
+  theme(legend.position = "bottom",
+        legend.spacing = unit(0, "cm"),
+        legend.box.background = element_blank())
+
+# Show the plot
+fig3b_sed_pcoa
+
+
+
+
+# PCoA of sediments color by treatment shaped by pond
+s1b_sed_pcoa <- 
+  plot_ordination(
+  physeq = scaled_sed_physeq,
+  ordination = scaled_sed_BC_pcoa,
+  color = "solar_progress",
+  shape = "Pond",
+  title = "Sediment Methane Cyclers") +
+  geom_point(size = 5, alpha = 0.5, 
+             aes(color = solar_progress, fill = solar_progress, shape = Pond)) + 
   scale_color_manual(values = solar_colors) + 
   scale_fill_manual(values = solar_colors) + 
   scale_shape_manual(values = pond_shapes) +
   guides(color = "none",
          fill = "none",
-         shape = "none")+
+         shape = "none") +
   theme_classic() 
   # theme(
   # legend.position = c(0.82, 0.01),  # inside bottom-left
@@ -1584,7 +1661,7 @@ s1b_sed_pcoa <- plot_ordination(
   # legend.spacing = unit(0.1, "cm"),
   # legend.background = element_rect(color = NA, fill = NA),
   # legend.box.background = element_rect(size = 0.1, linetype = "solid", color = "black"),
-  # legend.text = element_text(size = 6),
+  # legend.text = element_text(size = 6), 
   # legend.margin = margin(2, 2, 2, 2))
 s1b_sed_pcoa
 
@@ -1595,7 +1672,7 @@ Sediment samples are still distinct from other and separate along first axis
 
 ### Generaate S1 Plots
 Water + Sediments together
-```{r fig-s1}
+```{r fig-3}
 fig_s1 <- 
   ggarrange(s1a_water_pcoa, s1b_sed_pcoa,
   nrow = 1, 
@@ -1607,6 +1684,22 @@ fig_s1
 
 ggsave(fig_s1, width = 12.4, height = 6, dpi = 300,
         filename = "figures/s1/fig_s1.png")
+
+### 
+plot_fig3 <- 
+  fig3a_water_pcoa + fig3b_sed_pcoa + 
+  plot_annotation(tag_levels = "A") + 
+    plot_layout(guides = "collect") &
+  theme(
+    legend.position = "bottom",
+    legend.title = element_text(size = 9),
+    legend.text = element_text(size = 8),
+    legend.key.size = unit(0.4, "cm"),
+    legend.spacing.x = unit(0.2, "cm")
+  )
+  
+ggsave(plot_fig3, width = 7, height = 4, dpi = 300,
+        filename = "figures/Fig_3/fig_3.png")
 ```
 
 
@@ -2168,20 +2261,7 @@ water_ch4_order_df <- water_ch4_physeq %>%
 # community composition - water absolute abundances
 
 
-# water color scheme for taxa
-ch4_colors <- c("Methanobacteriales" = "#2E624D",
-                  "Methanocellales" = "#558D7B", 
-                  "Methanofastidiosales" =  "#148F77",
-                  "Methanomassiliicoccales" = "#009E73",
-                  "Methanomicrobiales" = "#43BA8F",
-                  "Methanosarcinales_A_2632" =  "#48C9B0",
-                  "Methanomethylicales" = "#90CEC0",
-                  "Methanotrichales" = "#A3E4D7",
-                  "Methylococcales"= "#7D3560",
-                  "Methylomirabilales" = "#CC79A7",
-                  "Methylacidiphilales"= "#EFB6D6"
-                  )
-
+# order for legend 
 ch4_legend_ord <- c("Methanobacteriales",
                   "Methanocellales", 
                   "Methanofastidiosales",

@@ -1,11 +1,29 @@
 # This file indicates that colors and shapes of metadata across various
 # let's keep the visualizations consistent! :) 
 
-solar_colors <- c(
-  "Open" = "#76A7CB",
-  "In Progress" = "#A6B7C6",
-  "FPV" = "#C07A5B"
+
+# water color scheme for taxa
+ch4_colors <- c("Methanobacteriales" = "#2E624D",
+                "Methanocellales" = "#558D7B", 
+                "Methanofastidiosales" =  "#148F77",
+                "Methanomassiliicoccales" = "#009E73",
+                "Methanomicrobiales" = "#43BA8F",
+                "Methanosarcinales_A_2632" =  "#48C9B0",
+                "Methanomethylicales" = "#90CEC0",
+                "Methanotrichales" = "#A3E4D7",
+                "Methylococcales"= "#7D3560",
+                "Methylomirabilales" = "#CC79A7",
+                "Methylacidiphilales"= "#EFB6D6"
 )
+
+
+
+solar_colors <- c(
+  "Open" = "#67a9cf",  #"#76A7CB",
+  "In Progress" = "#A6B7C6",
+  "FPV" = "#ef8a62" # "#C07A5B"
+)
+
 solar_colorsv1.2 <- c(
   "No Solar" = "#76A7CB",
   "In Progress" = "#A6B7C6",
@@ -103,7 +121,7 @@ pond_shapes <- c(
   "131" = 15,
   "123" = 10,
   "132" = 17,
-  "128" = 18,
+  "128" = 16, #18,
   "124" = 12,
   "125" = 13)
 
