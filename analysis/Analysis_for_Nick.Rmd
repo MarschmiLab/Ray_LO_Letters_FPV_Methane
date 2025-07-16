@@ -133,7 +133,8 @@ methane_cyclers_filt <- water_physeq_24%>%
       Order %in% methanogens ~ "Methanogen",
       Order %in% methanotrophs ~ "Methanotroph",
       TRUE ~ "Other"))
-methane_cyclers_filt
+
+head(methane_cyclers_filt)
 
 
 # 2. Create phyloseq for methane cyclers filtered data frame
@@ -1517,7 +1518,6 @@ water_all_ord_df <-
   ordination = water_BC_pcoa,
   color = "solar_progress",
   shape = "Pond",
-  title = "Water Methane Cyclers",
   justDF = TRUE)
 
 
@@ -1528,7 +1528,7 @@ fig3a_water_pcoa <-
            y = Axis.2,
            color = solar_progress,
            shape = Pond)) + 
-  geom_point(size = 4, alpha = 0.8, stroke = 1) +
+  geom_point(size = 3, alpha = 0.8, stroke = 0.8) +
   scale_shape_manual(values = pond_shapes) + 
   scale_color_manual(values = solar_colors) +
   labs(color = "Treatment",
@@ -1536,6 +1536,7 @@ fig3a_water_pcoa <-
        x = "Axis.1 [23.7%]",
        y = "Axis.2 [11.7%]",
        title = expression("Water CH"[4]*" Cyclers")) + 
+  theme_classic() +
   theme(legend.position = "bottom",
         legend.spacing = unit(0, "cm"),
         legend.box.background = element_blank())
@@ -1546,6 +1547,7 @@ fig3a_water_pcoa
 
 
 
+### Sophia's plot
 # PCoA of water samples color by treatment shape by pond
 s1a_water_pcoa <- plot_ordination(
   physeq = water_ch4_physeq,
@@ -1612,18 +1614,17 @@ sed_all_ord_df <-
   ordination = scaled_sed_BC_pcoa,
   color = "solar_progress",
   shape = "Pond",
-  title = "Sediment Methane Cyclers",
   justDF = TRUE)
 
 
-
+# Now plot it! 
 fig3b_sed_pcoa <- 
   ggplot(data = sed_all_ord_df, 
        aes(x = Axis.1, 
            y = Axis.2,
            color = solar_progress,
            shape = Pond)) + 
-  geom_point(size = 4, alpha = 0.8, stroke = 1) +
+  geom_point(size = 3, alpha = 0.8, stroke = 0.8) +
   scale_shape_manual(values = pond_shapes) + 
   scale_color_manual(values = solar_colors) +
   labs(color = "Treatment",
@@ -1631,6 +1632,7 @@ fig3b_sed_pcoa <-
        x = "Axis.1 [32%]",
        y = "Axis.2 [15.5%]",
        title = expression("Sediment CH"[4]*" Cyclers")) + 
+  theme_classic() +
   theme(legend.position = "bottom",
         legend.spacing = unit(0, "cm"),
         legend.box.background = element_blank())
@@ -1640,7 +1642,7 @@ fig3b_sed_pcoa
 
 
 
-
+# Sophia's plot 
 # PCoA of sediments color by treatment shaped by pond
 s1b_sed_pcoa <- 
   plot_ordination(
@@ -1702,6 +1704,9 @@ plot_fig3 <-
     legend.spacing.x = unit(0.2, "cm"),
     legend.margin = margin(t = -5, unit = "pt")
   )
+
+# Show the plot 
+plot_fig3
   
 ggsave(plot_fig3, width = 6.3, height = 3.5, dpi = 300,
         filename = "figures/Fig_3/Fig_3.png")
@@ -1745,7 +1750,7 @@ figS1A_sed_methanogens_pcoa <-
            y = Axis.2,
            color = solar_progress,
            shape = Pond)) + 
-  geom_point(size = 4, alpha = 0.8, stroke = 1) +
+  geom_point(size = 3, alpha = 0.8, stroke = 0.8) +
   scale_shape_manual(values = pond_shapes) + 
   scale_color_manual(values = solar_colors) +
   labs(color = "Treatment",
@@ -1753,6 +1758,7 @@ figS1A_sed_methanogens_pcoa <-
        x = "Axis.1 [32.9%]",
        y = "Axis.2 [17.6%]",
        title = "Sediment Methanogens") + 
+  theme_classic() + 
   theme(legend.position = "bottom",
         legend.spacing = unit(0, "cm"),
         legend.box.background = element_blank())
@@ -1833,7 +1839,7 @@ figS1B_sed_methanotroph_pcoa <-
            y = Axis.2,
            color = solar_progress,
            shape = Pond)) + 
-  geom_point(size = 4, alpha = 0.8, stroke = 1) +
+  geom_point(size = 3, alpha = 0.8, stroke = 0.8) +
   scale_shape_manual(values = pond_shapes) + 
   scale_color_manual(values = solar_colors) +
   labs(color = "Treatment",
@@ -1841,6 +1847,7 @@ figS1B_sed_methanotroph_pcoa <-
        x = "Axis.1 [35.7%]",
        y = "Axis.2 [17.2%]",
        title = "Sediment Methanotrophs") + 
+  theme_classic() + 
   theme(legend.position = "bottom",
         legend.spacing = unit(0, "cm"),
         legend.box.background = element_blank())
@@ -1902,6 +1909,7 @@ plot_figS1 <-
     legend.margin = margin(t = -5, unit = "pt")
   )
 
+# Show the plot
 plot_figS1
 
 # Now, actually save the plot   
@@ -2259,8 +2267,6 @@ diff_abund_df <-
 diff_abund_df$combined_label <- 
   paste(diff_abund_df$Genus, diff_abund_df$ASV, sep = "\n")
 
-
-
 # shapiro test
 diff_abund_df %>%
   group_by(ASV, solar_progress) %>%
@@ -2436,6 +2442,55 @@ sed_ch4_asv4603
 
 ```
 There is a differentially abundant ASV Methanosarcinales_A_2632 that is increased in solar ponds! When we plot the abundance overtime this ASV is barely in the community but it is higher in solar ponds. Doesnt really feel worth it to report considering its a minor contribution to community.
+
+```{r plot-sed-ASV-diffAbund}
+sed_difAbund_plot <- 
+  methano_sed_asv_df %>%
+  dplyr::filter(ASV == "ASV_4603") %>%
+  ggplot(aes(x = solar_progress, y = Abundance,
+             color = solar_progress)) + 
+  geom_point(aes(shape = Pond),
+             size = 2, alpha = 0.8, stroke = 0.8,
+             position = position_jitterdodge(jitter.width = .5, dodge.width = .3)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0, color = "black", 
+               position = position_dodge(0.6)) + 
+  labs(color = "Treatment",
+       y = "Relative Abundance",
+       title = "Methanoperedens_A \nASV_4603") +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  theme_classic() +
+  ### ADD PVALUES 
+  stat_compare_means(method = "wilcox.test", 
+                     #comparisons = list(c("FPV", "Open")),
+                     label = "p.format", # or "p.format" or "p.value"
+                     #group.by = "combined_label",
+                     size = 3,               # ⬅️ Font size
+                     label.y.npc = 0.7,
+                     #label.y = c(8000, 100000, 500000, 400000, 400000),
+                     label.x = 1.75) +    # ⬅️ Manually set y position)  +
+  guides(
+    color = guide_legend(ncol = 2,override.aes = list(size = 2)),
+    shape = guide_legend(ncol = 2, override.aes = list(size = 3))) +
+  theme(legend.position = "none", #c(0.75, 0.7),
+        axis.title.x = element_blank(),
+        legend.title = element_text(size = 8),
+        legend.text = element_text(size = 7),
+        legend.key.size = unit(0.4, "cm"),
+        legend.spacing.x = unit(0.2, "cm"),
+        legend.margin = margin(t = -5, unit = "pt"),
+        strip.text = element_text(size = 10),
+        plot.title = element_text(size = 10)); sed_difAbund_plot
+
+
+# Now, actually save the plot   
+# NOTE THAT ASV_
+ggsave(sed_difAbund_plot, width = 3, height = 2, dpi = 300,
+        filename = "figures/Fig_S2/Fig_S2.png")
+
+```
+
+
 
 ## S3 - Community Composition
 I am plotting water and sediment community compositions together in this chunk
