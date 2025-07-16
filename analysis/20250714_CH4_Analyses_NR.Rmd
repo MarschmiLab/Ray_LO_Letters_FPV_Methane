@@ -1,0 +1,1015 @@
+
+
+Statistical analyses for 2024 Cornell ponds floating solar experiment
+
+
+Analyses (each in it's own chunk):
+1. Pond temp and DO over the summer
+2. Pond dissolved CO2 and CH4 data throughout the summer
+3. Diffusive CH4 fluxes and k600
+4. Water column light/dark bottles
+5. Sediment fluxes
+6. Microbial data
+
+Load necessary libraries
+```{r}
+library(readxl)
+library(lubridate)
+library(tidyverse)
+library(MBA)
+library(reshape2)
+library(ggplot2)
+library(ggtext)
+library(patchwork)
+library(lme4)
+library(emmeans)
+```
+
+
+
+1. Start with the basic temp/do plots
+```{r}
+wc_temp_do <- read_excel("fs_methane_intensive_2024_v3.xlsx", sheet = "ysi_dat")
+View(wc_temp_do)
+
+str(wc_temp_do)
+wc_temp_do$Date = as.Date(ymd(wc_temp_do$Date))
+wc_temp_do$Pond = as.factor(wc_temp_do$Pond)
+str(wc_temp_do)
+
+#make the color palette
+temp_colors = c("#b2182b", "#ef8a62", "#fddbc7", "#f7f7f7", "#d1e5f0", "#67a9cf", "#2166ac")
+
+##make the temperature plots
+min(wc_temp_do$Temp_deg_C)
+max(wc_temp_do$Temp_deg_C)
+
+#start with p123
+#get the data ready
+p123 = filter(wc_temp_do, Pond == "123")
+p123$Date = as.Date(ymd(p123$Date))
+p123_plot = p123 %>%
+  mutate(depth = - `Depth_m`)
+p123_plot$Date = as.Date(p123_plot$Date)
+p123_temp_plot_dat = p123_plot[,c("doy", "depth", "Temp_deg_C")]
+p123_temp = mba.surf(p123_temp_plot_dat[c("doy", "depth", "Temp_deg_C")], no.X = 300, no.Y = 300, extend = T)
+dimnames(p123_temp$xyz.est$z) = list(p123_temp$xyz.est$x, p123_temp$xyz.est$y)
+p123_temp = melt(p123_temp$xyz.est$z, varnames = c('doy', 'depth'), value.name = "Temp_deg_C")
+
+#graph it
+p123_temp_plot = ggplot()+
+  theme_classic()+
+  geom_raster(data = p123_temp, aes(x = doy, y = depth, fill = Temp_deg_C))+
+  scale_fill_gradientn("Water Temp<br>(\u00b0 C)",colours = rev(temp_colors), limits = c(13.5,30))+
+  geom_point(data = p123_temp_plot_dat, aes(x = doy, y = depth), size = 0.5)+
+  scale_y_continuous(limits = c(-1.5,0), breaks = c(-1.5, -1, -0.5, 0))+
+  theme(panel.border = element_rect(fill = NA, colour = "black"))+
+  labs(y = "Depth (m)", x = ("Day of Year"), title = "Pond 123 - with FPV")+
+  theme(axis.title.y = element_markdown(size = 8,colour = "black"), 
+        axis.title.x = element_markdown(size = 8,colour = "black"),
+        axis.text.x =  element_text(size = 8,colour = "black"),
+        axis.text.y =  element_text(size = 8,colour = "black"),
+        plot.title = element_text(size = 8,colour = "black"),
+        legend.title = element_markdown(size = 8,colour = "black"),
+        legend.text = element_text(size = 8,colour = "black"))
+p123_temp_plot
+
+#repeat for pond 124
+p124 = filter(wc_temp_do, Pond == "124")
+p124$Date = as.Date(ymd(p124$Date))
+p124_plot = p124 %>%
+  mutate(depth = - `Depth_m`)
+p124_plot$Date = as.Date(p124_plot$Date)
+p124_temp_plot_dat = p124_plot[,c("doy", "depth", "Temp_deg_C")]
+p124_temp = mba.surf(p124_temp_plot_dat[c("doy", "depth", "Temp_deg_C")], no.X = 300, no.Y = 300, extend = T)
+dimnames(p124_temp$xyz.est$z) = list(p124_temp$xyz.est$x, p124_temp$xyz.est$y)
+p124_temp = melt(p124_temp$xyz.est$z, varnames = c('doy', 'depth'), value.name = "Temp_deg_C")
+p124_temp_plot = ggplot()+
+  theme_classic()+
+  geom_raster(data = p124_temp, aes(x = doy, y = depth, fill = Temp_deg_C))+
+  scale_fill_gradientn("Water Temp<br>(\u00b0 C)",colours = rev(temp_colors), limits = c(13.5,30))+
+  geom_point(data = p124_temp_plot_dat, aes(x = doy, y = depth), size = 0.5)+
+  scale_y_continuous(limits = c(-1.5,0), breaks = c(-1.5, -1, -0.5, 0))+
+  theme(panel.border = element_rect(fill = NA, colour = "black"))+
+  labs(y = "Depth (m)", x = ("Day of Year"), title = "Pond 124 - with FPV")+
+  theme(axis.title.y = element_markdown(size = 8,colour = "black"), 
+        axis.title.x = element_markdown(size = 8,colour = "black"),
+        axis.text.x =  element_text(size = 8,colour = "black"),
+        axis.text.y =  element_text(size = 8,colour = "black"),
+        plot.title = element_text(size = 8,colour = "black"),
+        legend.title = element_markdown(size = 8,colour = "black"),
+        legend.text = element_text(size = 8,colour = "black"))
+p124_temp_plot
+
+#pond 125
+p125 = filter(wc_temp_do, Pond == "125")
+p125$Date = as.Date(ymd(p125$Date))
+p125_plot = p125 %>%
+  mutate(depth = - `Depth_m`)
+p125_plot$Date = as.Date(p125_plot$Date)
+p125_temp_plot_dat = p125_plot[,c("doy", "depth", "Temp_deg_C")]
+p125_temp = mba.surf(p125_temp_plot_dat[c("doy", "depth", "Temp_deg_C")], no.X = 300, no.Y = 300, extend = T)
+dimnames(p125_temp$xyz.est$z) = list(p125_temp$xyz.est$x, p125_temp$xyz.est$y)
+p125_temp = melt(p125_temp$xyz.est$z, varnames = c('doy', 'depth'), value.name = "Temp_deg_C")
+p125_temp_plot = ggplot()+
+  theme_classic()+
+  geom_raster(data = p125_temp, aes(x = doy, y = depth, fill = Temp_deg_C))+
+  scale_fill_gradientn("Water Temp<br>(\u00b0 C)",colours = rev(temp_colors), limits = c(13.5,30))+
+  geom_point(data = p125_temp_plot_dat, aes(x = doy, y = depth), size = 0.5)+
+  scale_y_continuous(limits = c(-1.5,0), breaks = c(-1.5, -1, -0.5, 0))+
+  theme(panel.border = element_rect(fill = NA, colour = "black"))+
+  labs(y = "Depth (m)", x = ("Day of Year"), title = "Pond 125 - with FPV")+
+  theme(axis.title.y = element_markdown(size = 8,colour = "black"), 
+        axis.title.x = element_markdown(size = 8,colour = "black"),
+        axis.text.x =  element_text(size = 8,colour = "black"),
+        axis.text.y =  element_text(size = 8,colour = "black"),
+        plot.title = element_text(size = 8,colour = "black"),
+        legend.title = element_markdown(size = 8,colour = "black"),
+        legend.text = element_text(size = 8,colour = "black"))
+p125_temp_plot
+
+#pond 128
+p128 = filter(wc_temp_do, Pond == "128")
+p128$Date = as.Date(ymd(p128$Date))
+p128_plot = p128 %>%
+  mutate(depth = - `Depth_m`)
+p128_plot$Date = as.Date(p128_plot$Date)
+p128_temp_plot_dat = p128_plot[,c("doy", "depth", "Temp_deg_C")]
+p128_temp = mba.surf(p128_temp_plot_dat[c("doy", "depth", "Temp_deg_C")], no.X = 300, no.Y = 300, extend = T)
+dimnames(p128_temp$xyz.est$z) = list(p128_temp$xyz.est$x, p128_temp$xyz.est$y)
+p128_temp = melt(p128_temp$xyz.est$z, varnames = c('doy', 'depth'), value.name = "Temp_deg_C")
+p128_temp_plot = ggplot()+
+  theme_classic()+
+  geom_raster(data = p128_temp, aes(x = doy, y = depth, fill = Temp_deg_C))+
+  scale_fill_gradientn("Water Temp<br>(\u00b0 C)",colours = rev(temp_colors), limits = c(13.5,30))+
+  geom_point(data = p128_temp_plot_dat, aes(x = doy, y = depth), size = 0.5)+
+  scale_y_continuous(limits = c(-1.5,0), breaks = c(-1.5, -1, -0.5, 0))+
+  theme(panel.border = element_rect(fill = NA, colour = "black"))+
+  labs(y = "Depth (m)", x = ("Day of Year"), title = "Pond 128 - open water")+
+  theme(axis.title.y = element_markdown(size = 8,colour = "black"), 
+        axis.title.x = element_markdown(size = 8,colour = "black"),
+        axis.text.x =  element_text(size = 8,colour = "black"),
+        axis.text.y =  element_text(size = 8,colour = "black"),
+        plot.title = element_text(size = 8,colour = "black"),
+        legend.title = element_markdown(size = 8,colour = "black"),
+        legend.text = element_text(size = 8,colour = "black"))
+p128_temp_plot
+
+#pond 131
+p131 = filter(wc_temp_do, Pond == "131")
+p131$Date = as.Date(ymd(p131$Date))
+p131_plot = p131 %>%
+  mutate(depth = - `Depth_m`)
+p131_plot$Date = as.Date(p131_plot$Date)
+p131_temp_plot_dat = p131_plot[,c("doy", "depth", "Temp_deg_C")]
+p131_temp = mba.surf(p131_temp_plot_dat[c("doy", "depth", "Temp_deg_C")], no.X = 300, no.Y = 300, extend = T)
+dimnames(p131_temp$xyz.est$z) = list(p131_temp$xyz.est$x, p131_temp$xyz.est$y)
+p131_temp = melt(p131_temp$xyz.est$z, varnames = c('doy', 'depth'), value.name = "Temp_deg_C")
+p131_temp_plot = ggplot()+
+  theme_classic()+
+  geom_raster(data = p131_temp, aes(x = doy, y = depth, fill = Temp_deg_C))+
+  scale_fill_gradientn("Water Temp<br>(\u00b0 C)",colours = rev(temp_colors), limits = c(13.5,30))+
+  geom_point(data = p131_temp_plot_dat, aes(x = doy, y = depth), size = 0.5)+
+  scale_y_continuous(limits = c(-1.5,0), breaks = c(-1.5, -1, -0.5, 0))+
+  theme(panel.border = element_rect(fill = NA, colour = "black"))+
+  labs(y = "Depth (m)", x = ("Day of Year"), title = "Pond 131 - open water")+
+  theme(axis.title.y = element_markdown(size = 8,colour = "black"), 
+        axis.title.x = element_markdown(size = 8,colour = "black"),
+        axis.text.x =  element_text(size = 8,colour = "black"),
+        axis.text.y =  element_text(size = 8,colour = "black"),
+        plot.title = element_text(size = 8,colour = "black"),
+        legend.title = element_markdown(size = 8,colour = "black"),
+        legend.text = element_text(size = 8,colour = "black"))
+p131_temp_plot
+
+#pond 132
+p132 = filter(wc_temp_do, Pond == "132")
+p132$Date = as.Date(ymd(p132$Date))
+p132_plot = p132 %>%
+  mutate(depth = - `Depth_m`)
+p132_plot$Date = as.Date(p132_plot$Date)
+p132_temp_plot_dat = p132_plot[,c("doy", "depth", "Temp_deg_C")]
+p132_temp = mba.surf(p132_temp_plot_dat[c("doy", "depth", "Temp_deg_C")], no.X = 300, no.Y = 300, extend = T)
+dimnames(p132_temp$xyz.est$z) = list(p132_temp$xyz.est$x, p132_temp$xyz.est$y)
+p132_temp = melt(p132_temp$xyz.est$z, varnames = c('doy', 'depth'), value.name = "Temp_deg_C")
+p132_temp_plot = ggplot()+
+  theme_classic()+
+  geom_raster(data = p132_temp, aes(x = doy, y = depth, fill = Temp_deg_C))+
+  scale_fill_gradientn("Water Temp<br>(\u00b0 C)",colours = rev(temp_colors), limits = c(13.5,30))+
+  geom_point(data = p132_temp_plot_dat, aes(x = doy, y = depth), size = 0.5)+
+  scale_y_continuous(limits = c(-1.5,0), breaks = c(-1.5, -1, -0.5, 0))+
+  theme(panel.border = element_rect(fill = NA, colour = "black"))+
+  labs(y = "Depth (m)", x = ("Day of Year"), title = "Pond 132 - open water")+
+  theme(axis.title.y = element_markdown(size = 8,colour = "black"), 
+        axis.title.x = element_markdown(size = 8,colour = "black"),
+        axis.text.x =  element_text(size = 8,colour = "black"),
+        axis.text.y =  element_text(size = 8,colour = "black"),
+        plot.title = element_text(size = 8,colour = "black"),
+        legend.title = element_markdown(size = 8,colour = "black"),
+        legend.text = element_text(size = 8,colour = "black"))
+p132_temp_plot
+
+#put the plots together
+temp_profile_plots = p123_temp_plot + p124_temp_plot + p125_temp_plot + p128_temp_plot + p131_temp_plot + p132_temp_plot +
+  plot_layout(nrow = 2, ncol = 3,
+              guides = "collect")
+temp_profile_plots
+
+temp_profile_plots[[1]] = temp_profile_plots[[1]] + theme(axis.title.x = element_blank(), axis.text.x = element_blank())
+temp_profile_plots[[2]] = temp_profile_plots[[2]] + theme(axis.title.x = element_blank(), axis.text.x = element_blank(),
+                                                                            axis.title.y = element_blank(), axis.text.y = element_blank())
+temp_profile_plots[[3]] = temp_profile_plots[[3]] + theme(axis.title.x = element_blank(), axis.text.x = element_blank(),
+                                                                            axis.title.y = element_blank(), axis.text.y = element_blank())
+temp_profile_plots[[5]] = temp_profile_plots[[5]] + theme(axis.title.y = element_blank(), axis.text.y = element_blank())
+temp_profile_plots[[6]] = temp_profile_plots[[6]] + theme(axis.title.y = element_blank(), axis.text.y = element_blank())
+temp_profile_plots
+
+#save it as figure 1
+ggsave(filename = "figure_1_temp_profiles.png", plot = temp_profile_plots, width = 6.5, height = 4.3, units = "in")
+
+#############
+#repeat for dissolved oxygen
+min(wc_temp_do$DO_PercSat)
+max(wc_temp_do$DO_PercSat)
+
+#pond123
+p123_do_plot_dat = p123_plot[,c("doy", "depth", "DO_PercSat")]
+p123_do = mba.surf(p123_do_plot_dat[c("doy", "depth", "DO_PercSat")], no.X = 300, no.Y = 300, extend = T)
+dimnames(p123_do$xyz.est$z) = list(p123_do$xyz.est$x, p123_do$xyz.est$y)
+p123_do = melt(p123_do$xyz.est$z, varnames = c('doy', 'depth'), value.name = "DO_PercSat")
+p123_do_plot = ggplot()+
+  theme_classic()+
+  geom_raster(data = p123_do, aes(x = doy, y = depth, fill = DO_PercSat))+
+  scale_fill_gradientn("Oxygen<br>Saturation (%)",colours = rev(temp_colors), limits = c(0,200))+
+  geom_point(data = p123_do_plot_dat, aes(x = doy, y = depth), size = 0.5)+
+  scale_y_continuous(limits = c(-1.5,0), breaks = c(-1.5, -1, -0.5, 0))+
+  theme(panel.border = element_rect(fill = NA, colour = "black"))+
+  labs(y = "Depth (m)", x = ("Day of Year"), title = "Pond 123 - with FPV")+
+  theme(axis.title.y = element_markdown(size = 8,colour = "black"), 
+        axis.title.x = element_markdown(size = 8,colour = "black"),
+        axis.text.x =  element_text(size = 8,colour = "black"),
+        axis.text.y =  element_text(size = 8,colour = "black"),
+        plot.title = element_text(size = 8,colour = "black"),
+        legend.title = element_markdown(size = 8,colour = "black"),
+        legend.text = element_text(size = 8,colour = "black"))
+p123_do_plot
+
+#pond124
+p124_do_plot_dat = p124_plot[,c("doy", "depth", "DO_PercSat")]
+p124_do = mba.surf(p124_do_plot_dat[c("doy", "depth", "DO_PercSat")], no.X = 300, no.Y = 300, extend = T)
+dimnames(p124_do$xyz.est$z) = list(p124_do$xyz.est$x, p124_do$xyz.est$y)
+p124_do = melt(p124_do$xyz.est$z, varnames = c('doy', 'depth'), value.name = "DO_PercSat")
+p124_do_plot = ggplot()+
+  theme_classic()+
+  geom_raster(data = p124_do, aes(x = doy, y = depth, fill = DO_PercSat))+
+  scale_fill_gradientn("Oxygen<br>Saturation (%)",colours = rev(temp_colors), limits = c(0,200))+
+  geom_point(data = p124_do_plot_dat, aes(x = doy, y = depth), size = 0.5)+
+  scale_y_continuous(limits = c(-1.5,0), breaks = c(-1.5, -1, -0.5, 0))+
+  theme(panel.border = element_rect(fill = NA, colour = "black"))+
+  labs(y = "Depth (m)", x = ("Day of Year"), title = "Pond 124 - with FPV")+
+  theme(axis.title.y = element_markdown(size = 8,colour = "black"), 
+        axis.title.x = element_markdown(size = 8,colour = "black"),
+        axis.text.x =  element_text(size = 8,colour = "black"),
+        axis.text.y =  element_text(size = 8,colour = "black"),
+        plot.title = element_text(size = 8,colour = "black"),
+        legend.title = element_markdown(size = 8,colour = "black"),
+        legend.text = element_text(size = 8,colour = "black"))
+p124_do_plot
+
+#pond125
+p125_do_plot_dat = p125_plot[,c("doy", "depth", "DO_PercSat")]
+p125_do = mba.surf(p125_do_plot_dat[c("doy", "depth", "DO_PercSat")], no.X = 300, no.Y = 300, extend = T)
+dimnames(p125_do$xyz.est$z) = list(p125_do$xyz.est$x, p125_do$xyz.est$y)
+p125_do = melt(p125_do$xyz.est$z, varnames = c('doy', 'depth'), value.name = "DO_PercSat")
+p125_do_plot = ggplot()+
+  theme_classic()+
+  geom_raster(data = p125_do, aes(x = doy, y = depth, fill = DO_PercSat))+
+  scale_fill_gradientn("Oxygen<br>Saturation (%)",colours = rev(temp_colors), limits = c(0,200))+
+  geom_point(data = p125_do_plot_dat, aes(x = doy, y = depth), size = 0.5)+
+  scale_y_continuous(limits = c(-1.5,0), breaks = c(-1.5, -1, -0.5, 0))+
+  theme(panel.border = element_rect(fill = NA, colour = "black"))+
+  labs(y = "Depth (m)", x = ("Day of Year"), title = "Pond 125 - with FPV")+
+  theme(axis.title.y = element_markdown(size = 8,colour = "black"), 
+        axis.title.x = element_markdown(size = 8,colour = "black"),
+        axis.text.x =  element_text(size = 8,colour = "black"),
+        axis.text.y =  element_text(size = 8,colour = "black"),
+        plot.title = element_text(size = 8,colour = "black"),
+        legend.title = element_markdown(size = 8,colour = "black"),
+        legend.text = element_text(size = 8,colour = "black"))
+p125_do_plot
+
+#pond128
+p128_do_plot_dat = p128_plot[,c("doy", "depth", "DO_PercSat")]
+p128_do = mba.surf(p128_do_plot_dat[c("doy", "depth", "DO_PercSat")], no.X = 300, no.Y = 300, extend = T)
+dimnames(p128_do$xyz.est$z) = list(p128_do$xyz.est$x, p128_do$xyz.est$y)
+p128_do = melt(p128_do$xyz.est$z, varnames = c('doy', 'depth'), value.name = "DO_PercSat")
+p128_do_plot = ggplot()+
+  theme_classic()+
+  geom_raster(data = p128_do, aes(x = doy, y = depth, fill = DO_PercSat))+
+  scale_fill_gradientn("Oxygen<br>Saturation (%)",colours = rev(temp_colors), limits = c(0,200))+
+  geom_point(data = p128_do_plot_dat, aes(x = doy, y = depth), size = 0.5)+
+  scale_y_continuous(limits = c(-1.5,0), breaks = c(-1.5, -1, -0.5, 0))+
+  theme(panel.border = element_rect(fill = NA, colour = "black"))+
+  labs(y = "Depth (m)", x = ("Day of Year"), title = "Pond 128 - open water")+
+  theme(axis.title.y = element_markdown(size = 8,colour = "black"), 
+        axis.title.x = element_markdown(size = 8,colour = "black"),
+        axis.text.x =  element_text(size = 8,colour = "black"),
+        axis.text.y =  element_text(size = 8,colour = "black"),
+        plot.title = element_text(size = 8,colour = "black"),
+        legend.title = element_markdown(size = 8,colour = "black"),
+        legend.text = element_text(size = 8,colour = "black"))
+p128_do_plot
+
+#pond131
+p131_do_plot_dat = p131_plot[,c("doy", "depth", "DO_PercSat")]
+p131_do = mba.surf(p131_do_plot_dat[c("doy", "depth", "DO_PercSat")], no.X = 300, no.Y = 300, extend = T)
+dimnames(p131_do$xyz.est$z) = list(p131_do$xyz.est$x, p131_do$xyz.est$y)
+p131_do = melt(p131_do$xyz.est$z, varnames = c('doy', 'depth'), value.name = "DO_PercSat")
+p131_do$DO_PercSat[p131_do$DO_PercSat < 0] = 0
+p131_do_plot = ggplot()+
+  theme_classic()+
+  geom_raster(data = p131_do, aes(x = doy, y = depth, fill = DO_PercSat))+
+  scale_fill_gradientn("Oxygen<br>Saturation (%)",colours = rev(temp_colors), limits = c(0,200))+
+  geom_point(data = p131_do_plot_dat, aes(x = doy, y = depth), size = 0.5)+
+  scale_y_continuous(limits = c(-1.5,0), breaks = c(-1.5, -1, -0.5, 0))+
+  theme(panel.border = element_rect(fill = NA, colour = "black"))+
+  labs(y = "Depth (m)", x = ("Day of Year"), title = "Pond 131 - open water")+
+  theme(axis.title.y = element_markdown(size = 8,colour = "black"), 
+        axis.title.x = element_markdown(size = 8,colour = "black"),
+        axis.text.x =  element_text(size = 8,colour = "black"),
+        axis.text.y =  element_text(size = 8,colour = "black"),
+        plot.title = element_text(size = 8,colour = "black"),
+        legend.title = element_markdown(size = 8,colour = "black"),
+        legend.text = element_text(size = 8,colour = "black"))
+p131_do_plot
+
+#pond132
+p132_do_plot_dat = p132_plot[,c("doy", "depth", "DO_PercSat")]
+p132_do = mba.surf(p132_do_plot_dat[c("doy", "depth", "DO_PercSat")], no.X = 300, no.Y = 300, extend = T)
+dimnames(p132_do$xyz.est$z) = list(p132_do$xyz.est$x, p132_do$xyz.est$y)
+p132_do = melt(p132_do$xyz.est$z, varnames = c('doy', 'depth'), value.name = "DO_PercSat")
+p132_do$DO_PercSat[p132_do$DO_PercSat < 0] = 0
+p132_do_plot = ggplot()+
+  theme_classic()+
+  geom_raster(data = p132_do, aes(x = doy, y = depth, fill = DO_PercSat))+
+  scale_fill_gradientn("Oxygen<br>Saturation (%)",colours = rev(temp_colors), limits = c(0,200))+
+  geom_point(data = p132_do_plot_dat, aes(x = doy, y = depth), size = 0.5)+
+  scale_y_continuous(limits = c(-1.5,0), breaks = c(-1.5, -1, -0.5, 0))+
+  theme(panel.border = element_rect(fill = NA, colour = "black"))+
+  labs(y = "Depth (m)", x = ("Day of Year"), title = "Pond 132 - open water")+
+  theme(axis.title.y = element_markdown(size = 8,colour = "black"), 
+        axis.title.x = element_markdown(size = 8,colour = "black"),
+        axis.text.x =  element_text(size = 8,colour = "black"),
+        axis.text.y =  element_text(size = 8,colour = "black"),
+        plot.title = element_text(size = 8,colour = "black"),
+        legend.title = element_markdown(size = 8,colour = "black"),
+        legend.text = element_text(size = 8,colour = "black"))
+p132_do_plot
+
+do_profile_plots = p123_do_plot + p124_do_plot + p125_do_plot + p128_do_plot + p131_do_plot + p132_do_plot +
+  plot_layout(nrow = 2, ncol = 3,
+              guides = "collect")
+do_profile_plots
+
+do_profile_plots[[1]] = do_profile_plots[[1]] + theme(axis.title.x = element_blank(), axis.text.x = element_blank())
+do_profile_plots[[2]] = do_profile_plots[[2]] + theme(axis.title.x = element_blank(), axis.text.x = element_blank(),
+                                                                            axis.title.y = element_blank(), axis.text.y = element_blank())
+do_profile_plots[[3]] = do_profile_plots[[3]] + theme(axis.title.x = element_blank(), axis.text.x = element_blank(),
+                                                                            axis.title.y = element_blank(), axis.text.y = element_blank())
+do_profile_plots[[5]] = do_profile_plots[[5]] + theme(axis.title.y = element_blank(), axis.text.y = element_blank())
+do_profile_plots[[6]] = do_profile_plots[[6]] + theme(axis.title.y = element_blank(), axis.text.y = element_blank())
+do_profile_plots
+
+#save it as figure 2
+ggsave(filename = "figure_2_dissolved_oxygen.png", plot = do_profile_plots, width = 6.5, height = 4.3, units = "in")
+
+########
+#Do a quick comparison of average temp and DO by treatment
+
+#get the daily averages by pond
+temp_do_av_dat = wc_temp_do %>%
+  group_by(doy, Pond, treatment) %>%
+  dplyr::summarize(mean_temp = mean(Temp_deg_C, na.rm = TRUE),
+                   mean_do = mean(DO_PercSat, na.rm = TRUE))
+
+#and then do the comparisons
+pond_temp_model = lmer(mean_temp ~ treatment + doy + (1|Pond), data = temp_do_av_dat)
+summary(pond_temp_model)
+lsmeans(pond_temp_model, pairwise ~ treatment)
+
+pond_do_model = lmer(mean_do ~ treatment + doy + (1|Pond), data = temp_do_av_dat)
+summary(pond_do_model)
+lsmeans(pond_do_model, pairwise ~ treatment)
+
+#get the means and SDs
+temp_do_means = temp_do_av_dat %>%
+  group_by(treatment) %>%
+  dplyr::summarize(sd_temp = sd(mean_temp, na.rm = TRUE),
+                   max_temp = max(mean_temp),
+                   min_temp = min(mean_temp),
+                   mean_temp = mean(mean_temp),
+                   sd_do = sd(mean_do),
+                   max_do = max(mean_do),
+                   min_do = min(mean_do),
+                   mean_do = mean(mean_do)
+                   )
+temp_do_means
+
+#did FPV ponds ever have DO > 100%?
+fpv_do = subset(wc_temp_do, treatment == "fpv")
+max(fpv_do$DO_PercSat)
+```
+
+
+
+2. Compare dissolved gas concentrations throughout the summer
+```{r}
+diss_ch4_dat<- read_excel("fs_methane_intensive_2024_v3.xlsx", sheet = "diss_ch4_dat")
+View(diss_ch4_dat)
+
+#get means of technical replicates
+treatment_mean_diss = diss_ch4_dat %>%
+  group_by(treatment, doy, pond, top_bottom) %>%
+  dplyr::summarize(mean_ch4 = mean(ch4_umol_L))
+
+#and split out surface and bottom water
+top_ch4_conc_dat = subset(treatment_mean_diss, top_bottom == "Top")
+bottom_ch4_conc_dat = subset(treatment_mean_diss, top_bottom == "Bottom")
+
+#then make the top averages
+top_mean_diss = top_ch4_conc_dat %>%
+  group_by(treatment, doy) %>%
+  dplyr::summarize(sd_ch4 = sd(mean_ch4),
+                   bigmean_ch4 = mean(mean_ch4))
+
+#now make the graphs for the surface water:
+max(top_ch4_conc_dat$mean_ch4) #10
+top_ch4_fig = ggplot(data = top_mean_diss, aes(x = doy, y = bigmean_ch4, fill = treatment, color = treatment))+
+  geom_line()+
+  geom_point()+
+  theme_classic()+
+  geom_errorbar(aes(x = doy, ymin = bigmean_ch4 - sd_ch4, ymax = bigmean_ch4 + sd_ch4), width = 0, color = "black")+
+  geom_point(size = 3, shape = 16)+
+  geom_point(size = 3, shape = 1, color = "black")+
+  labs(y= "Surface [CH<sub>4</sub>]<br> (\u03bcmol L<sup>-1</sup>)", x = "Day of Year")+
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  scale_fill_manual(values = c("#ef8a62", "#67a9cf"))+
+  scale_color_manual(values = c("#ef8a62", "#67a9cf"))+
+  theme(legend.position = "NULL")+
+  scale_y_continuous(limits = c(0,11), breaks = c(0, 5, 10))+
+  scale_x_continuous(limits = c(170,250))
+top_ch4_fig
+
+#compare the treatments
+top_ch4_conc_dat$pond = as.factor(top_ch4_conc_dat$pond)
+top_ch4_model = lmer(mean_ch4 ~ treatment + doy + (1|pond), data = top_ch4_conc_dat)
+summary(top_ch4_model)
+lsmeans(top_ch4_model, pairwise ~ treatment)
+
+#and make the comparison graph
+max(top_ch4_conc_dat$mean_ch4)
+top_ch4_box = ggplot()+
+  theme_classic()+
+  geom_boxplot(data = top_ch4_conc_dat, aes(x = treatment, y = mean_ch4), outlier.shape = NA, color = "black")+
+  geom_jitter(data = top_ch4_conc_dat, aes(x = treatment, y = mean_ch4, fill = treatment, color = treatment),width = 0.2, size = 2, shape = 21)+
+  scale_fill_manual(values = c("#ef8a62", "#67a9cf"))+
+  scale_color_manual(values = c("black", "black"))+
+  scale_y_continuous(limits = c(0,11), breaks = c(0, 5, 10))+
+  scale_x_discrete(labels = c("open" = "Open",
+                              "fpv" = "FPV"))+
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  theme(legend.position = "NULL")+
+  annotate("text", x = 2, y = 11, label = "p = 0.208", size = 2.822,  fontface = "italic")
+top_ch4_box
+
+
+########
+#repeat for the bottom water
+#then make the bottom averages
+bottom_mean_diss = bottom_ch4_conc_dat %>%
+  group_by(treatment, doy) %>%
+  dplyr::summarize(sd_ch4 = sd(mean_ch4),
+                   bigmean_ch4 = mean(mean_ch4))
+
+#now make the graphs for the bottom water:
+max(bottom_ch4_conc_dat$mean_ch4) #1203
+bottom_ch4_fig = ggplot(data = bottom_mean_diss, aes(x = doy, y = bigmean_ch4, fill = treatment, color = treatment))+
+  geom_line()+
+  geom_point()+
+  theme_classic()+
+  geom_errorbar(aes(x = doy, ymin = bigmean_ch4 - sd_ch4, ymax = bigmean_ch4 + sd_ch4), width = 0, color = "black")+
+  geom_point(size = 3, shape = 16)+
+  geom_point(size = 3, shape = 1, color = "black")+
+  labs(y= "Bottom [CH<sub>4</sub>]<br> (\u03bcmol L<sup>-1</sup>)", x = "Day of Year")+
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_text(size = 8,colour = "black"),
+        axis.title.y = element_markdown(size = 8))+
+  scale_fill_manual(values = c("#ef8a62", "#67a9cf"))+
+  scale_color_manual(values = c("#ef8a62", "#67a9cf"))+
+  theme(legend.position = "NULL")+
+  scale_y_continuous(limits = c(0,1250), breaks = c(0, 500, 1000))+
+  scale_x_continuous(limits = c(170,250))
+bottom_ch4_fig
+
+#compare the treatments
+bottom_ch4_conc_dat$pond = as.factor(bottom_ch4_conc_dat$pond)
+bottom_ch4_model = lmer(mean_ch4 ~ treatment + doy + (1|pond), data = bottom_ch4_conc_dat)
+summary(bottom_ch4_model)
+lsmeans(bottom_ch4_model, pairwise ~ treatment)
+
+#and make the comparison graph
+max(bottom_ch4_conc_dat$mean_ch4)
+bottom_ch4_box = ggplot()+
+  theme_classic()+
+  geom_boxplot(data = bottom_ch4_conc_dat, aes(x = treatment, y = mean_ch4), outlier.shape = NA, color = "black")+
+  geom_jitter(data = bottom_ch4_conc_dat, aes(x = treatment, y = mean_ch4, fill = treatment, color = treatment),width = 0.2, size = 2, shape = 21)+
+  scale_fill_manual(values = c("#ef8a62", "#67a9cf"))+
+  scale_color_manual(values = c("black", "black"))+
+  scale_y_continuous(limits = c(0,1250), breaks = c(0, 500, 1000))+
+  scale_x_discrete(labels = c("open" = "Open",
+                              "fpv" = "FPV"))+
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  theme(legend.position = "NULL")+
+  annotate("text", x = 2, y = 1250, label = "p = 0.003", size = 2.822,  fontface = "italic")
+bottom_ch4_box
+
+#put all the graphs together (Figure 3)
+figure3_plot = top_ch4_fig + top_ch4_box + bottom_ch4_fig + bottom_ch4_box +
+  plot_layout(nrow = 2, ncol = 2, widths = c(10, 5))+
+  plot_annotation(tag_levels = "A", tag_suffix = '.')& 
+  theme(plot.tag = element_text(size = 8))
+figure3_plot
+
+figure3_plot[[1]] = figure3_plot[[1]] + theme(axis.title.x = element_blank())
+figure3_plot[[2]] = figure3_plot[[2]] + theme(axis.text.y = element_blank(),
+                                        axis.title.y = element_blank(),
+                                        axis.line.y = element_blank(),
+                                        axis.ticks.y = element_blank(),
+                                        axis.title.x = element_blank())
+figure3_plot[[4]] = figure3_plot[[4]] + theme(axis.text.y = element_blank(),
+                                        axis.title.y = element_blank(),
+                                        axis.line.y = element_blank(),
+                                        axis.ticks.y = element_blank(),
+                                        axis.title.x = element_blank())
+figure3_plot
+
+##export the figure
+ggsave(filename = "figure_3_dissolved_ch4.png", plot = figure3_plot, width = 6.5, height = 4.3, units = "in")
+
+
+
+##get the surface and bottom water average and SD by treatment
+diss_ch4_avs = treatment_mean_diss %>%
+  group_by(treatment, top_bottom) %>%
+  dplyr::summarize(ch4_sd = sd(mean_ch4),
+                   big_mean_ch4 = mean(mean_ch4))
+diss_ch4_avs
+```
+
+
+
+3. Compare diffusive fluxes and gas exchange velocities
+```{r}
+diff_flux_dat = read_excel("fs_methane_intensive_2024_v3.xlsx", sheet = "diff_flux_dat")
+view(diff_flux_dat)
+
+diff_flux_dat$center_edge = as.factor(diff_flux_dat$center_edge)
+
+#separate out the center and edge
+center_diff_dat = subset(diff_flux_dat, center_edge == "Center")
+edge_diff_dat = subset(diff_flux_dat, center_edge == "Edge")
+
+t.test(ch4_flux_umol_m2_h ~ treatment, data = center_diff_dat)
+t.test(ch4_flux_umol_m2_h ~ treatment, data = edge_diff_dat)
+
+t.test(k600 ~ treatment, data = center_diff_dat)
+t.test(k600 ~ treatment, data = edge_diff_dat)
+
+#and compare center and edge within treatments
+fpv_diff_dat = subset(diff_flux_dat, treatment == "fpv")
+open_diff_dat = subset(diff_flux_dat, treatment == "open")
+
+t.test(ch4_flux_umol_m2_h ~ center_edge, data = fpv_diff_dat)
+t.test(ch4_flux_umol_m2_h ~ center_edge, data = open_diff_dat)
+
+t.test(k600 ~ center_edge, data = fpv_diff_dat)
+t.test(k600 ~ center_edge, data = open_diff_dat)
+
+
+
+pond_diff_av = diff_flux_dat %>%
+  group_by(pond, treatment) %>%
+  dplyr::summarize(mean_ch4_flux = mean(ch4_flux_umol_m2_h),
+                   sd_ch4_flux = sd(ch4_flux_umol_m2_h),
+                   mean_k600 = mean(k600),
+                   sd_k600 = sd(k600))
+  
+mean(pond_diff_av$mean_ch4_flux)
+sd(pond_diff_av$mean_ch4_flux)
+
+```
+
+
+
+4. Look at the light/dark bottle data
+```{r}
+wc_ch4_dat = read_excel("fs_methane_intensive_2024_v3.xlsx", sheet = "wc_flux_dat")
+view(wc_ch4_dat)
+
+#together
+wc_bottle_mod = lmer(ch4_flux_umol_L_h ~ light_dark + top_bottom + treatment + (1|pond), data = wc_ch4_dat)
+summary(wc_bottle_mod)
+lsmeans(wc_bottle_mod, pairwise ~ treatment)
+lsmeans(wc_bottle_mod, pairwise ~ light_dark)
+
+#separate
+#surface only
+surface_ch4_bottle = subset(wc_ch4_dat, top_bottom == "Top")
+wc_surfacebottle_mod = lmer(ch4_flux_umol_L_h ~ light_dark + treatment + (1|pond), data = surface_ch4_bottle)
+summary(wc_surfacebottle_mod)
+lsmeans(wc_surfacebottle_mod, pairwise ~ treatment)
+#bottom only
+bottom_ch4_bottle = subset(wc_ch4_dat, top_bottom == "Bottom")
+wc_bottombottle_mod = lmer(ch4_flux_umol_L_h ~ light_dark + treatment + (1|pond), data = bottom_ch4_bottle)
+summary(wc_bottombottle_mod)
+lsmeans(wc_bottombottle_mod, pairwise ~ treatment)
+
+#subset out the bottom water and average the light and dark bottles since they are no different
+bottom_wc_dat = subset(wc_ch4_dat, top_bottom == "Bottom")
+bottom_wc_dat = bottom_wc_dat %>%
+  group_by(treatment, pond)%>%
+  dplyr::summarize(mean_ch4 = mean(ch4_flux_umol_L_h))
+
+bottom_wc_dat$abs_ch4 = abs(bottom_wc_dat$mean_ch4)
+t.test(abs_ch4 ~ treatment, data = bottom_wc_dat)
+
+bottom_wc_summary = bottom_wc_dat %>%
+  group_by(treatment) %>%
+  dplyr::summarize(big_meanch4 = mean(mean_ch4),
+                   sd_ch4 = sd(mean_ch4),
+                   mean_abs_ch4 = mean(abs_ch4),
+                   sd_abs_ch4 = sd(abs_ch4))
+bottom_wc_summary
+```
+
+
+
+5. Compare the sediment CH4 bottle incubation data
+```{r}
+sed_ch4_dat = read_excel("fs_methane_intensive_2024_v3.xlsx", sheet = "sed_flux_dat")
+
+t.test(ch4_ppm_d_gDW ~ treatment, data = sed_ch4_dat)
+
+sed_ch4_summary = sed_ch4_dat %>%
+  group_by(treatment) %>%
+  dplyr::summarize(mean_flux = mean(ch4_ppm_d_gDW),
+                   sd_flux = sd(ch4_ppm_d_gDW))
+sed_ch4_summary
+```
+
+
+
+
+6. Plot methanogen and methanotroph abundances over time
+```{r}
+#first load the watercolumn data
+fpv_wc_microb_dat = read_excel("fs_methane_intensive_2024_v3.xlsx", sheet = "wc_microbe")
+
+wc_microb_avs = fpv_wc_microb_dat %>%
+  group_by(treatment, top_bottom, methanogen_methanotroph) %>%
+  dplyr::summarize(meth_sd = sd(total_cells_ml),
+                   meth_mean = mean(total_cells_ml))
+wc_microb_avs
+
+#split out surface and bottom water and methogen/methanotroph
+top_methanogen_dat = fpv_wc_microb_dat[fpv_wc_microb_dat$top_bottom == "top" & fpv_wc_microb_dat$methanogen_methanotroph == "Methanogen",]
+top_methanotroph_dat = fpv_wc_microb_dat[fpv_wc_microb_dat$top_bottom == "top" & fpv_wc_microb_dat$methanogen_methanotroph == "Methanotroph",]
+bottom_methanogen_dat = fpv_wc_microb_dat[fpv_wc_microb_dat$top_bottom == "bottom" & fpv_wc_microb_dat$methanogen_methanotroph == "Methanogen",]
+bottom_methanotroph_dat = fpv_wc_microb_dat[fpv_wc_microb_dat$top_bottom == "bottom" & fpv_wc_microb_dat$methanogen_methanotroph == "Methanotroph",]
+
+#start with surface methanogens
+top_gen_sum = top_methanogen_dat %>%
+  group_by(treatment, doy) %>%
+  dplyr::summarize(sd_meth = sd(total_cells_ml),
+                   mean_meth = mean(total_cells_ml))
+
+max(top_gen_sum$mean_meth)
+top_methanogen_fig = ggplot(data = top_gen_sum, aes(x = doy, y = mean_meth, fill = treatment, color = treatment))+
+  geom_line()+
+  geom_point()+
+  theme_classic()+
+  geom_errorbar(aes(x = doy, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_point(size = 3, shape = 16)+
+  geom_point(size = 3, shape = 1, color = "black")+
+  labs(y= "Surface Methanogen<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  scale_fill_manual(values = c("#ef8a62", "#67a9cf"))+
+  scale_color_manual(values = c("#ef8a62", "#67a9cf"))+
+  theme(legend.position = "NULL")#+
+  #scale_y_continuous(limits = c(0,11), breaks = c(0, 5, 10))+
+  #scale_x_continuous(limits = c(170,250))
+top_methanogen_fig
+
+top_methanogen_dat$Pond = as.factor(top_methanogen_dat$Pond)
+top_methanogen_model = lmer(total_cells_ml ~ treatment + doy + (1|Pond), data = top_methanogen_dat)
+summary(top_methanogen_model)
+lsmeans(top_methanogen_model, pairwise ~ treatment)
+
+top_methanogen_box = ggplot()+
+  theme_classic()+
+  geom_boxplot(data = top_methanogen_dat, aes(x = treatment, y = total_cells_ml), outlier.shape = NA, color = "black")+
+  geom_jitter(data = top_methanogen_dat, aes(x = treatment, y = total_cells_ml, fill = treatment, color = treatment),width = 0.2, size = 2, shape = 21)+
+  scale_fill_manual(values = c("#ef8a62", "#67a9cf"))+
+  scale_color_manual(values = c("black", "black"))+
+  #scale_y_continuous(limits = c(0,11), breaks = c(0, 5, 10))+
+  scale_x_discrete(labels = c("open" = "Open",
+                              "fpv" = "FPV"))+
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  theme(legend.position = "NULL")+
+  annotate("text", x = 2, y = 9000, label = "p = 0.324", size = 2.822,  fontface = "italic")
+top_methanogen_box
+
+
+##surface methanotrophs
+top_troph_sum = top_methanotroph_dat %>%
+  group_by(treatment, doy) %>%
+  dplyr::summarize(sd_meth = sd(total_cells_ml),
+                   mean_meth = mean(total_cells_ml))
+
+max(top_troph_sum$mean_meth)
+top_methanotroph_fig = ggplot(data = top_troph_sum, aes(x = doy, y = mean_meth, fill = treatment, color = treatment))+
+  geom_line()+
+  geom_point()+
+  theme_classic()+
+  geom_errorbar(aes(x = doy, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_point(size = 3, shape = 16)+
+  geom_point(size = 3, shape = 1, color = "black")+
+  labs(y= "Surface Methanotroph<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  scale_fill_manual(values = c("#ef8a62", "#67a9cf"))+
+  scale_color_manual(values = c("#ef8a62", "#67a9cf"))+
+  theme(legend.position = "NULL")#+
+  #scale_y_continuous(limits = c(0,11), breaks = c(0, 5, 10))+
+  #scale_x_continuous(limits = c(170,250))
+top_methanotroph_fig
+
+top_methanotroph_dat$Pond = as.factor(top_methanotroph_dat$Pond)
+top_methanotroph_model = lmer(total_cells_ml ~ treatment + doy + (1|Pond), data = top_methanotroph_dat)
+summary(top_methanotroph_model)
+lsmeans(top_methanotroph_model, pairwise ~ treatment)
+
+top_methanotroph_box = ggplot()+
+  theme_classic()+
+  geom_boxplot(data = top_methanotroph_dat, aes(x = treatment, y = total_cells_ml), outlier.shape = NA, color = "black")+
+  geom_jitter(data = top_methanotroph_dat, aes(x = treatment, y = total_cells_ml, fill = treatment, color = treatment),width = 0.2, size = 2, shape = 21)+
+  scale_fill_manual(values = c("#ef8a62", "#67a9cf"))+
+  scale_color_manual(values = c("black", "black"))+
+  #scale_y_continuous(limits = c(0,11), breaks = c(0, 5, 10))+
+  scale_x_discrete(labels = c("open" = "Open",
+                              "fpv" = "FPV"))+
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  theme(legend.position = "NULL")+
+  annotate("text", x = 2, y = 1500000, label = "p < 0.001", size = 2.822,  fontface = "italic")
+top_methanotroph_box
+
+####repeat for the bottom waters
+bottom_gen_sum = bottom_methanogen_dat %>%
+  group_by(treatment, doy) %>%
+  dplyr::summarize(sd_meth = sd(total_cells_ml),
+                   mean_meth = mean(total_cells_ml))
+
+max(bottom_gen_sum$mean_meth)
+bottom_methanogen_fig = ggplot(data = bottom_gen_sum, aes(x = doy, y = mean_meth, fill = treatment, color = treatment))+
+  geom_line()+
+  geom_point()+
+  theme_classic()+
+  geom_errorbar(aes(x = doy, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_point(size = 3, shape = 16)+
+  geom_point(size = 3, shape = 1, color = "black")+
+  labs(y= "Bottom Methanogen<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  scale_fill_manual(values = c("#ef8a62", "#67a9cf"))+
+  scale_color_manual(values = c("#ef8a62", "#67a9cf"))+
+  theme(legend.position = "NULL")#+
+  #scale_y_continuous(limits = c(0,11), breaks = c(0, 5, 10))+
+  #scale_x_continuous(limits = c(170,250))
+bottom_methanogen_fig
+
+bottom_methanogen_dat$Pond = as.factor(bottom_methanogen_dat$Pond)
+bottom_methanogen_model = lmer(total_cells_ml ~ treatment + doy + (1|Pond), data = bottom_methanogen_dat)
+summary(bottom_methanogen_model)
+lsmeans(bottom_methanogen_model, pairwise ~ treatment)
+
+bottom_methanogen_box = ggplot()+
+  theme_classic()+
+  geom_boxplot(data = bottom_methanogen_dat, aes(x = treatment, y = total_cells_ml), outlier.shape = NA, color = "black")+
+  geom_jitter(data = bottom_methanogen_dat, aes(x = treatment, y = total_cells_ml, fill = treatment, color = treatment),width = 0.2, size = 2, shape = 21)+
+  scale_fill_manual(values = c("#ef8a62", "#67a9cf"))+
+  scale_color_manual(values = c("black", "black"))+
+  #scale_y_continuous(limits = c(0,11), breaks = c(0, 5, 10))+
+  scale_x_discrete(labels = c("open" = "Open",
+                              "fpv" = "FPV"))+
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  theme(legend.position = "NULL")+
+  annotate("text", x = 2, y = 75000, label = "p = 0.572", size = 2.822,  fontface = "italic")
+bottom_methanogen_box
+
+bottom_troph_sum = bottom_methanotroph_dat %>%
+  group_by(treatment, doy) %>%
+  dplyr::summarize(sd_meth = sd(total_cells_ml),
+                   mean_meth = mean(total_cells_ml))
+
+max(bottom_troph_sum$mean_meth)
+bottom_methanotroph_fig = ggplot(data = bottom_troph_sum, aes(x = doy, y = mean_meth, fill = treatment, color = treatment))+
+  geom_line()+
+  geom_point()+
+  theme_classic()+
+  geom_errorbar(aes(x = doy, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_point(size = 3, shape = 16)+
+  geom_point(size = 3, shape = 1, color = "black")+
+  labs(y= "Bottom Methanotroph<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  scale_fill_manual(values = c("#ef8a62", "#67a9cf"))+
+  scale_color_manual(values = c("#ef8a62", "#67a9cf"))+
+  theme(legend.position = "NULL")#+
+  #scale_y_continuous(limits = c(0,11), breaks = c(0, 5, 10))+
+  #scale_x_continuous(limits = c(170,250))
+bottom_methanotroph_fig
+
+bottom_methanotroph_dat$Pond = as.factor(bottom_methanotroph_dat$Pond)
+bottom_methanotroph_model = lmer(total_cells_ml ~ treatment + doy + (1|Pond), data = bottom_methanotroph_dat)
+summary(bottom_methanotroph_model)
+lsmeans(bottom_methanotroph_model, pairwise ~ treatment)
+
+bottom_methanotroph_box = ggplot()+
+  theme_classic()+
+  geom_boxplot(data = bottom_methanotroph_dat, aes(x = treatment, y = total_cells_ml), outlier.shape = NA, color = "black")+
+  geom_jitter(data = bottom_methanotroph_dat, aes(x = treatment, y = total_cells_ml, fill = treatment, color = treatment),width = 0.2, size = 2, shape = 21)+
+  scale_fill_manual(values = c("#ef8a62", "#67a9cf"))+
+  scale_color_manual(values = c("black", "black"))+
+  #scale_y_continuous(limits = c(0,11), breaks = c(0, 5, 10))+
+  scale_x_discrete(labels = c("open" = "Open",
+                              "fpv" = "FPV"))+
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  theme(legend.position = "NULL")+
+  annotate("text", x = 2, y = 750000, label = "p < 0.001", size = 2.822,  fontface = "italic")
+bottom_methanotroph_box
+
+#####and now the sediments
+fpv_sed_microb_dat = read_excel("fs_methane_intensive_2024_v3.xlsx", sheet = "sed_microbe")
+
+sed_troph_dat = subset(fpv_sed_microb_dat, methanogen_methanotroph == "Methanotroph")
+sed_gen_dat = subset(fpv_sed_microb_dat, methanogen_methanotroph == "Methanogen")
+
+sed_troph_sum = sed_troph_dat %>%
+  group_by(treatment, doy) %>%
+  dplyr::summarize(sd_meth = sd(order_abund_relative),
+                   mean_meth = mean(order_abund_relative))
+
+max(sed_troph_sum$mean_meth)
+sed_methanotroph_fig = ggplot(data = sed_troph_sum, aes(x = doy, y = mean_meth, fill = treatment, color = treatment))+
+  geom_line()+
+  geom_point()+
+  theme_classic()+
+  geom_errorbar(aes(x = doy, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_point(size = 3, shape = 16)+
+  geom_point(size = 3, shape = 1, color = "black")+
+  labs(y= "Sediment Methanotroph<br>Abundance (Proportion)", x = "Day of Year")+
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  scale_fill_manual(values = c("#ef8a62", "#67a9cf"))+
+  scale_color_manual(values = c("#ef8a62", "#67a9cf"))+
+  theme(legend.position = "NULL")#+
+  #scale_y_continuous(limits = c(0,11), breaks = c(0, 5, 10))+
+  #scale_x_continuous(limits = c(170,250))
+sed_methanotroph_fig
+
+sed_troph_dat$Pond = as.factor(sed_troph_dat$Pond)
+sed_methanotroph_model = lmer(order_abund_relative ~ treatment + doy + (1|Pond), data = sed_troph_dat)
+summary(sed_methanotroph_model)
+lsmeans(sed_methanotroph_model, pairwise ~ treatment)
+
+sed_methanotroph_box = ggplot()+
+  theme_classic()+
+  geom_boxplot(data = sed_troph_dat, aes(x = treatment, y = order_abund_relative), outlier.shape = NA, color = "black")+
+  geom_jitter(data = sed_troph_dat, aes(x = treatment, y = order_abund_relative, fill = treatment, color = treatment),width = 0.2, size = 2, shape = 21)+
+  scale_fill_manual(values = c("#ef8a62", "#67a9cf"))+
+  scale_color_manual(values = c("black", "black"))+
+  #scale_y_continuous(limits = c(0,11), breaks = c(0, 5, 10))+
+  scale_x_discrete(labels = c("open" = "Open",
+                              "fpv" = "FPV"))+
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  theme(legend.position = "NULL")+
+  annotate("text", x = 2, y = .15, label = "p = 0.736", size = 2.822,  fontface = "italic")
+sed_methanotroph_box
+
+###
+sed_gen_sum = sed_gen_dat %>%
+  group_by(treatment, doy) %>%
+  dplyr::summarize(sd_meth = sd(order_abund_relative),
+                   mean_meth = mean(order_abund_relative))
+
+max(sed_gen_sum$mean_meth)
+sed_methanogen_fig = ggplot(data = sed_gen_sum, aes(x = doy, y = mean_meth, fill = treatment, color = treatment))+
+  geom_line()+
+  geom_point()+
+  theme_classic()+
+  geom_errorbar(aes(x = doy, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_point(size = 3, shape = 16)+
+  geom_point(size = 3, shape = 1, color = "black")+
+  labs(y= "Sediment Methanogen<br>Abundance (Proportion)", x = "Day of Year")+
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_text(size = 8,colour = "black"),
+        axis.title.y = element_markdown(size = 8))+
+  scale_fill_manual(values = c("#ef8a62", "#67a9cf"))+
+  scale_color_manual(values = c("#ef8a62", "#67a9cf"))+
+  theme(legend.position = "NULL")#+
+  #scale_y_continuous(limits = c(0,11), breaks = c(0, 5, 10))+
+  #scale_x_continuous(limits = c(170,250))
+sed_methanogen_fig
+
+sed_gen_dat$Pond = as.factor(sed_gen_dat$Pond)
+sed_methanogen_model = lmer(order_abund_relative ~ treatment + doy + (1|Pond), data = sed_gen_dat)
+summary(sed_methanogen_model)
+lsmeans(sed_methanogen_model, pairwise ~ treatment)
+
+sed_methanogen_box = ggplot()+
+  theme_classic()+
+  geom_boxplot(data = sed_gen_dat, aes(x = treatment, y = order_abund_relative), outlier.shape = NA, color = "black")+
+  geom_jitter(data = sed_gen_dat, aes(x = treatment, y = order_abund_relative, fill = treatment, color = treatment),width = 0.2, size = 2, shape = 21)+
+  scale_fill_manual(values = c("#ef8a62", "#67a9cf"))+
+  scale_color_manual(values = c("black", "black"))+
+  #scale_y_continuous(limits = c(0,11), breaks = c(0, 5, 10))+
+  scale_x_discrete(labels = c("open" = "Open",
+                              "fpv" = "FPV"))+
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  theme(legend.position = "NULL")+
+  annotate("text", x = 2, y = .15, label = "p = 0.654", size = 2.822,  fontface = "italic")
+sed_methanogen_box
+
+##put them all together
+microbe_time_plot = top_methanotroph_fig + top_methanotroph_box + top_methanogen_fig + top_methanogen_box +
+  bottom_methanotroph_fig + bottom_methanotroph_box + bottom_methanogen_fig + bottom_methanogen_box + 
+  sed_methanotroph_fig + sed_methanotroph_box + sed_methanogen_fig + sed_methanogen_box+
+  plot_layout(nrow = 6, ncol = 2, widths = c(10, 5))+
+  plot_annotation(tag_levels = "A", tag_suffix = '.')& 
+  theme(plot.tag = element_text(size = 8))
+  
+microbe_time_plot[[2]] = microbe_time_plot[[2]] + theme(axis.title.y = element_blank(), axis.line.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank())
+microbe_time_plot[[4]] = microbe_time_plot[[4]] + theme(axis.title.y = element_blank(), axis.line.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank())
+microbe_time_plot[[6]] = microbe_time_plot[[6]] + theme(axis.title.y = element_blank(), axis.line.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank())
+microbe_time_plot[[8]] = microbe_time_plot[[8]] + theme(axis.title.y = element_blank(), axis.line.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank())
+microbe_time_plot[[10]] = microbe_time_plot[[10]] + theme(axis.title.y = element_blank(), axis.line.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank())
+microbe_time_plot[[12]] = microbe_time_plot[[12]] + theme(axis.title.y = element_blank(), axis.line.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank())
+
+microbe_time_plot
+
+#export the figure
+ggsave(filename = "microbe_summary_plot.png", plot = microbe_time_plot, width = 6.5, height = 8, units = "in")
+```
+
+
+

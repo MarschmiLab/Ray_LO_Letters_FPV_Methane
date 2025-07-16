@@ -53,7 +53,7 @@ source("code/functions.R") # contains scale_reads
 source("code/colors_and_shapes.R")
 
 # Set our seed for reproducibility
-set.seed(999)
+set.seed(0909199)
 ```
 
 # Load in Data
@@ -74,8 +74,16 @@ load("data/00_load_data/full_abs_physeq.RData")
 # sediment scaled physeq
 load("data/00_load_data/scaled_sed_physeq.RData")
 
+## Add JDate to the sample_data 
+sample_data(scaled_sed_physeq)$JDate <-
+  lubridate::yday(sample_data(scaled_sed_physeq)$Date_Collected)
+
 # physeq with water (unincorporated cell counts) + sediment samples = 188 samples total
 load("data/00_load_data/new_archaea_rooted_physeq.RData")
+
+## Add JDate to the sample_data 
+sample_data(new_archaea_rooted_physeq)$JDate <-
+  lubridate::yday(sample_data(new_archaea_rooted_physeq)$Date_Collected)
 
 # load in metadata
 load("data/00_load_data/metadata.RData")
@@ -349,6 +357,7 @@ We created:
 3. **methano_sed_df** dataframe calculated with relative abundance counts
 
 ### Sediment - Methanogen + Methanotroph Phyloseqs
+
 To see how our methanogens and methanotrophs differ in our sediment communities we will create two separate physeqs for methanogen and methanotrophs
 
 #### Create Methanogen Phyloseq
@@ -446,6 +455,7 @@ scaled_methanogen_sed_physeq
 # save phyloseq object
 save(scaled_methanogen_sed_physeq, file = "data/01_phyloseq/scaled_methanogen_sed_physeq.RData")
 ```
+
 We created:
 1. **scaled_methanogen_sed_physeq** which has been specifically filtered for methanogens and saved as a phyloseq object
 
@@ -605,7 +615,8 @@ methano_water_df %>%
   )
 
 ```
-Based on our data with the qq plots we see that the points more or less fit the line. but when we investigate further with the density histograms, it does not look like a clear unimodal distribution distribution but lets check this out further with a Shapiro-Wilk test. When we run our Shapiro-Wilk test to also test for a normal distribution if p > 0.05 the data is likely normal but if p < 0.05 then the data is not normal.
+
+Based on our data with the qq plots we see that the points more or less fit the line. but when we investigate further with the density histograms, the data lacks a clear unimodal distribution. Now, let's check this out further with a Shapiro-Wilk test. When we run our Shapiro-Wilk test to also test for a normal distribution if p > 0.05 the data is likely normal but if p < 0.05 then the data is not normal.
 
 A tibble: 4 × 3
   group                         shapiro_p     n
@@ -615,10 +626,13 @@ A tibble: 4 × 3
 3 Methanogen Bottom Water    0.000000408     24
 4 Methanotroph Bottom Water  0.000135        24
 
-The data is not normal 
+The data is not normal! 
+
+Therefore, we will need to use non-parametric stats to statitistically test the data. 
 
 
 ### Sediment - Normality 
+
 We will be running this for all 2024 time points 
 ```{r normality-sed}
 # level
@@ -668,6 +682,7 @@ methano_sed_df %>%
     n = n()
   )
 ```
+
 Based on our data with the qq plots and the density histograms, data does not seem to be clearly normally distributed. Shapiro-Wilk test to also test for a normal distribution if p > 0.05 the data is likely normal but if p < 0.05 then the data is not normal.
 
 A tibble: 2 × 3
@@ -676,7 +691,7 @@ A tibble: 2 × 3
 1 Methanogen Sediment    0.576       23
 2 Methanotroph Sediment  0.000296    23
 
-methanotrophs are not normally distributed but but methanogens are which is interesting. but will still go with two-sample Wilcoxon tests
+Methanotrophs are not normally distributed but but methanogens are which is interesting. but will still go with two-sample Wilcoxon tests
 
 
 # Generate Figures
@@ -1308,7 +1323,174 @@ now we have created our main text figure. the only thing is that i dont have the
 # Supplemental Figures
 Here are the supplemental figures (and bonus figures) for the manuscript. 
 
-## Figure S1 - Water and Sediment Bray-Curtis PCoA
+# Figure S1
+
+## S1 -  Bray-Curtis PCoA PERMANOVA
+
+PERMANOVA (Permutational Multivariate Analysis of Variance) is a non-parametric, permutation-based test used to compare groups of objects based on a distance matrix. The goal is to test the null hypothesis that the centroids and dispersion of groups are equivalent in the space defined by the dissimilarity measure. 
+
+```{r S1-calc-bray-metadata}
+#### WATER COLUMN: All methane cyclers
+# calculate Bray-Curtis PERMANOVA using phyloseq distance
+water_bray <- 
+  phyloseq::distance(water_ch4_physeq, method = "bray", binary = FALSE)
+
+# pull out metadata 
+water_metadata <- 
+  water_ch4_physeq %>%
+  sample_data() %>%
+  data.frame()
+
+
+#### SEDIMENT: All methane cyclers
+# calculate Bray-Curtis PERMANOVA using phyloseq distance
+sed_bray <- 
+  phyloseq::distance(scaled_sed_physeq, method = "bray", binary = FALSE)
+
+# pull out metadata 
+sed_metadata <- 
+  scaled_sed_physeq %>%
+  sample_data() %>%
+  data.frame()
+```
+
+
+
+### Water 
+
+Here we are performing a PERMANOVA on the water column methane cyclers throughout the entire sampling season.
+
+```{r permanova-water}
+# Permutational Multivariate Analysis of Variance Using Distance Matrices
+# aka PERMANOVA using the adonis2 function from vegan 
+
+#1. Test the individual terms for significance
+# Testing if the centroids of solar progress are different: significant p = 0.001 ***
+adonis2(water_bray ~ solar_progress, data = water_metadata, by = "terms")
+
+# Now testing to see if centroids of depth_class are different: not significant p = 0.19
+adonis2(water_bray ~ Depth_Class, data = water_metadata, by = "terms")
+
+# Does pond matter? significant p = 0.001 ***
+adonis2(water_bray ~ Pond, data = water_metadata, by = "terms")
+
+# Does date matter? significant p = 0.001 ***
+adonis2(water_bray ~ JDate, data = water_metadata, by = "terms")
+
+#2. Test the terms together
+# Now lets see the effect of each pond by date_collected and solar progress
+water_permanova <- adonis2(water_bray ~ solar_progress * Pond * JDate, data = water_metadata, by = "terms"); water_permanova
+```
+With our PERMANOVA we find that treatment (solar_progress), day of year sampled (JDate - Julian date), and Pond is significant but depth class alone is not.
+
+When we create a model with treatment, pond, and date these are all significant (p < 0.001 ***). 
+- Solar progress is responsible for explaining  11.4% of variance and has a strong structuring effect on the water column community composition. This has the highest F value meaning that the between group differences are larger than within group variance (F = 8.2)
+
+- Pond is also significant explains 12.4% of variance but is weaker than treatment (solar_progress) (F = 2.4). Even though it explains more variation than treatment, there is more variation in ponds than between ponds. 
+
+- Date (JDate) is also strong and explains 9.6% of variance and is also weighted heavier (F = 6.9). The temporal effect is seen in the first axis as time progresses throughout the season.
+
+- The interaction between treatment and date explains 7.6% of variance and is an important but moderate factor in its effect size for structuring community (F = 5.5)
+
+However, the interaction of pond and date explains 8.1% of variance but is not the most important for explaining the variance in our water column methane cyclers (F = 1.5, p = 0.031 *)
+
+Together the PERMANOVA explains only about half the variance seen with 50.05% remaining
+
+### Sediments 
+Here we are performing a PERMANOVA on the sediment methane cyclers throughout the entire sampling season
+```{r permanova-sediments}
+# Permutational Multivariate Analysis of Variance Using Distance Matrices
+# aka PERMANOVA using the adonis2 function from vegan 
+
+#1. Test the individual terms for significance
+# Testing if the centroids of solar progress are different: significant p = 0.001 ***
+adonis2(sed_bray ~ solar_progress, data = sed_metadata, by = "terms")
+
+# Does pond matter? significant p = 0.001 ***
+adonis2(sed_bray ~ Pond, data = sed_metadata, by = "terms")
+
+# Does date matter? significant p = 0.001 ***
+adonis2(sed_bray ~ JDate, data = sed_metadata, by = "terms")
+
+#2. Test the terms together
+# Now lets see the effect of each pond by date_collected and solar progress
+sediment_permanova <- adonis2(sed_bray ~ solar_progress * Pond * JDate, data = sed_metadata, by = "terms"); sediment_permanova
+```
+With our PERMANOVA we find that treatment (solar_progress), day of year sampled (JDate - Julian date), and Pond is significant factors.
+
+When we create a model with treatment, pond, and date these are all significant (p < 0.001 ***). 
+- treatment = solar_progress is important for explaining 11.6% of variation and has the largest effect on structuring the community (F = 9.99). This explains the separation along the first axis
+
+- pond explains the most variation (26.4%) and also has a substantial effect on structuring the community (F = 5.7) 
+
+- Date explains 9.9% of variation and also has temporal effect (F = 8.5) that shapes communities
+
+Comparing treatment and date we see that it is not that improtant and only explains 2.5% of variance (F = 2.1, p = 0.045*). But pond and date is more important as that explains 10.0% of variance but not the strongest effect (F = 2.1, p = 0.002)
+
+This explains 60.4% of variance with 39.6% in the residuals. 
+
+## S1 - Betadispr
+We are running betadispr to test variances/dispersions
+
+When computing PERMANOVA, we must also perform betadispr analysis when analyzing beta diversity in microbial ecology. We must do it after PERMANOVA because we need to look into the assumption of PERMANOVA which is the homogeneity of group dispersions aka variances. If this assumption is violated then the PERMANOVA results might be driven by dispersion rather than true differences in community composition.
+
+Always run betadisper() and permutest() after PERMANOVA to test whether the groups have similar within-group variation.
+
+It works by first taking ina. distance matrix and calculates the centroid of each group in multivariate space (note it does not test for significane). After computing within-group distances, we will run permutest() to see whether those dispersiosn differ significantly between groups using PERMANOVA
+
+The permutest works like this: - null hypothesis (H0): all groups have equal multivariate dispersion and a compute a new F-statistic for each permutation.
+
+The p-value is the proportion of permutations where the F is as extreme or more extreme than the observed F.
+The result from permutest() is a robust non-parametric p-value testing whether dispersion differs across groups.
+If p > 0.05 (not significant), the PERMANOVA result is reliable.
+
+If p = 0.05 (significant), be cautious—group differences may be due to dispersion, not composition! However, not all is lost as we may expect this to be biologically true.
+
+adonis - compares centroids to see if significant difference. betadispr - compares variance/distance from centroid
+
+### Water
+```{r betadispr-water}
+# Homogeneity of Disperson test with beta dispr
+
+## Bray-Curtis
+betadispr_water_pond <- betadisper(water_bray, water_metadata$Pond)
+betadispr_water_solar <- betadisper(water_bray, water_metadata$solar_progress)
+betadispr_water_depth <- betadisper(water_bray, water_metadata$Depth_Class)
+betadispr_water_JDate <- betadisper(water_bray, water_metadata$JDate)
+
+# permutest() performs a non-parametric permutation test, which is robust and valid for the kind of data used in beta diversity analysis (e.g., dissimilarity matrices).
+permutest(betadispr_water_pond) # not significant p = 0.256 
+
+permutest(betadispr_water_solar) # significant p = 0.011 **
+
+permutest(betadispr_water_depth) # not significant p = 0.417 
+
+permutest(betadispr_water_JDate) # significant p = 0.006 **
+```
+With betadispr we find the PERMANOVA results are mostly valid where pond variation is consistent. The PERMANOVA and betadispr find that depth is not significant meaning that depth doesnt structure the community. This makes sense between the ponds are so shallow so they are more likely to be similar.
+
+But treatment and date are significant meaning the differences may be due to dispersion and not composition. This could be because of temporal reasons where communities change over time with the season.
+
+### Sediment 
+```{r betadispr-sed}
+# Homogeneity of Disperson test with beta dispr
+## Bray-Curtis
+betadispr_sed_pond <- betadisper(sed_bray, sed_metadata$Pond)
+betadispr_sed_solar <- betadisper(sed_bray, sed_metadata$solar_progress)
+betadispr_sed_JDate <- betadisper(sed_bray, sed_metadata$JDate)
+
+# permutest() performs a non-parametric permutation test, which is robust and valid for the kind of data used in beta diversity analysis (e.g., dissimilarity matrices).
+permutest(betadispr_sed_pond) # not significant p = 0.835
+
+permutest(betadispr_sed_solar) # not significant p = 0.673
+
+permutest(betadispr_sed_JDate) # not significant p = 0.162
+```
+With betadispr we find the PERMANOVA results are are valid as pond, treatment, and date are not significant but significant in the PERMANOVA. Thus our PERMANOVA result is reliable and the differences between groups are due to location/centroids of groups rather than differences in variation within groups 
+
+
+
+## Plot S1: Water and Sediment Bray-Curtis PCoA
 
 ### S1A — Water PCoA 
 ```{r s1a-pcoa-water}
@@ -1355,6 +1537,8 @@ s1a_water_pcoa <- plot_ordination(
     legend.box.just = "center",
     legend.box.background = element_rect(size = 0.2, linetype = "solid", color = "black"),
     legend.margin = margin(1, 2, 1, 1))
+
+# Plot it 
 s1a_water_pcoa
 
 # ggsave(s1a_water_pcoa, width = 8, height = 7, units = "in",
@@ -1425,185 +1609,11 @@ ggsave(fig_s1, width = 12.4, height = 6, dpi = 300,
         filename = "figures/s1/fig_s1.png")
 ```
 
-## S1 -  Bray-Curtis PCoA PERMANOVA
-PERMANOVA (Permutational Multivariate Analysis of Variance) is a non-parametric, permutation-based test used to compare groups of objects based on a distance matrix. The goal is to test the null hypothesis that the centroids and dispersion of groups are equivalent in the space defined by the dissimilarity measure. 
-
-### Water 
-Here we are performing a PERMANOVA on the water column methane cyclers throughout the entire sampling season
-```{r permanova-water}
-# set seed 
-set.seed(0909199)
-
-# calculate Bray-Curtis PERMANOVA using phyloseq distance
-water_bray <- phyloseq::distance(water_ch4_physeq, method = "bray", binary = FALSE)
-
-# pull out metadata 
-metadata <- water_ch4_physeq %>%
-  sample_data() %>%
-  data.frame()
-
-# Permutational Multivariate Analysis of Variance Using Distance Matrices
-# aka PERMANOVA using the adonis2 function from vegan 
 
 
-#1. Test the individual terms for significance
-# Testing if the centroids of solar progress are different: significant p = 0.001 ***
-adonis2(water_bray ~ solar_progress, data = metadata, by = "terms")
-
-# Now testing to see if centroids of depth_class are different: not significant p = 0.19
-adonis2(water_bray ~ Depth_Class, data = metadata, by = "terms")
-
-# Does pond matter? significant p = 0.001 ***
-adonis2(water_bray ~ Pond, data = metadata, by = "terms")
-
-# Does date matter? significant p = 0.001 ***
-adonis2(water_bray ~ as.factor(JDate), data = metadata, by = "terms")
-
-#2. Test the terms together
-# Now lets see the effect of each pond by date_collected and solar progress
-adonis2(water_bray ~ solar_progress * Pond * JDate, data = metadata, by = "terms")
-```
-With our PERMANOVA we find that treatment (solar_progress), day of year sampled (JDate - Julian date), and Pond is significant but depth class alone is not.
-
-When we create a model with treatment, pond, and date these are all significant (p < 0.001 ***). 
-- Solar progress is responsible for explaining  11.4% of variance and has a strong structuring effect on the water column community composition. This has the highest F value meaning that the between group differences are larger than within group variance (F = 8.2)
-
-- Pond is also significant explains 12.4% of variance but is weaker than treatment (solar_progress) (F = 2.4). Even though it explains more variation than treatment, there is more variation in ponds than between ponds. 
-
-- Date (JDate) is also strong and explains 9.6% of variance and is also weighted heavier (F = 6.9). The temporal effect is seen in the first axis as time progresses throughout the season.
-
-- The interaction between treatment and date explains 7.6% of variance and is an important but moderate factor in its effect size for structuring community (F = 5.5)
-
-However, the interaction of pond and date explains 8.1% of variance but is not the most important for explaining the variance in our water column methane cyclers (F = 1.5, p = 0.031 *)
-
-Together the PERMANOVA explains only about half the variance seen with 50.05% remaining
-
-### Sediments 
-Here we are performing a PERMANOVA on the sediment methane cyclers throughout the entire sampling season
-```{r permanova-sediments}
-# set seed 
-set.seed(0909199)
-
-# calculate Bray-Curtis PERMANOVA using phyloseq distance
-sed_bray <- phyloseq::distance(scaled_sed_physeq, method = "bray", binary = FALSE)
-
-# pull out metadata 
-metadata <- scaled_sed_physeq %>%
-  sample_data() %>%
-  data.frame()
-
-# Permutational Multivariate Analysis of Variance Using Distance Matrices
-# aka PERMANOVA using the adonis2 function from vegan 
 
 
-#1. Test the individual terms for significance
-# Testing if the centroids of solar progress are different: significant p = 0.001 ***
-adonis2(sed_bray ~ solar_progress, data = metadata, by = "terms")
 
-# Does pond matter? significant p = 0.001 ***
-adonis2(sed_bray ~ Pond, data = metadata, by = "terms")
-
-# Does date matter? significant p = 0.001 ***
-adonis2(sed_bray ~ as.factor(JDate), data = metadata, by = "terms")
-
-#2. Test the terms together
-# Now lets see the effect of each pond by date_collected and solar progress
-adonis2(sed_bray ~ solar_progress * Pond * JDate, data = metadata, by = "terms")
-```
-With our PERMANOVA we find that treatment (solar_progress), day of year sampled (JDate - Julian date), and Pond is significant factors.
-
-When we create a model with treatment, pond, and date these are all significant (p < 0.001 ***). 
-- treatment = solar_progress is important for explaining 11.6% of variation and has the largest effect on structuring the community (F = 9.99). This explains the separation along the first axis
-
-- pond explains the most variation (26.4%) and also has a substantial effect on structuring the community (F = 5.7) 
-
-- Date explains 9.9% of variation and also has temporal effect (F = 8.5) that shapes communities
-
-Comparing treatment and date we see that it is not that improtant and only explains 2.5% of variance (F = 2.1, p = 0.045*). But pond and date is more important as that explains 10.0% of variance but not the strongest effect (F = 2.1, p = 0.002)
-
-This explains 60.4% of variance with 39.6% in the residuals. 
-
-## S1 - Betadispr
-We are running betadispr to test variances/dispersions
-
-When computing PERMANOVA, we must also perform betadispr analysis when analyzing beta diversity in microbial ecology. We must do it after PERMANOVA because we need to look into the assumption of PERMANOVA which is the homogeneity of group dispersions aka variances. If this assumption is violated then the PERMANOVA results might be driven by dispersion rather than true differences in community composition.
-
-Always run betadisper() and permutest() after PERMANOVA to test whether the groups have similar within-group variation.
-
-It works by first taking ina. distance matrix and calculates the centroid of each group in multivariate space (note it does not test for significane). After computing within-group distances, we will run permutest() to see whether those dispersiosn differ significantly between groups using PERMANOVA
-
-The permutest works like this: - null hypothesis (H0): all groups have equal multivariate dispersion and a compute a new F-statistic for each permutation.
-
-The p-value is the proportion of permutations where the F is as extreme or more extreme than the observed F.
-The result from permutest() is a robust non-parametric p-value testing whether dispersion differs across groups.
-If p > 0.05 (not significant), the PERMANOVA result is reliable.
-
-If p = 0.05 (significant), be cautious—group differences may be due to dispersion, not composition! However, not all is lost as we may expect this to be biologically true.
-
-adonis - compares centroids to see if significant difference. betadispr - compares variance/distance from centroid
-
-### Water
-```{r betadispr-water}
-# set seed 
-set.seed(0909199)
-
-# calculate Bray-Curtis PERMANOVA using phyloseq distance
-water_bray <- phyloseq::distance(water_ch4_physeq, method = "bray", binary = FALSE)
-
-# pull out metadata 
-metadata <- water_ch4_physeq %>%
-  sample_data() %>%
-  data.frame()
-
-# Homogeneity of Disperson test with beta dispr
-
-## Bray-Curtis
-betadispr_water_pond <- betadisper(water_bray, metadata$Pond)
-betadispr_water_solar <- betadisper(water_bray, metadata$solar_progress)
-betadispr_water_depth <- betadisper(water_bray, metadata$Depth_Class)
-betadispr_water_JDate <- betadisper(water_bray, metadata$JDate)
-
-# permutest() performs a non-parametric permutation test, which is robust and valid for the kind of data used in beta diversity analysis (e.g., dissimilarity matrices).
-permutest(betadispr_water_pond) # not significant p = 0.269 
-
-permutest(betadispr_water_solar) # significant p = 0.009 **
-
-permutest(betadispr_water_depth) # not significant p = 0.406 
-
-permutest(betadispr_water_JDate) # significant p = 0.007 **
-```
-With betadispr we find the PERMANOVA results are mostly valid where pond variation is consistent. The PERMANOVA and betadispr find that depth is not significant meaning that depth doesnt structure the community. This makes sense between the ponds are so shallow so they are more likely to be similar.
-
-But treatment and date are significant meaning the differences may be due to dispersion and not composition. This could be because of temporal reasons where communities change over time with the season.
-
-### Sediment 
-```{r betadispr-sed}
-# set seed 
-set.seed(0909199)
-
-# calculate Bray-Curtis PERMANOVA using phyloseq distance
-sed_bray <- phyloseq::distance(scaled_sed_physeq, method = "bray", binary = FALSE)
-
-# pull out metadata 
-metadata <- scaled_sed_physeq %>%
-  sample_data() %>%
-  data.frame()
-
-# Homogeneity of Disperson test with beta dispr
-
-## Bray-Curtis
-betadispr_sed_pond <- betadisper(sed_bray, metadata$Pond)
-betadispr_sed_solar <- betadisper(sed_bray, metadata$solar_progress)
-betadispr_sed_JDate <- betadisper(sed_bray, metadata$JDate)
-
-# permutest() performs a non-parametric permutation test, which is robust and valid for the kind of data used in beta diversity analysis (e.g., dissimilarity matrices).
-permutest(betadispr_sed_pond) # not significant p = 0.756
-
-permutest(betadispr_sed_solar) # not significant p = 0.203
-
-permutest(betadispr_sed_JDate) # not significant p = 0.196
-```
-With betadispr we find the PERMANOVA results are are valid as pond, treatment, and date are not significant but significant in the PERMANOVA. Thus our PERMANOVA result is reliable and the differences between groups are due to location/centroids of groups rather than differences in variation within groups 
 
 ## S2 - Sediment Community Methane Cyclers: Methanogen and Methanotrophs
 We want to see who is structuring the community within the sediments. In water column it is clear that methanotrophs are, but what about in sediment communities?
@@ -1713,9 +1723,6 @@ PERMANOVA (Permutational Multivariate Analysis of Variance) is a non-parametric,
 
 Here we are performing a PERMANOVA on the sediment methanogen and methanotrophs
 ```{r permanova-sed-ch4-cyclr}
-# set seed 
-set.seed(0909199)
-
 #1. methanogen
 # calculate Bray-Curtis PERMANOVA using phyloseq distance
 sed_gen_bray <- phyloseq::distance(scaled_methanogen_sed_physeq, method = "bray", binary = FALSE)
@@ -1792,9 +1799,6 @@ Together these variables explain 56% of the data
 
 ## Betadispr
 ```{r betadispr-sed-ch4-cycler}
-# set seed 
-set.seed(0909199)
-
 # 1. methanogens 
 # calculate Bray-Curtis PERMANOVA using phyloseq distance
 sed_gen_bray <- phyloseq::distance(scaled_methanogen_sed_physeq, method = "bray", binary = FALSE)
@@ -1856,9 +1860,6 @@ Now we will calculate the differential abundance between our water and sediment 
 
 ### Water
 ```{r diff-abund-water}
-# set seed
-set.seed(09091999)
-
 # filter out for ASVs with zero variances 
 water_ch4_phy_bc <- water_ch4_physeq %>% 
   subset_samples(Year == "2024") %>% 
@@ -2008,9 +2009,6 @@ When we look at the water column of just our methane cyclers, we see that there 
 ### Sediment
 First we are running this analysis with all methane cyclers.
 ```{r diff-abund-sediment}
-# set seed
-set.seed(09091999)
-
 # filter out for ASVs with zero variances 
 scaled_sed_ch4_physeq_bc <- scaled_sed_ch4_physeq %>% 
   filter_taxa(., function(x) {
