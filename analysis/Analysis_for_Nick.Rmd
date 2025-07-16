@@ -1532,7 +1532,7 @@ fig3a_water_pcoa <-
        shape = "Pond",
        x = "Axis.1 [23.7%]",
        y = "Axis.2 [11.7%]",
-       title = "Water Methane Cyclers") + 
+       title = expression("Water CH"[4]*" Cyclers")) + 
   theme(legend.position = "bottom",
         legend.spacing = unit(0, "cm"),
         legend.box.background = element_blank())
@@ -1627,7 +1627,7 @@ fig3b_sed_pcoa <-
        shape = "Pond",
        x = "Axis.1 [32%]",
        y = "Axis.2 [15.5%]",
-       title = "Sediment Methane Cyclers") + 
+       title = expression("Sediment CH"[4]*" Cyclers")) + 
   theme(legend.position = "bottom",
         legend.spacing = unit(0, "cm"),
         legend.box.background = element_blank())
@@ -1687,7 +1687,8 @@ ggsave(fig_s1, width = 12.4, height = 6, dpi = 300,
 
 ### 
 plot_fig3 <- 
-  fig3a_water_pcoa + fig3b_sed_pcoa + 
+  fig3a_water_pcoa + theme(plot.title = element_text(margin = margin(b = ))) + 
+  fig3b_sed_pcoa + theme(plot.title = element_text(margin = margin(b = 0))) +
   plot_annotation(tag_levels = "A") + 
     plot_layout(guides = "collect") &
   theme(
@@ -1695,10 +1696,11 @@ plot_fig3 <-
     legend.title = element_text(size = 9),
     legend.text = element_text(size = 8),
     legend.key.size = unit(0.4, "cm"),
-    legend.spacing.x = unit(0.2, "cm")
+    legend.spacing.x = unit(0.2, "cm"),
+    legend.margin = margin(t = -5, unit = "pt")
   )
   
-ggsave(plot_fig3, width = 7, height = 4, dpi = 300,
+ggsave(plot_fig3, width = 6.3, height = 3.5, dpi = 300,
         filename = "figures/Fig_3/fig_3.png")
 ```
 
