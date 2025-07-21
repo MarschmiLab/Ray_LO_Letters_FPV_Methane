@@ -1319,7 +1319,7 @@ methanogen_final <- ggarrange(
 )
 
 # 2. draw box around methanogens
-png("figures/fig4/methanogens.png", width = 4000, height = 4000, res = 600)
+png("figures/Fig_2/methanogens.png", width = 4000, height = 4000, res = 600)
 
 grid.newpage()
 grid.draw(methanogen_final)
@@ -1355,7 +1355,7 @@ methanotroph_final <- ggarrange(
 methanotroph_final
 
 # 2. draw box around methanogens
-png("figures/fig4/methanotrophs.png", width = 4000, height = 4000, res = 600)
+png("figures/Fig_2/methanotrophs.png", width = 4000, height = 4000, res = 600)
 
 grid.newpage()
 grid.draw(methanotroph_final)

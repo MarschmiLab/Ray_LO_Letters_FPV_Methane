@@ -41,8 +41,21 @@ pacman::p_load(phyloseq, ggpubr, tidyverse, patchwork,
                install = FALSE)
 
 source("code/functions.R") # contains scale_reads
-source("code/colors_and_shapes.R")
+```
 
+```
+## Error in file(filename, "r", encoding = encoding): cannot open the connection
+```
+
+``` r
+source("code/colors_and_shapes.R")
+```
+
+```
+## Error in file(filename, "r", encoding = encoding): cannot open the connection
+```
+
+``` r
 # Set our seed for reproducibility
 set.seed(0909199)
 ```
@@ -62,23 +75,57 @@ And we will add in our metadata as well!
 ``` r
 # water physeq with absolute abundance counts
 load("data/00_load_data/full_abs_physeq.RData")
+```
 
+```
+## Error in readChar(con, 5L, useBytes = TRUE): cannot open the connection
+```
+
+``` r
 # sediment scaled physeq
 load("data/00_load_data/scaled_sed_physeq.RData")
+```
 
+```
+## Error in readChar(con, 5L, useBytes = TRUE): cannot open the connection
+```
+
+``` r
 ## Add JDate to the sample_data 
 sample_data(scaled_sed_physeq)$JDate <-
   lubridate::yday(sample_data(scaled_sed_physeq)$Date_Collected)
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'sample_data': object 'scaled_sed_physeq' not found
+```
+
+``` r
 # physeq with water (unincorporated cell counts) + sediment samples = 188 samples total
 load("data/00_load_data/new_archaea_rooted_physeq.RData")
+```
 
+```
+## Error in readChar(con, 5L, useBytes = TRUE): cannot open the connection
+```
+
+``` r
 ## Add JDate to the sample_data 
 sample_data(new_archaea_rooted_physeq)$JDate <-
   lubridate::yday(sample_data(new_archaea_rooted_physeq)$Date_Collected)
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'sample_data': object 'new_archaea_rooted_physeq' not found
+```
+
+``` r
 # load in metadata
 load("data/00_load_data/metadata.RData")
+```
+
+```
+## Error in readChar(con, 5L, useBytes = TRUE): cannot open the connection
 ```
 
 # Prepare Phyloseq Objects
@@ -92,15 +139,33 @@ For our sediment samples, we do not have absolute abundance measures so we will 
 ``` r
 # filter for all time points in 2024
 water_physeq_24 <- subset_samples(full_abs_physeq, Year == "2024")
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'sample_data': object 'full_abs_physeq' not found
+```
+
+``` r
 # prune taxa 
 water_physeq_24 <- water_physeq_24 %>% 
   prune_taxa(taxa_sums(.) > 0,.)
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'taxa' in selecting a method for function 'prune_taxa': error in evaluating the argument 'object' in selecting a method for function 'otu_table': object 'water_physeq_24' not found
+```
+
+``` r
 # melt physeq into data frame for all taxa
 water_physeq_ch4 <- water_physeq_24 %>% 
   psmelt() # melt into dataframe
+```
 
+```
+## Error: object 'water_physeq_24' not found
+```
+
+``` r
 # melt physeq into data frame for just methane cyclers at Order level
 
 # pull unique methane cycler taxonomic information 
@@ -108,21 +173,18 @@ methane_cyclers_distinct <- water_physeq_24 %>%
   psmelt() %>% # melt into dataframe 
   dplyr::filter(str_detect(Order, "^Meth")) %>% # filtering for methanogens / methanotroph
   distinct(Phylum,Class, Order)
+```
+
+```
+## Error: object 'water_physeq_24' not found
+```
+
+``` r
 methane_cyclers_distinct
 ```
 
 ```
-##                      Phylum               Class                    Order
-## 1            Pseudomonadota Gammaproteobacteria          Methylococcales
-## 2            Halobacteriota     Methanosarcinia         Methanotrichales
-## 3         Verrucomicrobiota    Verrucomicrobiae      Methylacidiphilales
-## 4  Methanobacteriota_A_1229     Methanobacteria       Methanobacteriales
-## 5            Halobacteriota     Methanomicrobia       Methanomicrobiales
-## 6         Methylomirabilota    Methylomirabilia       Methylomirabilales
-## 7          Thermoplasmatota Thermoplasmata_1773  Methanomassiliicoccales
-## 8            Halobacteriota       Methanocellia          Methanocellales
-## 9            Halobacteriota     Methanosarcinia Methanosarcinales_A_2632
-## 10      Methanobacteriota_B         Thermococci     Methanofastidiosales
+## Error: object 'methane_cyclers_distinct' not found
 ```
 
 ``` r
@@ -139,53 +201,18 @@ methane_cyclers_filt <- water_physeq_24%>%
       Order %in% methanogens ~ "Methanogen",
       Order %in% methanotrophs ~ "Methanotroph",
       TRUE ~ "Other"))
+```
 
+```
+## Error: object 'water_physeq_24' not found
+```
+
+``` r
 head(methane_cyclers_filt)
 ```
 
 ```
-##      OTU  Sample Abundance  DNA_ID  input filtered denoisedF denoisedR merged nochim perc_reads_retained                   Sample_ID Concentration_ng_ul Filter_Extracted Extraction_Date Lot_Number Project_ID Location_ID Date_Collected.x Pond
-## 1 ASV_13 SA_D089    656826 SA_D089 111078    77989     75718     75949  74163  72010            64.82832 AAE_EXP_20240911_123_FP_SW1                14.2              0.5        20241106       <NA>        AAE         EXP       2024-09-11  123
-## 2 ASV_44 SA_D089    544978 SA_D089 111078    77989     75718     75949  74163  72010            64.82832 AAE_EXP_20240911_123_FP_SW1                14.2              0.5        20241106       <NA>        AAE         EXP       2024-09-11  123
-## 3 ASV_32 SA_D092    506345 SA_D092 131341    93406     90162     90142  87423  85048            64.75358 AAE_EXP_20240911_124_FP_BW1                76.8              0.5        20241106       <NA>        AAE         EXP       2024-09-11  124
-## 4 ASV_13 SA_D093    498410 SA_D093 110206    73086     70174     70485  68588  66342            60.19817 AAE_EXP_20240911_125_FP_SW1                60.4              0.5        20241104       <NA>        AAE         EXP       2024-09-11  125
-## 5 ASV_13 SA_D094    438698 SA_D094 125411    90521     86788     86931  84419  80494            64.18416 AAE_EXP_20240911_125_FP_BW1                37.5              0.5        20241104       <NA>        AAE         EXP       2024-09-11  125
-## 6 ASV_44 SA_D090    313642 SA_D090 124065    92691     89468     89516  87392  83715            67.47673 AAE_EXP_20240911_123_FP_BW1                60.3              0.5        20241106       <NA>        AAE         EXP       2024-09-11  123
-##            Deployment_ID SD_remaining_est Freezer_Temp_NegDegrees     Date D_Number Deployment_Type Niskin_bottles Deployment_Depth_m Integrated_Depths_m Depth_Class Max_Depth Temp_at_Deployment  Deployment_Time Total_Filtration_Time_min
-## 1 AAE_EXP_20240911_123_1             <NA>                      NA 20240911        1      Bottle Dip             NA                0.0                <NA>           S        NA                 NA 0-01-01 08:31:00                        NA
-## 2 AAE_EXP_20240911_123_1             <NA>                      NA 20240911        1      Bottle Dip             NA                0.0                <NA>           S        NA                 NA 0-01-01 08:31:00                        NA
-## 3 AAE_EXP_20240911_124_2             <NA>                      NA 20240911        2        Van Dorn             NA                1.5                <NA>           B        NA                 NA 0-01-01 08:42:00                        NA
-## 4 AAE_EXP_20240911_125_1             <NA>                      NA 20240911        1      Bottle Dip             NA                0.0                <NA>           S        NA                 NA 0-01-01 08:52:00                        NA
-## 5 AAE_EXP_20240911_125_2             <NA>                      NA 20240911        2        Van Dorn             NA                1.5                <NA>           B        NA                 NA 0-01-01 08:56:00                        NA
-## 6 AAE_EXP_20240911_123_2             <NA>                      NA 20240911        2        Van Dorn             NA                1.5                <NA>           B        NA                 NA 0-01-01 08:31:00                        NA
-##   Volume_Filtered_mL Storage_Code Fraction Replicate Upper_Size_um Lower_Size_um Notes Start_Filtration_Time End_Filtration_Time      lag water_extracted SampleType Year Sample_or_Control solar_progress JDate avg_cells_per_ml     Month
-## 1               1220           FR        W        NA            20          0.22  <NA>   0000-01-01 11:10:00 0000-01-01 11:34:00 3.050000             610      Water 2024            Sample          Solar   255          6565960 September
-## 2               1220           FR        W        NA            20          0.22  <NA>   0000-01-01 11:10:00 0000-01-01 11:34:00 3.050000             610      Water 2024            Sample          Solar   255          6565960 September
-## 3               1200           FR        W        NA            20          0.22  <NA>   0000-01-01 11:21:00 0000-01-01 11:38:00 2.933333             600      Water 2024            Sample          Solar   255          3445667 September
-## 4               1700           FR        W        NA            20          0.22  <NA>   0000-01-01 11:24:00 0000-01-01 11:42:00 2.833333             850      Water 2024            Sample          Solar   255          4262366 September
-## 5                900           FR        W        NA            20          0.22  <NA>   0000-01-01 11:24:00 0000-01-01 11:42:00 2.766667             450      Water 2024            Sample          Solar   255          4555411 September
-## 6                880           FR        W        NA            20          0.22  <NA>   0000-01-01 11:10:00 0000-01-01 11:34:00 3.050000             440      Water 2024            Sample          Solar   255          8411562 September
-##       Treatment_Depth  Kingdom         Phylum               Class           Order            Family             Genus Species    ASV
-## 1 Solar Surface Water Bacteria Pseudomonadota Gammaproteobacteria Methylococcales Methylomonadaceae              <NA>    <NA> ASV_13
-## 2 Solar Surface Water Bacteria Pseudomonadota Gammaproteobacteria Methylococcales Methylomonadaceae      Methylomonas   albis ASV_44
-## 3  Solar Bottom Water Bacteria Pseudomonadota Gammaproteobacteria Methylococcales  Methylococcaceae Methyloparacoccus    <NA> ASV_32
-## 4 Solar Surface Water Bacteria Pseudomonadota Gammaproteobacteria Methylococcales Methylomonadaceae              <NA>    <NA> ASV_13
-## 5  Solar Bottom Water Bacteria Pseudomonadota Gammaproteobacteria Methylococcales Methylomonadaceae              <NA>    <NA> ASV_13
-## 6  Solar Bottom Water Bacteria Pseudomonadota Gammaproteobacteria Methylococcales Methylomonadaceae      Methylomonas   albis ASV_44
-##                                                                                                                                                                                                                                                         ASVseqs
-## 1 TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGCTCGTTAAGTCAGATGTGAAAGCCCTGGGCTCAACCTGGGAACGGCATTTGAAACTGGCGAGCTAGAGTTTAGGAGAGGAGAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGAGATCTGAAGGAACACCAGTGGCGAAGGCGACTCTCTGGCCTAAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
-## 2 TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGTTATTTAAGTCAGATGTGAAAGCCCTGGGCTTAACCTGGGAACTGCATTTGATACTGGATGACTAGAGTTGAGTAGAGGAGAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGAGATCTGAAGGAACACCAGTGGCGAAGGCGGCTCTCTGGACTCAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
-## 3 TACGGAGGGTGCGAGCGTTAATCGGAATTACTGGGCGTAAAGCGCGCGTAGGCGGTTGGCTAAGTTTGCTGTGAAAGCCCCGGGCTTAACCTGGGAACTGCAGTGAATACTGGTCAGCTAGAGTATGGTAGAGGGTAGTGGAATTTCCGGTGTAGCAGTGAAATGCGTAGAGATCGGAAGGAACACCAGTGGCGAAGGCGGCTATCTGGACCAATACTGACGCTGAGGTGCGAAAGCGTGGGGAGCAAACAGG
-## 4 TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGCTCGTTAAGTCAGATGTGAAAGCCCTGGGCTCAACCTGGGAACGGCATTTGAAACTGGCGAGCTAGAGTTTAGGAGAGGAGAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGAGATCTGAAGGAACACCAGTGGCGAAGGCGACTCTCTGGCCTAAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
-## 5 TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGCTCGTTAAGTCAGATGTGAAAGCCCTGGGCTCAACCTGGGAACGGCATTTGAAACTGGCGAGCTAGAGTTTAGGAGAGGAGAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGAGATCTGAAGGAACACCAGTGGCGAAGGCGACTCTCTGGCCTAAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
-## 6 TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGTTATTTAAGTCAGATGTGAAAGCCCTGGGCTTAACCTGGGAACTGCATTTGATACTGGATGACTAGAGTTGAGTAGAGGAGAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGAGATCTGAAGGAACACCAGTGGCGAAGGCGGCTCTCTGGACTCAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
-##   Methanotroph_Methanogen
-## 1            Methanotroph
-## 2            Methanotroph
-## 3            Methanotroph
-## 4            Methanotroph
-## 5            Methanotroph
-## 6            Methanotroph
+## Error: object 'methane_cyclers_filt' not found
 ```
 
 ``` r
@@ -195,27 +222,75 @@ head(methane_cyclers_filt)
 otu_wide_ch4 <- methane_cyclers_filt %>% 
   select(ASV, Sample, Abundance) %>% 
   pivot_wider(names_from = Sample, values_from = Abundance, values_fill = 0) # pivot wider
+```
 
+```
+## Error: object 'methane_cyclers_filt' not found
+```
 
+``` r
 # convert to matrix and OTU/ASV names
 otu_mat_ch4 <- as.matrix(otu_wide_ch4[, -1])
+```
+
+```
+## Error: object 'otu_wide_ch4' not found
+```
+
+``` r
 rownames(otu_mat_ch4) <- otu_wide_ch4$ASV
+```
+
+```
+## Error: object 'otu_wide_ch4' not found
+```
+
+``` r
 otu_table_ch4 <- otu_table(otu_mat_ch4, taxa_are_rows = TRUE)
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'otu_table': object 'otu_mat_ch4' not found
+```
 
+``` r
 # create tax table
 tax_ch4 <- methane_cyclers_filt %>% 
   select(OTU, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, ASVseqs) %>% 
   distinct(ASV, .keep_all = TRUE) %>%
   column_to_rownames("OTU")
+```
 
+```
+## Error: object 'methane_cyclers_filt' not found
+```
+
+``` r
 tax_ch4_mat <- as.matrix(tax_ch4)
+```
 
+```
+## Error: object 'tax_ch4' not found
+```
+
+``` r
 tax_ch4_table <- tax_table(tax_ch4_mat)
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'tax_table': object 'tax_ch4_mat' not found
+```
+
+``` r
 # sample data
 sam_data_ch4 <- methane_cyclers_filt
+```
 
+```
+## Error: object 'methane_cyclers_filt' not found
+```
+
+``` r
 # Convert back to sample_data
 sam_data_ch4 <- sam_data_ch4 %>% 
   select(DNA_ID, Sample, Pond, Depth_Class, solar_progress, everything()) %>%
@@ -226,29 +301,43 @@ sam_data_ch4 <- sam_data_ch4 %>%
     solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open")) %>% 
   column_to_rownames("Sample") %>% 
   sample_data()
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'sample_data': object 'sam_data_ch4' not found
+```
+
+``` r
 # create all time point phyloseq object
 water_ch4_physeq <- phyloseq(
   otu_table(otu_table_ch4, taxa_are_rows = TRUE),
   tax_ch4_table,
   sam_data_ch4
 )
+```
+
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'otu_table': object 'otu_table_ch4' not found
+```
+
+``` r
 water_ch4_physeq
 ```
 
 ```
-## phyloseq-class experiment-level object
-## otu_table()   OTU Table:          [ 281 taxa and 48 samples ]:
-## sample_data() Sample Data:        [ 48 samples by 51 sample variables ]:
-## tax_table()   Taxonomy Table:     [ 281 taxa by 9 taxonomic ranks ]:
-## taxa are rows
+## Error: object 'water_ch4_physeq' not found
 ```
 
 ``` r
 # save phyloseq object
 save(water_ch4_physeq, file = "data/01_phyloseq/water_ch4_physeq.RData")
+```
 
+```
+## Error in save(water_ch4_physeq, file = "data/01_phyloseq/water_ch4_physeq.RData"): object 'water_ch4_physeq' not found
+```
 
+``` r
 # tax glom at Order level for methane cyclers phyloseq
 water_physeq_ch4_order <- water_ch4_physeq %>% 
   tax_glom(taxrank = "ASV") %>% 
@@ -265,24 +354,18 @@ water_physeq_ch4_order <- water_ch4_physeq %>%
     total_cells_ml = sum(Abundance, na.rm = TRUE),
     .groups = "drop"
   )
+```
+
+```
+## Error: object 'water_ch4_physeq' not found
+```
+
+``` r
 water_physeq_ch4_order 
 ```
 
 ```
-## # A tibble: 96 × 6
-##    Pond  solar_progress Depth_Class Methanotroph_Methanogen JDate total_cells_ml
-##    <chr> <chr>          <fct>       <chr>                   <dbl>          <dbl>
-##  1 123   FPV            S           Methanogen                172              0
-##  2 123   FPV            S           Methanogen                193            667
-##  3 123   FPV            S           Methanogen                234            714
-##  4 123   FPV            S           Methanogen                255            967
-##  5 123   FPV            S           Methanotroph              172          79186
-##  6 123   FPV            S           Methanotroph              193         206359
-##  7 123   FPV            S           Methanotroph              234         385252
-##  8 123   FPV            S           Methanotroph              255        1553470
-##  9 123   FPV            B           Methanogen                172           5062
-## 10 123   FPV            B           Methanogen                193           6748
-## # ℹ 86 more rows
+## Error: object 'water_physeq_ch4_order' not found
 ```
 
 ``` r
@@ -301,12 +384,28 @@ methano_water_df <- water_physeq_ch4_order %>%
       solar_methano,
       levels = c("FPV Methanogen", "Open Methanogen", "FPV Methanotroph", "Open Methanotroph")
     ))
+```
 
+```
+## Error: object 'water_physeq_ch4_order' not found
+```
+
+``` r
 # save methane cycler order data frame
 save(water_physeq_ch4_order, file = "data/01_phyloseq/water_physeq_ch4_order.RData")
+```
 
+```
+## Error in save(water_physeq_ch4_order, file = "data/01_phyloseq/water_physeq_ch4_order.RData"): object 'water_physeq_ch4_order' not found
+```
+
+``` r
 # write out to excel file for plotting main figure
 write.csv(methano_water_df, "data/01_phyloseq/watercol_microbial_communities.csv")
+```
+
+```
+## Error in eval(expr, p): object 'methano_water_df' not found
 ```
 We created:
 1. **water_ch4_physeq** that has all 2024 time points and filtered for *only* methane cyclers
@@ -321,20 +420,38 @@ We do not have absolute abundance counts for our sediment samples so we will nee
 ``` r
 # filter phyloseq for only sediment samples
 sed_phy <- subset_samples(new_archaea_rooted_physeq, SampleType == "Sediment")
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'sample_data': object 'new_archaea_rooted_physeq' not found
+```
+
+``` r
 # subset samples 
 sed_physeq <- subset_samples(sed_phy, !(sample_names(sed_phy) %in% c("SA_D046", "SA_D047")))
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'sample_data': object 'sed_phy' not found
+```
+
+``` r
 # prune taxa 
 sed_phy <- sed_phy %>% 
   prune_taxa(taxa_sums(.) > 0,.)
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'taxa' in selecting a method for function 'prune_taxa': error in evaluating the argument 'object' in selecting a method for function 'otu_table': object 'sed_phy' not found
+```
+
+``` r
 # Intuition check of number of sequences per sample
 min(sample_sums(sed_phy)) ## min = 20822
 ```
 
 ```
-## [1] 20822
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'otu_table': object 'sed_phy' not found
 ```
 
 ``` r
@@ -342,30 +459,39 @@ min(sample_sums(sed_phy)) ## min = 20822
 scaled_sed_physeq <- 
   sed_phy %>% 
   scale_reads(round = "matround")
+```
 
+```
+## Error in scale_reads(., round = "matround"): could not find function "scale_reads"
+```
+
+``` r
 # melt physeq into data frame for all time points 
 scaled_sed_physeq_24 <- scaled_sed_physeq 
+```
 
+```
+## Error: object 'scaled_sed_physeq' not found
+```
+
+``` r
 # pull unique methane cycler taxonomic information 
 methane_cyclers_distinct <- scaled_sed_physeq_24 %>% 
   psmelt() %>% # melt into dataframe 
   dplyr::filter(str_detect(Order, "^Meth")) %>% # filtering for methanogens / methanotroph
   distinct(Phylum,Class,Order)
+```
+
+```
+## Error: object 'scaled_sed_physeq_24' not found
+```
+
+``` r
 methane_cyclers_distinct
 ```
 
 ```
-##                      Phylum               Class                    Order
-## 1            Halobacteriota     Methanosarcinia         Methanotrichales
-## 2            Halobacteriota     Methanomicrobia       Methanomicrobiales
-## 3            Pseudomonadota Gammaproteobacteria          Methylococcales
-## 4  Methanobacteriota_A_1229     Methanobacteria       Methanobacteriales
-## 5            Halobacteriota     Methanosarcinia Methanosarcinales_A_2632
-## 6         Methylomirabilota    Methylomirabilia       Methylomirabilales
-## 7            Halobacteriota       Methanocellia          Methanocellales
-## 8          Thermoplasmatota Thermoplasmata_1773  Methanomassiliicoccales
-## 9            Thermoproteota   Methanomethylicia      Methanomethylicales
-## 10        Verrucomicrobiota    Verrucomicrobiae      Methylacidiphilales
+## Error: object 'methane_cyclers_distinct' not found
 ```
 
 ``` r
@@ -388,49 +514,117 @@ methano_sed_phy <- scaled_sed_physeq_24 %>%
     solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open"),
     Depth_Class = "Sediment"
   )
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'physeq' in selecting a method for function 'taxa_are_rows': object 'scaled_sed_physeq_24' not found
+```
+
+``` r
 # summarize order abundance of methane cycler in sediments
 methano_sed_df <- methano_sed_phy %>%
   group_by(Pond, solar_progress, Depth_Class, Methanotroph_Methanogen, Date_Collected) %>%
   summarize(order_abund = sum(Abundance), .groups = "drop")
+```
 
+```
+## Error: object 'methano_sed_phy' not found
+```
+
+``` r
 # convert time to Julian date
 methano_sed_df$JDate <- lubridate::yday(methano_sed_df$Date_Collected)
+```
 
+```
+## Error: object 'methano_sed_df' not found
+```
+
+``` r
 # save .RData
 save(methano_sed_df, file = "data/01_phyloseq/methano_sed_df.RData")
+```
 
+```
+## Error in save(methano_sed_df, file = "data/01_phyloseq/methano_sed_df.RData"): object 'methano_sed_df' not found
+```
 
+``` r
 # write out to excel file 
 write.csv(methano_sed_df, "data/01_phyloseq/sed_microbial_communities.csv")
+```
 
+```
+## Error in eval(expr, p): object 'methano_sed_df' not found
+```
 
-
+``` r
 # 2. Create phyloseq for methane cyclers filtered data frame
 
 # put into wide format for OTU table
 otu_wide_sed <- methano_sed_phy %>% 
   select(ASV, Sample, Abundance) %>% 
   pivot_wider(names_from = Sample, values_from = Abundance, values_fill = 0) # pivot wider
+```
 
+```
+## Error: object 'methano_sed_phy' not found
+```
 
+``` r
 # convert to matrix and OTU/ASV names
 otu_mat_sed <- as.matrix(otu_wide_sed[, -1])
+```
+
+```
+## Error: object 'otu_wide_sed' not found
+```
+
+``` r
 rownames(otu_mat_sed) <- otu_wide_sed$ASV
+```
+
+```
+## Error: object 'otu_wide_sed' not found
+```
+
+``` r
 otu_table_sed <- otu_table(otu_mat_sed, taxa_are_rows = TRUE)
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'otu_table': object 'otu_mat_sed' not found
+```
 
+``` r
 # create tax table
 tax_sed <- methano_sed_phy %>% 
   select(OTU, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, ASVseqs, Methanotroph_Methanogen) %>% 
   distinct(OTU, .keep_all = TRUE) %>%
   column_to_rownames("OTU")
+```
 
+```
+## Error: object 'methano_sed_phy' not found
+```
+
+``` r
 tax_sed_mat <- as.matrix(tax_sed)
+```
 
+```
+## Error: object 'tax_sed' not found
+```
+
+``` r
 tax_sed_table <- tax_table(tax_sed_mat)
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'tax_table': object 'tax_sed_mat' not found
+```
 
+``` r
 # convert to sample data from melted phyloseq object - note no methanotroph_methanogen information as thats in tax_table
 sam_data_sed <- methano_sed_phy %>%
   select(DNA_ID, Sample, Pond, solar_progress, Date_Collected) %>%
@@ -442,28 +636,40 @@ sam_data_sed <- methano_sed_phy %>%
   select(Sample, DNA_ID, Pond, solar_progress, Depth_Class, Date_Collected, JDate) %>%
   column_to_rownames("Sample") %>%
   sample_data()
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'sample_data': object 'methano_sed_phy' not found
+```
 
+``` r
 # create all time points sediment phyloseq object
 scaled_sed_ch4_physeq <- phyloseq(
   otu_table(otu_table_sed, taxa_are_rows = TRUE),
   tax_sed_table,
   sam_data_sed
 )
+```
+
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'otu_table': object 'otu_table_sed' not found
+```
+
+``` r
 scaled_sed_ch4_physeq
 ```
 
 ```
-## phyloseq-class experiment-level object
-## otu_table()   OTU Table:          [ 367 taxa and 46 samples ]:
-## sample_data() Sample Data:        [ 46 samples by 6 sample variables ]:
-## tax_table()   Taxonomy Table:     [ 367 taxa by 10 taxonomic ranks ]:
-## taxa are rows
+## Error: object 'scaled_sed_ch4_physeq' not found
 ```
 
 ``` r
 # save phyloseq object
 save(scaled_sed_ch4_physeq, file = "data/01_phyloseq/scaled_sed_ch4_physeq.RData")
+```
+
+```
+## Error in save(scaled_sed_ch4_physeq, file = "data/01_phyloseq/scaled_sed_ch4_physeq.RData"): object 'scaled_sed_ch4_physeq' not found
 ```
 We created:
 1. **scaled_sed_ch4_physeq** phyloseq object that was scaled down to minimum read depth (20822)
@@ -484,18 +690,18 @@ methane_cyclers_distinct <- scaled_sed_physeq_24 %>%
   psmelt() %>% # melt into dataframe 
   dplyr::filter(str_detect(Order, "^Methano")) %>% # filtering for methanogens / methanotroph
   distinct(Phylum,Class,Order)
+```
+
+```
+## Error: object 'scaled_sed_physeq_24' not found
+```
+
+``` r
 methane_cyclers_distinct
 ```
 
 ```
-##                     Phylum               Class                    Order
-## 1           Halobacteriota     Methanosarcinia         Methanotrichales
-## 2           Halobacteriota     Methanomicrobia       Methanomicrobiales
-## 3 Methanobacteriota_A_1229     Methanobacteria       Methanobacteriales
-## 4           Halobacteriota     Methanosarcinia Methanosarcinales_A_2632
-## 5           Halobacteriota       Methanocellia          Methanocellales
-## 6         Thermoplasmatota Thermoplasmata_1773  Methanomassiliicoccales
-## 7           Thermoproteota   Methanomethylicia      Methanomethylicales
+## Error: object 'methane_cyclers_distinct' not found
 ```
 
 ``` r
@@ -517,13 +723,19 @@ methanogen_sed_phy <- scaled_sed_physeq_24 %>%
     solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open"),
     Depth_Class = "Sediment"
   )
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'physeq' in selecting a method for function 'taxa_are_rows': object 'scaled_sed_physeq_24' not found
+```
+
+``` r
 # intuition check 
 unique(methanogen_sed_phy$Methanotroph_Methanogen)
 ```
 
 ```
-## [1] "Methanogen"
+## Error: object 'methanogen_sed_phy' not found
 ```
 
 ``` r
@@ -531,42 +743,97 @@ unique(methanogen_sed_phy$Methanotroph_Methanogen)
 methanogen_sed_df <- methanogen_sed_phy %>%
   group_by(Pond, solar_progress, Methanotroph_Methanogen, Date_Collected, Depth_Class) %>%
   summarize(order_abund = sum(Abundance), .groups = "drop")
+```
 
+```
+## Error: object 'methanogen_sed_phy' not found
+```
+
+``` r
 # add Julian Date
 methanogen_sed_df$JDate <- lubridate::yday(methanogen_sed_df$Date_Collected)
+```
 
+```
+## Error: object 'methanogen_sed_df' not found
+```
+
+``` r
 # save .RData
 save(methanogen_sed_df, file = "data/01_phyloseq/methanogen_sed_df.RData")
+```
 
+```
+## Error in save(methanogen_sed_df, file = "data/01_phyloseq/methanogen_sed_df.RData"): object 'methanogen_sed_df' not found
+```
 
-
-
-
+``` r
 # create phyloseq object for methanogens 
 
 # put into wide format for OTU table
 otu_wide_sed <- methanogen_sed_phy %>% 
   select(ASV, Sample, Abundance) %>% 
   pivot_wider(names_from = Sample, values_from = Abundance, values_fill = 0) # pivot wider
+```
 
+```
+## Error: object 'methanogen_sed_phy' not found
+```
 
+``` r
 # convert to matrix and OTU/ASV names
 otu_mat_sed <- as.matrix(otu_wide_sed[, -1])
+```
+
+```
+## Error: object 'otu_wide_sed' not found
+```
+
+``` r
 rownames(otu_mat_sed) <- otu_wide_sed$ASV
+```
+
+```
+## Error: object 'otu_wide_sed' not found
+```
+
+``` r
 otu_table_sed <- otu_table(otu_mat_sed, taxa_are_rows = TRUE)
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'otu_table': object 'otu_mat_sed' not found
+```
 
+``` r
 # create tax table
 tax_sed <- methanogen_sed_phy %>% 
   select(OTU, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, ASVseqs, Methanotroph_Methanogen) %>% 
   distinct(OTU, .keep_all = TRUE) %>%
   column_to_rownames("OTU")
+```
 
+```
+## Error: object 'methanogen_sed_phy' not found
+```
+
+``` r
 tax_sed_mat <- as.matrix(tax_sed)
+```
 
+```
+## Error: object 'tax_sed' not found
+```
+
+``` r
 tax_sed_table <- tax_table(tax_sed_mat)
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'tax_table': object 'tax_sed_mat' not found
+```
 
+``` r
 # convert to sample data from melted phyloseq object
 sam_data_sed <- methanogen_sed_phy %>%
   select(DNA_ID, Sample, Pond, solar_progress, Date_Collected) %>%
@@ -578,28 +845,40 @@ sam_data_sed <- methanogen_sed_phy %>%
   select(Sample, DNA_ID, Pond, solar_progress, Depth_Class, Date_Collected, JDate) %>%
   column_to_rownames("Sample") %>%
   sample_data()
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'sample_data': object 'methanogen_sed_phy' not found
+```
 
+``` r
 # create methanogen sediment phyloseq object
 scaled_methanogen_sed_physeq <- phyloseq(
   otu_table(otu_table_sed, taxa_are_rows = TRUE),
   tax_sed_table,
   sam_data_sed
 )
+```
+
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'otu_table': object 'otu_table_sed' not found
+```
+
+``` r
 scaled_methanogen_sed_physeq
 ```
 
 ```
-## phyloseq-class experiment-level object
-## otu_table()   OTU Table:          [ 169 taxa and 46 samples ]:
-## sample_data() Sample Data:        [ 46 samples by 6 sample variables ]:
-## tax_table()   Taxonomy Table:     [ 169 taxa by 10 taxonomic ranks ]:
-## taxa are rows
+## Error: object 'scaled_methanogen_sed_physeq' not found
 ```
 
 ``` r
 # save phyloseq object
 save(scaled_methanogen_sed_physeq, file = "data/01_phyloseq/scaled_methanogen_sed_physeq.RData")
+```
+
+```
+## Error in save(scaled_methanogen_sed_physeq, file = "data/01_phyloseq/scaled_methanogen_sed_physeq.RData"): object 'scaled_methanogen_sed_physeq' not found
 ```
 
 We created:
@@ -614,14 +893,18 @@ methane_cyclers_distinct <- scaled_sed_physeq_24 %>%
   psmelt() %>% # melt into dataframe 
   dplyr::filter(str_detect(Order, "^Methyl")) %>% # filtering for methanogens / methanotroph
   distinct(Phylum,Class,Order)
+```
+
+```
+## Error: object 'scaled_sed_physeq_24' not found
+```
+
+``` r
 methane_cyclers_distinct
 ```
 
 ```
-##              Phylum               Class               Order
-## 1    Pseudomonadota Gammaproteobacteria     Methylococcales
-## 2 Methylomirabilota    Methylomirabilia  Methylomirabilales
-## 3 Verrucomicrobiota    Verrucomicrobiae Methylacidiphilales
+## Error: object 'methane_cyclers_distinct' not found
 ```
 
 ``` r
@@ -643,49 +926,108 @@ methanotroph_sed_phy <- scaled_sed_physeq_24 %>%
     solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open"),
     Depth_Class = "Sediment"
   )
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'physeq' in selecting a method for function 'taxa_are_rows': object 'scaled_sed_physeq_24' not found
+```
+
+``` r
 # summarize order abundance of methanotrophs in sediments
 methanotroph_sed_df <- methanotroph_sed_phy %>%
   group_by(Pond, solar_progress, Methanotroph_Methanogen, Date_Collected, Depth_Class) %>%
   summarize(order_abund = sum(Abundance), .groups = "drop")
+```
 
+```
+## Error: object 'methanotroph_sed_phy' not found
+```
+
+``` r
 # add julian date
 methanotroph_sed_df$JDate <- lubridate::yday(methanotroph_sed_df$Date_Collected)
+```
 
+```
+## Error: object 'methanotroph_sed_df' not found
+```
+
+``` r
 # save .RData
 save(methanotroph_sed_df, file = "data/01_phyloseq/methanotroph_sed_df.RData")
+```
 
+```
+## Error in save(methanotroph_sed_df, file = "data/01_phyloseq/methanotroph_sed_df.RData"): object 'methanotroph_sed_df' not found
+```
 
-
-
-
-
-
+``` r
 # Create phyloseq for sediment methanogens
 
 # put into wide format for OTU table
 otu_wide_sed <- methanotroph_sed_phy %>% 
   select(ASV, Sample, Abundance) %>% 
   pivot_wider(names_from = Sample, values_from = Abundance, values_fill = 0) # pivot wider
+```
 
+```
+## Error: object 'methanotroph_sed_phy' not found
+```
 
+``` r
 # convert to matrix and OTU/ASV names
 otu_mat_sed <- as.matrix(otu_wide_sed[, -1])
+```
+
+```
+## Error: object 'otu_wide_sed' not found
+```
+
+``` r
 rownames(otu_mat_sed) <- otu_wide_sed$ASV
+```
+
+```
+## Error: object 'otu_wide_sed' not found
+```
+
+``` r
 otu_table_sed <- otu_table(otu_mat_sed, taxa_are_rows = TRUE)
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'otu_table': object 'otu_mat_sed' not found
+```
 
+``` r
 # create tax table
 tax_sed <- methanotroph_sed_phy %>% 
   select(OTU, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, ASVseqs, Methanotroph_Methanogen) %>% 
   distinct(OTU, .keep_all = TRUE) %>%
   column_to_rownames("OTU")
+```
 
+```
+## Error: object 'methanotroph_sed_phy' not found
+```
+
+``` r
 tax_sed_mat <- as.matrix(tax_sed)
+```
 
+```
+## Error: object 'tax_sed' not found
+```
+
+``` r
 tax_sed_table <- tax_table(tax_sed_mat)
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'tax_table': object 'tax_sed_mat' not found
+```
 
+``` r
 # convert to sample data from melted phyloseq object
 sam_data_sed <- methanotroph_sed_phy %>%
   select(DNA_ID, Sample, Pond, solar_progress, Date_Collected) %>%
@@ -697,28 +1039,40 @@ sam_data_sed <- methanotroph_sed_phy %>%
   select(Sample, DNA_ID, Pond, solar_progress, Depth_Class, Date_Collected, JDate) %>%
   column_to_rownames("Sample") %>%
   sample_data()
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'sample_data': object 'methanotroph_sed_phy' not found
+```
 
+``` r
 # create all taxa phyloseq object
 scaled_methanotroph_sed_physeq <- phyloseq(
   otu_table(otu_table_sed, taxa_are_rows = TRUE),
   tax_sed_table,
   sam_data_sed
 )
+```
+
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'otu_table': object 'otu_table_sed' not found
+```
+
+``` r
 scaled_methanotroph_sed_physeq
 ```
 
 ```
-## phyloseq-class experiment-level object
-## otu_table()   OTU Table:          [ 198 taxa and 46 samples ]:
-## sample_data() Sample Data:        [ 46 samples by 6 sample variables ]:
-## tax_table()   Taxonomy Table:     [ 198 taxa by 10 taxonomic ranks ]:
-## taxa are rows
+## Error: object 'scaled_methanotroph_sed_physeq' not found
 ```
 
 ``` r
 # save phyloseq object
 save(scaled_methanotroph_sed_physeq, file = "data/01_phyloseq/scaled_methanotroph_sed_physeq.RData")
+```
+
+```
+## Error in save(scaled_methanotroph_sed_physeq, file = "data/01_phyloseq/scaled_methanotroph_sed_physeq.RData"): object 'scaled_methanotroph_sed_physeq' not found
 ```
 We created:
 1. **scaled_methanotroph_sed_physeq** which has been specifically filtered for methanotrophs and saved as a phyloseq object
@@ -738,11 +1092,23 @@ We will split this up by sample type where we will do water first then sediments
 methano_water_df$solar_progress <- factor(
   methano_water_df$solar_progress,
   levels = c("FPV", "Open"))
+```
 
+```
+## Error: object 'methano_water_df' not found
+```
+
+``` r
 # now add interaction column to our df
 methano_water_df <- methano_water_df %>%
   mutate(group = interaction(Methanotroph_Methanogen, Depth_Class, sep = " "))
+```
 
+```
+## Error: object 'methano_water_df' not found
+```
+
+``` r
 # qq plot to visualize normality
 ggplot(methano_water_df, aes(sample = total_cells_ml)) +
   stat_qq() +
@@ -752,7 +1118,9 @@ ggplot(methano_water_df, aes(sample = total_cells_ml)) +
   labs(title = "Q-Q Plots: Order Abundance by Group")
 ```
 
-![](Analysis_for_Nick_files/figure-html/normality-water-1.png)<!-- -->
+```
+## Error: object 'methano_water_df' not found
+```
 
 ``` r
 # lets plot density histogram by group too
@@ -767,7 +1135,9 @@ ggplot(methano_water_df, aes(x = total_cells_ml, fill = group)) +
   theme(legend.position = "none")
 ```
 
-![](Analysis_for_Nick_files/figure-html/normality-water-2.png)<!-- -->
+```
+## Error: object 'methano_water_df' not found
+```
 
 ``` r
 # now lets plot density histogram by further facetting by treatment
@@ -782,7 +1152,9 @@ ggplot(methano_water_df, aes(x = total_cells_ml, fill = group)) +
   theme(legend.position = "none")
 ```
 
-![](Analysis_for_Nick_files/figure-html/normality-water-3.png)<!-- -->
+```
+## Error: object 'methano_water_df' not found
+```
 
 ``` r
 # shapiro test
@@ -795,13 +1167,7 @@ methano_water_df %>%
 ```
 
 ```
-## # A tibble: 4 × 3
-##   group                         shapiro_p     n
-##   <fct>                             <dbl> <int>
-## 1 Methanogen Surface Water   0.0000000754    24
-## 2 Methanotroph Surface Water 0.0000159       24
-## 3 Methanogen Bottom Water    0.000000408     24
-## 4 Methanotroph Bottom Water  0.000135        24
+## Error: object 'methano_water_df' not found
 ```
 
 Based on our data with the qq plots we see that the points more or less fit the line. but when we investigate further with the density histograms, the data lacks a clear unimodal distribution. Now, let's check this out further with a Shapiro-Wilk test. When we run our Shapiro-Wilk test to also test for a normal distribution if p > 0.05 the data is likely normal but if p < 0.05 then the data is not normal.
@@ -828,11 +1194,22 @@ We will be running this for all 2024 time points
 methano_sed_df$solar_progress <- factor(
   methano_sed_df$solar_progress,
   levels = c("FPV", "Open"))
+```
 
+```
+## Error: object 'methano_sed_df' not found
+```
+
+``` r
 methano_sed_df <- methano_sed_df %>%
   mutate(group = interaction(Methanotroph_Methanogen, Depth_Class, sep = " "))
+```
 
+```
+## Error: object 'methano_sed_df' not found
+```
 
+``` r
 # qq plot to visualize normality
 ggplot(methano_sed_df, aes(sample = order_abund)) +
   stat_qq() +
@@ -842,7 +1219,9 @@ ggplot(methano_sed_df, aes(sample = order_abund)) +
   labs(title = "Q-Q Plots: Order Abundance by Group")
 ```
 
-![](Analysis_for_Nick_files/figure-html/normality-sed-1.png)<!-- -->
+```
+## Error: object 'methano_sed_df' not found
+```
 
 ``` r
 # lets plot density histogram by group too
@@ -857,7 +1236,9 @@ ggplot(methano_sed_df, aes(x = order_abund, fill = group)) +
   theme(legend.position = "none")
 ```
 
-![](Analysis_for_Nick_files/figure-html/normality-sed-2.png)<!-- -->
+```
+## Error: object 'methano_sed_df' not found
+```
 
 ``` r
 # now lets plot density histogram by further facetting by treatment
@@ -872,7 +1253,9 @@ ggplot(methano_sed_df, aes(x = order_abund, fill = group)) +
   theme(legend.position = "none")
 ```
 
-![](Analysis_for_Nick_files/figure-html/normality-sed-3.png)<!-- -->
+```
+## Error: object 'methano_sed_df' not found
+```
 
 ``` r
 # shapiro test
@@ -885,11 +1268,7 @@ methano_sed_df %>%
 ```
 
 ```
-## # A tibble: 2 × 3
-##   group                 shapiro_p     n
-##   <fct>                     <dbl> <int>
-## 1 Methanogen Sediment    0.576       23
-## 2 Methanotroph Sediment  0.000296    23
+## Error: object 'methano_sed_df' not found
 ```
 
 Based on our data with the qq plots and the density histograms, data does not seem to be clearly normally distributed. Shapiro-Wilk test to also test for a normal distribution if p > 0.05 the data is likely normal but if p < 0.05 then the data is not normal.
@@ -944,10 +1323,19 @@ methanogen_surfwater24 <- methano_water_df %>%
     legend.position = "none"
   ) +
   guides(color = "none", shape = "none")
+```
+
+```
+## Error: object 'methano_water_df' not found
+```
+
+``` r
 methanogen_surfwater24
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-Abund-over-Time-1.png)<!-- -->
+```
+## Error: object 'methanogen_surfwater24' not found
+```
 
 ``` r
 # surface methanotrophs
@@ -976,10 +1364,19 @@ methanotrophs_surfwater24 <- methano_water_df %>%
     legend.position = "none"
   ) +
   guides(color = "none", shape = "none")
+```
+
+```
+## Error: object 'methano_water_df' not found
+```
+
+``` r
 methanotrophs_surfwater24
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-Abund-over-Time-2.png)<!-- -->
+```
+## Error: object 'methanotrophs_surfwater24' not found
+```
 
 ``` r
 # now bottom water methanogens
@@ -1008,10 +1405,19 @@ methanogen_bot_water24 <- methano_water_df %>%
     legend.position = "none"
   ) +
   guides(color = "none", shape = "none")
+```
+
+```
+## Error: object 'methano_water_df' not found
+```
+
+``` r
 methanogen_bot_water24
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-Abund-over-Time-3.png)<!-- -->
+```
+## Error: object 'methanogen_bot_water24' not found
+```
 
 ``` r
 # bottom methanotrophs
@@ -1040,10 +1446,19 @@ methanotroph_bot_water24 <- methano_water_df %>%
     legend.position = "none"
   ) +
   guides(color = "none", shape = "none")
+```
+
+```
+## Error: object 'methano_water_df' not found
+```
+
+``` r
 methanotroph_bot_water24
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-Abund-over-Time-4.png)<!-- -->
+```
+## Error: object 'methanotroph_bot_water24' not found
+```
 
 ``` r
 # sediment methanogens 
@@ -1072,10 +1487,19 @@ methano_sed_24 <- methano_sed_df %>%
     legend.position = "none"
   ) +
   guides(color = "none", shape = "none")
+```
+
+```
+## Error: object 'methano_sed_df' not found
+```
+
+``` r
 methano_sed_24
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-Abund-over-Time-5.png)<!-- -->
+```
+## Error: object 'methano_sed_24' not found
+```
 
 ``` r
 # sediment methanotroph 
@@ -1105,24 +1529,37 @@ methanotroph_sed_24 <- methano_sed_df %>%
     legend.position = "none"
   ) +
   guides(color = "none", shape = "none")
+```
+
+```
+## Error: object 'methano_sed_df' not found
+```
+
+``` r
 methanotroph_sed_24
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-Abund-over-Time-6.png)<!-- -->
+```
+## Error: object 'methanotroph_sed_24' not found
+```
 
 ``` r
 # quick plot methanogens
 methanogen_surfwater24 / methanogen_bot_water24 / methano_sed_24
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-Abund-over-Time-7.png)<!-- -->
+```
+## Error: object 'methanogen_surfwater24' not found
+```
 
 ``` r
 # quick plot methanotrophs
 methanotrophs_surfwater24 / methanotroph_bot_water24 / methanotroph_sed_24
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-Abund-over-Time-8.png)<!-- -->
+```
+## Error: object 'methanotrophs_surfwater24' not found
+```
 
 
 ## Fig 2: Boxplots of Abundance
@@ -1142,17 +1579,18 @@ stat.test <- methano_water_df %>%
     group = interaction(Methanotroph_Methanogen, Depth_Class, sep = " "),
     y.position = 0.35,
     p.label = signif(p, digits = 2))
+```
+
+```
+## Error: object 'methano_water_df' not found
+```
+
+``` r
 stat.test
 ```
 
 ```
-## # A tibble: 4 × 13
-##   Methanotroph_Methanogen Depth_Class   .y.            group1 group2    n1    n2 statistic       p p.signif group                      y.position p.label
-##   <chr>                   <fct>         <chr>          <chr>  <chr>  <int> <int>     <dbl>   <dbl> <chr>    <fct>                           <dbl>   <dbl>
-## 1 Methanogen              Surface Water total_cells_ml FPV    Open      12    12      78.5 0.728   ns       Methanogen Surface Water         0.35  0.73  
-## 2 Methanogen              Bottom Water  total_cells_ml FPV    Open      12    12      80   0.665   ns       Methanogen Bottom Water          0.35  0.66  
-## 3 Methanotroph            Surface Water total_cells_ml FPV    Open      12    12     119   0.00726 **       Methanotroph Surface Water       0.35  0.0073
-## 4 Methanotroph            Bottom Water  total_cells_ml FPV    Open      12    12     116   0.012   *        Methanotroph Bottom Water        0.35  0.012
+## Error: object 'stat.test' not found
 ```
 
 ``` r
@@ -1160,7 +1598,13 @@ stat.test
 stat_gen_surf <- stat.test %>%
   filter(Methanotroph_Methanogen == "Methanogen",
          Depth_Class == "Surface Water")
+```
 
+```
+## Error: object 'stat.test' not found
+```
+
+``` r
 # surface methanogen
 box_gen_surf <- methano_water_df %>% 
   dplyr::filter(Depth_Class == "Surface Water",
@@ -1193,10 +1637,19 @@ box_gen_surf <- methano_water_df %>%
     axis.ticks.y = element_blank(),
     legend.position = "none"
   )
+```
+
+```
+## Error: object 'methano_water_df' not found
+```
+
+``` r
 box_gen_surf
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-abudnd-boxplots-1.png)<!-- -->
+```
+## Error: object 'box_gen_surf' not found
+```
 
 ``` r
 ## What are some states of sediment methanotrophs abundance? 
@@ -1210,14 +1663,7 @@ methano_water_df %>%
 ```
 
 ```
-## # A tibble: 4 × 6
-## # Groups:   solar_progress [2]
-##   solar_progress Depth_Class   avg_wat_methanotroph median_wat_methanotroph max_wat_methanotroph min_wat_methanotroph
-##   <fct>          <fct>                        <dbl>                   <dbl>                <dbl>                <dbl>
-## 1 FPV            Surface Water              462304.                 329430.              1553470                33773
-## 2 FPV            Bottom Water               417710                  330585                866687                37554
-## 3 Open           Surface Water               92066.                  55224                240653                10523
-## 4 Open           Bottom Water               119127.                 107987                326258                41047
+## Error: object 'methano_water_df' not found
 ```
 
 ``` r
@@ -1233,14 +1679,7 @@ methano_water_df %>%
 ```
 
 ```
-## # A tibble: 4 × 6
-## # Groups:   solar_progress [2]
-##   solar_progress Depth_Class   avg_wat_methanotroph median_wat_methanotroph max_wat_methanotroph min_wat_methanotroph
-##   <fct>          <fct>                        <dbl>                   <dbl>                <dbl>                <dbl>
-## 1 FPV            Surface Water             1047971.                  959884              1553470               630558
-## 2 FPV            Bottom Water               803348.                  800227               866687               743131
-## 3 Open           Surface Water              100779.                   35725               239085                27528
-## 4 Open           Bottom Water                70352.                   45090               124920                41047
+## Error: object 'methano_water_df' not found
 ```
 
 ``` r
@@ -1248,7 +1687,13 @@ methano_water_df %>%
 stat_troph_surf <- stat.test %>%
   filter(Methanotroph_Methanogen == "Methanotroph",
          Depth_Class == "Surface Water")
+```
 
+```
+## Error: object 'stat.test' not found
+```
+
+``` r
 # surface methanotroph
 box_troph_surf <- methano_water_df %>% 
   dplyr::filter(Depth_Class == "Surface Water",
@@ -1290,16 +1735,32 @@ box_troph_surf <- methano_water_df %>%
     axis.ticks.y = element_blank(),
     legend.position = "none"
   )
+```
+
+```
+## Error: object 'methano_water_df' not found
+```
+
+``` r
 box_troph_surf
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-abudnd-boxplots-2.png)<!-- -->
+```
+## Error: object 'box_troph_surf' not found
+```
 
 ``` r
 # B. filter for methanogen bottom water
 stat_gen_bot <- stat.test %>%
   filter(Methanotroph_Methanogen == "Methanogen",
          Depth_Class == "Bottom Water")
+```
+
+```
+## Error: object 'stat.test' not found
+```
+
+``` r
 # bottom methanogen
 box_gen_bot <- methano_water_df %>% 
   dplyr::filter(Depth_Class == "Bottom Water",
@@ -1342,17 +1803,32 @@ box_gen_bot <- methano_water_df %>%
     axis.ticks.y = element_blank(),
     legend.position = "none"
   )
+```
+
+```
+## Error: object 'methano_water_df' not found
+```
+
+``` r
 box_gen_bot
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-abudnd-boxplots-3.png)<!-- -->
+```
+## Error: object 'box_gen_bot' not found
+```
 
 ``` r
 # C. filter for methanotroph bottom water
 stat_troph_bot <- stat.test %>%
   filter(Methanotroph_Methanogen == "Methanotroph",
          Depth_Class == "Bottom Water")
+```
 
+```
+## Error: object 'stat.test' not found
+```
+
+``` r
 # bottom methanotrophs
 box_troph_bot <- methano_water_df %>% 
   dplyr::filter(Depth_Class == "Bottom Water",
@@ -1395,10 +1871,19 @@ box_troph_bot <- methano_water_df %>%
     axis.ticks.y = element_blank(),
     legend.position = "none"
   )
+```
+
+```
+## Error: object 'methano_water_df' not found
+```
+
+``` r
 box_troph_bot
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-abudnd-boxplots-4.png)<!-- -->
+```
+## Error: object 'box_troph_bot' not found
+```
 
 ``` r
 # 2. calculate pvalue for sediment
@@ -1412,15 +1897,18 @@ stat.test <- methano_sed_df %>%
     group = interaction(Methanotroph_Methanogen, Depth_Class, sep = " "),
     y.position = 0.35,
     p.label = signif(p, digits = 2))
+```
+
+```
+## Error: object 'methano_sed_df' not found
+```
+
+``` r
 stat.test
 ```
 
 ```
-## # A tibble: 2 × 13
-##   Depth_Class Methanotroph_Methanogen .y.         group1 group2    n1    n2 statistic     p p.signif group                 y.position p.label
-##   <chr>       <chr>                   <chr>       <chr>  <chr>  <int> <int>     <dbl> <dbl> <chr>    <fct>                      <dbl>   <dbl>
-## 1 Sediment    Methanogen              order_abund FPV    Open      11    12        54 0.479 ns       Methanogen Sediment         0.35    0.48
-## 2 Sediment    Methanotroph            order_abund FPV    Open      11    12        60 0.735 ns       Methanotroph Sediment       0.35    0.74
+## Error: object 'stat.test' not found
 ```
 
 ``` r
@@ -1428,7 +1916,13 @@ stat.test
 stat_gen_sed <- stat.test %>%
   filter(Methanotroph_Methanogen == "Methanogen",
          Depth_Class == "Sediment")
+```
 
+```
+## Error: object 'stat.test' not found
+```
+
+``` r
 ############# SEDIMENT METHANOGENS 
 ## What are some states of sediment methanogen abundance? 
 methano_sed_df %>% 
@@ -1441,11 +1935,7 @@ methano_sed_df %>%
 ```
 
 ```
-## # A tibble: 2 × 5
-##   solar_progress avg_sed_methanogen median_sed_methanogen max_sed_methanogen min_sed_methanogen
-##   <fct>                       <dbl>                 <dbl>              <dbl>              <dbl>
-## 1 FPV                         0.203                 0.208              0.293              0.135
-## 2 Open                        0.216                 0.205              0.269              0.181
+## Error: object 'methano_sed_df' not found
 ```
 
 ``` r
@@ -1486,17 +1976,32 @@ box_gen_sed <- methano_sed_df %>%
     axis.ticks.y = element_blank(),
     legend.position = "none"
   )
+```
+
+```
+## Error: object 'methano_sed_df' not found
+```
+
+``` r
 box_gen_sed
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-abudnd-boxplots-5.png)<!-- -->
+```
+## Error: object 'box_gen_sed' not found
+```
 
 ``` r
 # E. calculate stats for sediment methanotroph
 stat_troph_sed <- stat.test %>%
   filter(Methanotroph_Methanogen == "Methanotroph",
          Depth_Class == "Sediment")
+```
 
+```
+## Error: object 'stat.test' not found
+```
+
+``` r
 ############# SEDIMENT METHANOTROPHS
 ## What are some states of sediment methanotrophs abundance? 
 methano_sed_df %>% 
@@ -1509,11 +2014,7 @@ methano_sed_df %>%
 ```
 
 ```
-## # A tibble: 2 × 5
-##   solar_progress avg_sed_methanotroph median_sed_methanotroph max_sed_methanotroph min_sed_methanotroph
-##   <fct>                         <dbl>                   <dbl>                <dbl>                <dbl>
-## 1 FPV                          0.0523                  0.0452               0.106                0.0345
-## 2 Open                         0.0546                  0.0458               0.0997               0.0322
+## Error: object 'methano_sed_df' not found
 ```
 
 ``` r
@@ -1555,10 +2056,19 @@ box_troph_sed <- methano_sed_df %>%
     axis.ticks.y = element_blank(),
     legend.position = "none"
   )
+```
+
+```
+## Error: object 'methano_sed_df' not found
+```
+
+``` r
 box_troph_sed
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-abudnd-boxplots-6.png)<!-- -->
+```
+## Error: object 'box_troph_sed' not found
+```
 
 ``` r
 # extract legend 
@@ -1600,14 +2110,29 @@ legend_plot <- methano_sed_df %>% # dummy plot
     legend.box = "horizontal",
     legend.justification = "center"
   )
+```
+
+```
+## Error: object 'methano_sed_df' not found
+```
+
+``` r
 legend_plot
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-abudnd-boxplots-7.png)<!-- -->
+```
+## Error: object 'legend_plot' not found
+```
 
 ``` r
 legend_only <- ggpubr::get_legend(legend_plot) # extract legend
+```
 
+```
+## Error: object 'legend_plot' not found
+```
+
+``` r
 # now we will need to add it to sediments to plot legend only wont plot by itself
 sed_depths_leg <- ggarrange(methano_sed_24, box_gen_sed, methanotroph_sed_24, box_troph_sed,
             ncol = 2,
@@ -1615,12 +2140,20 @@ sed_depths_leg <- ggarrange(methano_sed_24, box_gen_sed, methanotroph_sed_24, bo
             legend_only,
             align = "hv"
 )
+```
 
+```
+## Error: object 'methano_sed_24' not found
+```
+
+``` r
 # Display
 sed_depths_leg
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-abudnd-boxplots-8.png)<!-- -->
+```
+## Error: object 'sed_depths_leg' not found
+```
 
 ``` r
 # or lets try two (technically 4 columns) where on the left we have methanogens and right is methanotrophs. they will still be going from surface, bottom, sediments with box plot on the right but we will have a box around methanogens and methanotrophs
@@ -1637,10 +2170,19 @@ methanogen_final <-
   labels = c("A.", "B.", "C.", "D.", "E.", "F."),
   font.label = list(size =10),
   widths = c(1, .5))
+```
+
+```
+## Error: object 'methanogen_surfwater24' not found
+```
+
+``` r
 methanogen_final
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-abudnd-boxplots-9.png)<!-- -->
+```
+## Error: object 'methanogen_final' not found
+```
 
 ``` r
 # want to add space for title in methanogen plot
@@ -1653,12 +2195,25 @@ methanogen_final <- ggarrange(
   ncol = 1,
   heights = c(0.1, 1)  
 )
+```
 
+```
+## Error: object 'methanogen_final' not found
+```
+
+``` r
 # 2. draw box around methanogens
-png("figures/fig4/methanogens.png", width = 4000, height = 4000, res = 600)
+png("figures/Fig_2/methanogens.png", width = 4000, height = 4000, res = 600)
 
 grid.newpage()
 grid.draw(methanogen_final)
+```
+
+```
+## Error: object 'methanogen_final' not found
+```
+
+``` r
 grid.rect(gp = gpar(col = "black", fill = NA, lwd = 2))  # draw border
 grid.text(label = "Methanogens", x = 0.5, y = 0.99, just = c("center", "top"),
           gp = gpar(fontface = "bold", cex = .9))
@@ -1667,8 +2222,7 @@ dev.off()
 ```
 
 ```
-## quartz_off_screen 
-##                 2
+## Error in dev.off(): QuartzBitmap_Output - unable to open file 'figures/Fig_2/methanogens.png'
 ```
 
 ``` r
@@ -1683,10 +2237,19 @@ methanotroph_final <-
   labels = c("G.", "H.", "I.", "J.", "K.", "L."),
   font.label = list(size =10),
   widths = c(1, .5))
+```
+
+```
+## Error: object 'methanotrophs_surfwater24' not found
+```
+
+``` r
 methanotroph_final
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-abudnd-boxplots-10.png)<!-- -->
+```
+## Error: object 'methanotroph_final' not found
+```
 
 ``` r
 # want to add space for title in methanogen plot
@@ -1699,17 +2262,33 @@ methanotroph_final <- ggarrange(
   ncol = 1,
   heights = c(0.09, 1)  
 )
+```
+
+```
+## Error: object 'methanotroph_final' not found
+```
+
+``` r
 methanotroph_final
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-2-abudnd-boxplots-11.png)<!-- -->
+```
+## Error: object 'methanotroph_final' not found
+```
 
 ``` r
 # 2. draw box around methanogens
-png("figures/fig4/methanotrophs.png", width = 4000, height = 4000, res = 600)
+png("figures/Fig_2/methanotrophs.png", width = 4000, height = 4000, res = 600)
 
 grid.newpage()
 grid.draw(methanotroph_final)
+```
+
+```
+## Error: object 'methanotroph_final' not found
+```
+
+``` r
 grid.rect(gp = gpar(col = "black", fill = NA, lwd = 2))  # draw border
 grid.text(label = "Methanotrophs", x = 0.5, y = 0.99, just = c("center", "top"),
           gp = gpar(fontface = "bold", cex = .9))
@@ -1718,8 +2297,7 @@ dev.off()
 ```
 
 ```
-## quartz_off_screen 
-##                 2
+## Error in dev.off(): QuartzBitmap_Output - unable to open file 'figures/Fig_2/methanotrophs.png'
 ```
 
 ``` r
@@ -1743,24 +2321,45 @@ PERMANOVA (Permutational Multivariate Analysis of Variance) is a non-parametric,
 # calculate Bray-Curtis PERMANOVA using phyloseq distance
 water_bray <- 
   phyloseq::distance(water_ch4_physeq, method = "bray", binary = FALSE)
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'physeq' in selecting a method for function 'distance': object 'water_ch4_physeq' not found
+```
+
+``` r
 # pull out metadata 
 water_metadata <- 
   water_ch4_physeq %>%
   sample_data() %>%
   data.frame()
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'sample_data': object 'water_ch4_physeq' not found
+```
 
+``` r
 #### SEDIMENT: All methane cyclers
 # calculate Bray-Curtis PERMANOVA using phyloseq distance
 sed_bray <- 
   phyloseq::distance(scaled_sed_physeq, method = "bray", binary = FALSE)
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'physeq' in selecting a method for function 'distance': object 'scaled_sed_physeq' not found
+```
+
+``` r
 # pull out metadata 
 sed_metadata <- 
   scaled_sed_physeq %>%
   sample_data() %>%
   data.frame()
+```
+
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'sample_data': object 'scaled_sed_physeq' not found
 ```
 
 
@@ -1780,18 +2379,7 @@ adonis2(water_bray ~ solar_progress, data = water_metadata, by = "terms")
 ```
 
 ```
-## Permutation test for adonis under reduced model
-## Terms added sequentially (first to last)
-## Permutation: free
-## Number of permutations: 999
-## 
-## adonis2(formula = water_bray ~ solar_progress, data = water_metadata, by = "terms")
-##                Df SumOfSqs      R2      F Pr(>F)    
-## solar_progress  1   1.6888 0.11381 5.9075  0.001 ***
-## Residual       46  13.1499 0.88619                  
-## Total          47  14.8386 1.00000                  
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error in eval(YVAR, parent.frame(), environment(formula)): object 'water_bray' not found
 ```
 
 ``` r
@@ -1800,16 +2388,7 @@ adonis2(water_bray ~ Depth_Class, data = water_metadata, by = "terms")
 ```
 
 ```
-## Permutation test for adonis under reduced model
-## Terms added sequentially (first to last)
-## Permutation: free
-## Number of permutations: 999
-## 
-## adonis2(formula = water_bray ~ Depth_Class, data = water_metadata, by = "terms")
-##             Df SumOfSqs      R2      F Pr(>F)
-## Depth_Class  1   0.3952 0.02663 1.2587   0.19
-## Residual    46  14.4434 0.97337              
-## Total       47  14.8386 1.00000
+## Error in eval(YVAR, parent.frame(), environment(formula)): object 'water_bray' not found
 ```
 
 ``` r
@@ -1818,18 +2397,7 @@ adonis2(water_bray ~ Pond, data = water_metadata, by = "terms")
 ```
 
 ```
-## Permutation test for adonis under reduced model
-## Terms added sequentially (first to last)
-## Permutation: free
-## Number of permutations: 999
-## 
-## adonis2(formula = water_bray ~ Pond, data = water_metadata, by = "terms")
-##          Df SumOfSqs      R2      F Pr(>F)    
-## Pond      5   3.6703 0.24735 2.7605  0.001 ***
-## Residual 42  11.1684 0.75265                  
-## Total    47  14.8386 1.00000                  
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error in eval(YVAR, parent.frame(), environment(formula)): object 'water_bray' not found
 ```
 
 ``` r
@@ -1838,18 +2406,7 @@ adonis2(water_bray ~ JDate, data = water_metadata, by = "terms")
 ```
 
 ```
-## Permutation test for adonis under reduced model
-## Terms added sequentially (first to last)
-## Permutation: free
-## Number of permutations: 999
-## 
-## adonis2(formula = water_bray ~ JDate, data = water_metadata, by = "terms")
-##          Df SumOfSqs      R2      F Pr(>F)    
-## JDate     1   1.4244 0.09599 4.8844  0.001 ***
-## Residual 46  13.4143 0.90401                  
-## Total    47  14.8386 1.00000                  
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error in eval(YVAR, parent.frame(), environment(formula)): object 'water_bray' not found
 ```
 
 ``` r
@@ -1859,22 +2416,7 @@ water_permanova <- adonis2(water_bray ~ solar_progress * Pond * JDate, data = wa
 ```
 
 ```
-## Permutation test for adonis under reduced model
-## Terms added sequentially (first to last)
-## Permutation: free
-## Number of permutations: 999
-## 
-## adonis2(formula = water_bray ~ solar_progress * Pond * JDate, data = water_metadata, by = "terms")
-##                      Df SumOfSqs      R2      F Pr(>F)    
-## solar_progress        1   1.6888 0.11381 8.2023  0.001 ***
-## Pond                  4   1.9815 0.13354 2.4061  0.001 ***
-## JDate                 1   1.4244 0.09599 6.9181  0.001 ***
-## solar_progress:JDate  1   1.1339 0.07641 5.5072  0.001 ***
-## Pond:JDate            4   1.1982 0.08075 1.4549  0.034 *  
-## Residual             36   7.4120 0.49950                  
-## Total                47  14.8386 1.00000                  
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error in eval(YVAR, parent.frame(), environment(formula)): object 'water_bray' not found
 ```
 With our PERMANOVA we find that treatment (solar_progress), day of year sampled (JDate - Julian date), and Pond is significant but depth class alone is not.
 
@@ -1904,18 +2446,7 @@ adonis2(sed_bray ~ solar_progress, data = sed_metadata, by = "terms")
 ```
 
 ```
-## Permutation test for adonis under reduced model
-## Terms added sequentially (first to last)
-## Permutation: free
-## Number of permutations: 999
-## 
-## adonis2(formula = sed_bray ~ solar_progress, data = sed_metadata, by = "terms")
-##                Df SumOfSqs      R2      F Pr(>F)    
-## solar_progress  1   0.7413 0.11101 5.4944  0.001 ***
-## Residual       44   5.9365 0.88899                  
-## Total          45   6.6778 1.00000                  
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error in eval(YVAR, parent.frame(), environment(formula)): object 'sed_bray' not found
 ```
 
 ``` r
@@ -1924,18 +2455,7 @@ adonis2(sed_bray ~ Pond, data = sed_metadata, by = "terms")
 ```
 
 ```
-## Permutation test for adonis under reduced model
-## Terms added sequentially (first to last)
-## Permutation: free
-## Number of permutations: 999
-## 
-## adonis2(formula = sed_bray ~ Pond, data = sed_metadata, by = "terms")
-##          Df SumOfSqs      R2      F Pr(>F)    
-## Pond      5   2.3390 0.35027 4.3129  0.001 ***
-## Residual 40   4.3387 0.64973                  
-## Total    45   6.6778 1.00000                  
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error in eval(YVAR, parent.frame(), environment(formula)): object 'sed_bray' not found
 ```
 
 ``` r
@@ -1944,18 +2464,7 @@ adonis2(sed_bray ~ JDate, data = sed_metadata, by = "terms")
 ```
 
 ```
-## Permutation test for adonis under reduced model
-## Terms added sequentially (first to last)
-## Permutation: free
-## Number of permutations: 999
-## 
-## adonis2(formula = sed_bray ~ JDate, data = sed_metadata, by = "terms")
-##          Df SumOfSqs      R2      F Pr(>F)    
-## JDate     1   0.5374 0.08048 3.8509  0.001 ***
-## Residual 44   6.1404 0.91952                  
-## Total    45   6.6778 1.00000                  
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error in eval(YVAR, parent.frame(), environment(formula)): object 'sed_bray' not found
 ```
 
 ``` r
@@ -1965,22 +2474,7 @@ sediment_permanova <- adonis2(sed_bray ~ solar_progress * Pond * JDate, data = s
 ```
 
 ```
-## Permutation test for adonis under reduced model
-## Terms added sequentially (first to last)
-## Permutation: free
-## Number of permutations: 999
-## 
-## adonis2(formula = sed_bray ~ solar_progress * Pond * JDate, data = sed_metadata, by = "terms")
-##                      Df SumOfSqs      R2      F Pr(>F)    
-## solar_progress        1   0.7413 0.11101 8.4062  0.001 ***
-## Pond                  4   1.5977 0.23926 4.5295  0.001 ***
-## JDate                 1   0.5177 0.07753 5.8706  0.001 ***
-## solar_progress:JDate  1   0.1852 0.02773 2.0998  0.017 *  
-## Pond:JDate            4   0.6376 0.09548 1.8074  0.006 ** 
-## Residual             34   2.9983 0.44900                  
-## Total                45   6.6778 1.00000                  
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error in eval(YVAR, parent.frame(), environment(formula)): object 'sed_bray' not found
 ```
 With our PERMANOVA we find that treatment (solar_progress), day of year sampled (JDate - Julian date), and Pond is significant factors.
 
@@ -2021,24 +2515,43 @@ adonis - compares centroids to see if significant difference. betadispr - compar
 
 ## Bray-Curtis
 betadispr_water_pond <- betadisper(water_bray, water_metadata$Pond)
-betadispr_water_solar <- betadisper(water_bray, water_metadata$solar_progress)
-betadispr_water_depth <- betadisper(water_bray, water_metadata$Depth_Class)
-betadispr_water_JDate <- betadisper(water_bray, water_metadata$JDate)
+```
 
+```
+## Error: object 'water_bray' not found
+```
+
+``` r
+betadispr_water_solar <- betadisper(water_bray, water_metadata$solar_progress)
+```
+
+```
+## Error: object 'water_bray' not found
+```
+
+``` r
+betadispr_water_depth <- betadisper(water_bray, water_metadata$Depth_Class)
+```
+
+```
+## Error: object 'water_bray' not found
+```
+
+``` r
+betadispr_water_JDate <- betadisper(water_bray, water_metadata$JDate)
+```
+
+```
+## Error: object 'water_bray' not found
+```
+
+``` r
 # permutest() performs a non-parametric permutation test, which is robust and valid for the kind of data used in beta diversity analysis (e.g., dissimilarity matrices).
 permutest(betadispr_water_pond) # not significant p = 0.256 
 ```
 
 ```
-## 
-## Permutation test for homogeneity of multivariate dispersions
-## Permutation: free
-## Number of permutations: 999
-## 
-## Response: Distances
-##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.09302 0.018604 1.3603    999  0.252
-## Residuals 42 0.57440 0.013676
+## Error: object 'betadispr_water_pond' not found
 ```
 
 ``` r
@@ -2046,17 +2559,7 @@ permutest(betadispr_water_solar) # significant p = 0.011 **
 ```
 
 ```
-## 
-## Permutation test for homogeneity of multivariate dispersions
-## Permutation: free
-## Number of permutations: 999
-## 
-## Response: Distances
-##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)   
-## Groups     1 0.06996 0.069958 7.5386    999  0.008 **
-## Residuals 46 0.42688 0.009280                        
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error: object 'betadispr_water_solar' not found
 ```
 
 ``` r
@@ -2064,15 +2567,7 @@ permutest(betadispr_water_depth) # not significant p = 0.417
 ```
 
 ```
-## 
-## Permutation test for homogeneity of multivariate dispersions
-## Permutation: free
-## Number of permutations: 999
-## 
-## Response: Distances
-##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)
-## Groups     1 0.00721 0.007206 0.7147    999  0.417
-## Residuals 46 0.46380 0.010083
+## Error: object 'betadispr_water_depth' not found
 ```
 
 ``` r
@@ -2080,17 +2575,7 @@ permutest(betadispr_water_JDate) # significant p = 0.006 **
 ```
 
 ```
-## 
-## Permutation test for homogeneity of multivariate dispersions
-## Permutation: free
-## Number of permutations: 999
-## 
-## Response: Distances
-##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)   
-## Groups     3 0.18515 0.061715 4.8804    999  0.002 **
-## Residuals 44 0.55640 0.012645                        
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error: object 'betadispr_water_JDate' not found
 ```
 With betadispr we find the PERMANOVA results are mostly valid where pond variation is consistent. The PERMANOVA and betadispr find that depth is not significant meaning that depth doesnt structure the community. This makes sense between the ponds are so shallow so they are more likely to be similar.
 
@@ -2102,23 +2587,35 @@ But treatment and date are significant meaning the differences may be due to dis
 # Homogeneity of Disperson test with beta dispr
 ## Bray-Curtis
 betadispr_sed_pond <- betadisper(sed_bray, sed_metadata$Pond)
-betadispr_sed_solar <- betadisper(sed_bray, sed_metadata$solar_progress)
-betadispr_sed_JDate <- betadisper(sed_bray, sed_metadata$JDate)
+```
 
+```
+## Error: object 'sed_bray' not found
+```
+
+``` r
+betadispr_sed_solar <- betadisper(sed_bray, sed_metadata$solar_progress)
+```
+
+```
+## Error: object 'sed_bray' not found
+```
+
+``` r
+betadispr_sed_JDate <- betadisper(sed_bray, sed_metadata$JDate)
+```
+
+```
+## Error: object 'sed_bray' not found
+```
+
+``` r
 # permutest() performs a non-parametric permutation test, which is robust and valid for the kind of data used in beta diversity analysis (e.g., dissimilarity matrices).
 permutest(betadispr_sed_pond) # not significant p = 0.835
 ```
 
 ```
-## 
-## Permutation test for homogeneity of multivariate dispersions
-## Permutation: free
-## Number of permutations: 999
-## 
-## Response: Distances
-##           Df  Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.02257 0.0045145 0.3718    999  0.856
-## Residuals 40 0.48568 0.0121419
+## Error: object 'betadispr_sed_pond' not found
 ```
 
 ``` r
@@ -2126,15 +2623,7 @@ permutest(betadispr_sed_solar) # not significant p = 0.673
 ```
 
 ```
-## 
-## Permutation test for homogeneity of multivariate dispersions
-## Permutation: free
-## Number of permutations: 999
-## 
-## Response: Distances
-##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     1 0.000641 0.0006411 0.1485    999  0.711
-## Residuals 44 0.189940 0.0043168
+## Error: object 'betadispr_sed_solar' not found
 ```
 
 ``` r
@@ -2142,15 +2631,7 @@ permutest(betadispr_sed_JDate) # not significant p = 0.162
 ```
 
 ```
-## 
-## Permutation test for homogeneity of multivariate dispersions
-## Permutation: free
-## Number of permutations: 999
-## 
-## Response: Distances
-##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     3 0.010957 0.0036524 1.7651    999  0.176
-## Residuals 42 0.086908 0.0020692
+## Error: object 'betadispr_sed_JDate' not found
 ```
 With betadispr we find the PERMANOVA results are are valid as pond, treatment, and date are not significant but significant in the PERMANOVA. Thus our PERMANOVA result is reliable and the differences between groups are due to location/centroids of groups rather than differences in variation within groups 
 
@@ -2171,9 +2652,13 @@ water_BC_pcoa <-
     distance = "bray", 
     binary = FALSE
   )
+```
 
+```
+## Error: object 'water_ch4_physeq' not found
+```
 
-
+``` r
 #### Grab the data for the plot 
 water_all_ord_df <- 
   plot_ordination(
@@ -2182,8 +2667,13 @@ water_all_ord_df <-
   color = "solar_progress",
   shape = "Pond",
   justDF = TRUE)
+```
 
+```
+## Error: object 'water_ch4_physeq' not found
+```
 
+``` r
 ### Now, plot Figure 3A: WATER 
 fig3a_water_pcoa <- 
   ggplot(data = water_all_ord_df, 
@@ -2203,12 +2693,20 @@ fig3a_water_pcoa <-
   theme(legend.position = "bottom",
         legend.spacing = unit(0, "cm"),
         legend.box.background = element_blank())
+```
 
+```
+## Error: object 'water_all_ord_df' not found
+```
+
+``` r
 # Show the plot
 fig3a_water_pcoa
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig3a-pcoa-water-1.png)<!-- -->
+```
+## Error: object 'fig3a_water_pcoa' not found
+```
 
 ``` r
 ### Sophia's plot
@@ -2245,12 +2743,20 @@ s1a_water_pcoa <- plot_ordination(
     legend.box.just = "center",
     legend.box.background = element_rect(size = 0.2, linetype = "solid", color = "black"),
     legend.margin = margin(1, 2, 1, 1))
+```
 
+```
+## Error: object 'water_ch4_physeq' not found
+```
+
+``` r
 # Plot it 
 s1a_water_pcoa
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig3a-pcoa-water-2.png)<!-- -->
+```
+## Error: object 's1a_water_pcoa' not found
+```
 
 ``` r
 # ggsave(s1a_water_pcoa, width = 8, height = 7, units = "in",
@@ -2265,7 +2771,13 @@ This is all methane cylcers in sediment communities
 
 # use physeq object for just methane cyclers 
 scaled_sed_physeq <- scaled_sed_ch4_physeq
+```
 
+```
+## Error: object 'scaled_sed_ch4_physeq' not found
+```
+
+``` r
 # Calculate Bray-Curtis Dissimilarity 
 scaled_sed_BC_pcoa <- 
   ordinate(
@@ -2274,8 +2786,13 @@ scaled_sed_BC_pcoa <-
     distance = "bray", 
     binary = FALSE
   )
+```
 
+```
+## Error: object 'scaled_sed_physeq' not found
+```
 
+``` r
 #### Grab the data for the plot 
 sed_all_ord_df <- 
   plot_ordination(
@@ -2284,8 +2801,13 @@ sed_all_ord_df <-
   color = "solar_progress",
   shape = "Pond",
   justDF = TRUE)
+```
 
+```
+## Error: object 'scaled_sed_physeq' not found
+```
 
+``` r
 # Now plot it! 
 fig3b_sed_pcoa <- 
   ggplot(data = sed_all_ord_df, 
@@ -2305,12 +2827,20 @@ fig3b_sed_pcoa <-
   theme(legend.position = "bottom",
         legend.spacing = unit(0, "cm"),
         legend.box.background = element_blank())
+```
 
+```
+## Error: object 'sed_all_ord_df' not found
+```
+
+``` r
 # Show the plot
 fig3b_sed_pcoa
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig3b-pcoa-sediments-1.png)<!-- -->
+```
+## Error: object 'fig3b_sed_pcoa' not found
+```
 
 ``` r
 # Sophia's plot 
@@ -2331,6 +2861,13 @@ s1b_sed_pcoa <-
          fill = "none",
          shape = "none") +
   theme_classic() 
+```
+
+```
+## Error: object 'scaled_sed_physeq' not found
+```
+
+``` r
   # theme(
   # legend.position = c(0.82, 0.01),  # inside bottom-left
   # legend.justification = c(0, 0),  # anchor the legend's top-left corner there
@@ -2342,7 +2879,9 @@ s1b_sed_pcoa <-
 s1b_sed_pcoa
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig3b-pcoa-sediments-2.png)<!-- -->
+```
+## Error: object 's1b_sed_pcoa' not found
+```
 
 ``` r
 # ggsave(s1b_sed_pcoa, width = 8, height = 7, units = "in",
@@ -2361,15 +2900,32 @@ fig_s1 <-
   labels = c("A.", "B."),
   font.label = list(size =12),
   align = "hv") # aligns axis 
+```
+
+```
+## Error: object 's1a_water_pcoa' not found
+```
+
+``` r
 fig_s1
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-3-1.png)<!-- -->
+```
+## Error: object 'fig_s1' not found
+```
 
 ``` r
 ggsave(fig_s1, width = 12.4, height = 6, dpi = 300,
         filename = "figures/Fig_3/fig_3_old.png")
+```
 
+```
+## Error in `ggsave()`:
+## ! Cannot find directory 'figures/Fig_3'.
+## ℹ Please supply an existing directory or use `create.dir = TRUE`.
+```
+
+``` r
 ### Final Plot for Submission 
 plot_fig3 <- 
   fig3a_water_pcoa + theme(plot.title = element_text(margin = margin(b = 0))) + 
@@ -2384,16 +2940,30 @@ plot_fig3 <-
     legend.spacing.x = unit(0.2, "cm"),
     legend.margin = margin(t = -5, unit = "pt")
   )
+```
 
+```
+## Error: object 'fig3a_water_pcoa' not found
+```
+
+``` r
 # Show the plot 
 plot_fig3
 ```
 
-![](Analysis_for_Nick_files/figure-html/fig-3-2.png)<!-- -->
+```
+## Error: object 'plot_fig3' not found
+```
 
 ``` r
 ggsave(plot_fig3, width = 6.3, height = 3.5, dpi = 300,
         filename = "figures/Fig_3/Fig_3.png")
+```
+
+```
+## Error in `ggsave()`:
+## ! Cannot find directory 'figures/Fig_3'.
+## ℹ Please supply an existing directory or use `create.dir = TRUE`.
 ```
 
 
@@ -2416,7 +2986,13 @@ scaled_sed_methanogen_BC_pcoa <-
     distance = "bray", 
     binary = FALSE
   )
+```
 
+```
+## Error: object 'scaled_methanogen_sed_physeq' not found
+```
+
+``` r
 ## NEW PLOT 
 #### Grab the data for the plot 
 sed_methanogen_ord_df <- 
@@ -2426,8 +3002,13 @@ sed_methanogen_ord_df <-
   color = "solar_progress",
   shape = "Pond",
   justDF = TRUE)
+```
 
+```
+## Error: object 'scaled_methanogen_sed_physeq' not found
+```
 
+``` r
 ### Now, plot Figure S1A: SEDIMENT METHANOGENS 
 figS1A_sed_methanogens_pcoa <- 
   ggplot(data = sed_methanogen_ord_df, 
@@ -2447,12 +3028,20 @@ figS1A_sed_methanogens_pcoa <-
   theme(legend.position = "bottom",
         legend.spacing = unit(0, "cm"),
         legend.box.background = element_blank())
+```
 
+```
+## Error: object 'sed_methanogen_ord_df' not found
+```
+
+``` r
 # Show the plot
 figS1A_sed_methanogens_pcoa
 ```
 
-![](Analysis_for_Nick_files/figure-html/s1-sed-pcoa-methanogen-1.png)<!-- -->
+```
+## Error: object 'figS1A_sed_methanogens_pcoa' not found
+```
 
 ``` r
 # PCoA of sediments color by treatment shaped by pond
@@ -2487,10 +3076,19 @@ s2a_sed_gen <- plot_ordination(
     legend.box.just = "center",
     legend.box.background = element_rect(size = 0.2, linetype = "solid", color = "black"),
     legend.margin = margin(1, 2, 1, 1))
+```
+
+```
+## Error: object 'scaled_methanogen_sed_physeq' not found
+```
+
+``` r
 s2a_sed_gen
 ```
 
-![](Analysis_for_Nick_files/figure-html/s1-sed-pcoa-methanogen-2.png)<!-- -->
+```
+## Error: object 's2a_sed_gen' not found
+```
 
 ``` r
 # ggsave(sed_pond_solar_pcoa_gens, width = 8, height = 7, units = "in",
@@ -2512,8 +3110,13 @@ scaled_sed_methanotroph_BC_pcoa <-
     distance = "bray", 
     binary = FALSE
   )
+```
 
+```
+## Error: object 'scaled_methanotroph_sed_physeq' not found
+```
 
+``` r
 ## NEW PLOT 
 #### Grab the data for the plot 
 sed_methanotroph_ord_df <- 
@@ -2523,8 +3126,13 @@ sed_methanotroph_ord_df <-
   color = "solar_progress",
   shape = "Pond",
   justDF = TRUE)
+```
 
+```
+## Error: object 'scaled_methanotroph_sed_physeq' not found
+```
 
+``` r
 ### Now, plot Figure S1B: SEDIMENT METHANOTROPHS 
 figS1B_sed_methanotroph_pcoa <- 
   ggplot(data = sed_methanotroph_ord_df, 
@@ -2544,12 +3152,20 @@ figS1B_sed_methanotroph_pcoa <-
   theme(legend.position = "bottom",
         legend.spacing = unit(0, "cm"),
         legend.box.background = element_blank())
+```
 
+```
+## Error: object 'sed_methanotroph_ord_df' not found
+```
+
+``` r
 # Show the plot
 figS1B_sed_methanotroph_pcoa
 ```
 
-![](Analysis_for_Nick_files/figure-html/s1-sed-pcoa-methanotrophs-1.png)<!-- -->
+```
+## Error: object 'figS1B_sed_methanotroph_pcoa' not found
+```
 
 ``` r
 # PCoA of sediments color by treatment shaped by pond
@@ -2567,10 +3183,19 @@ s2b_sed_troph <- plot_ordination(
          fill = "none",
          shape = "none")+
   theme_classic()
+```
+
+```
+## Error: object 'scaled_methanotroph_sed_physeq' not found
+```
+
+``` r
 s2b_sed_troph
 ```
 
-![](Analysis_for_Nick_files/figure-html/s1-sed-pcoa-methanotrophs-2.png)<!-- -->
+```
+## Error: object 's2b_sed_troph' not found
+```
 
 
 ## Save Fig S1
@@ -2588,15 +3213,32 @@ fig_s2 <-
   labels = c("A.", "B."),
   font.label = list(size =12),
   align = "hv") # aligns axis 
+```
+
+```
+## Error: object 's2a_sed_gen' not found
+```
+
+``` r
 fig_s2
 ```
 
-![](Analysis_for_Nick_files/figure-html/plot-FigS1-1.png)<!-- -->
+```
+## Error: object 'fig_s2' not found
+```
 
 ``` r
 ggsave(fig_s2, width = 12.4, height = 6, dpi = 300,
         filename = "figures/s2/fig_s2.png")
+```
 
+```
+## Error in `ggsave()`:
+## ! Cannot find directory 'figures/s2'.
+## ℹ Please supply an existing directory or use `create.dir = TRUE`.
+```
+
+``` r
 ### New plot 
 plot_figS1 <- 
   figS1A_sed_methanogens_pcoa + theme(plot.title = element_text(margin = margin(b = 0))) + 
@@ -2611,17 +3253,31 @@ plot_figS1 <-
     legend.spacing.x = unit(0.2, "cm"),
     legend.margin = margin(t = -5, unit = "pt")
   )
+```
 
+```
+## Error: object 'figS1A_sed_methanogens_pcoa' not found
+```
+
+``` r
 # Show the plot
 plot_figS1
 ```
 
-![](Analysis_for_Nick_files/figure-html/plot-FigS1-2.png)<!-- -->
+```
+## Error: object 'plot_figS1' not found
+```
 
 ``` r
 # Now, actually save the plot   
 ggsave(plot_figS1, width = 6.3, height = 3.5, dpi = 300,
         filename = "figures/Fig_S1/Fig_S1.png")
+```
+
+```
+## Error in `ggsave()`:
+## ! Cannot find directory 'figures/Fig_S1'.
+## ℹ Please supply an existing directory or use `create.dir = TRUE`.
 ```
 
 Sediment samples are still distinct from other and separate along first axis
@@ -2640,13 +3296,25 @@ Here we are performing a PERMANOVA on the sediment methanogen and methanotrophs
 sed_gen_bray <- 
   phyloseq::distance(scaled_methanogen_sed_physeq, 
                      method = "bray", binary = FALSE)
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'physeq' in selecting a method for function 'distance': object 'scaled_methanogen_sed_physeq' not found
+```
+
+``` r
 # pull out metadata 
 sed_methanogens_metadata <- 
   scaled_methanogen_sed_physeq %>%
   sample_data() %>%
   data.frame()
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'sample_data': object 'scaled_methanogen_sed_physeq' not found
+```
+
+``` r
 # Permutational Multivariate Analysis of Variance Using Distance Matrices
 # aka PERMANOVA using the adonis2 function from vegan 
 
@@ -2658,18 +3326,7 @@ adonis2(sed_gen_bray ~ solar_progress,
 ```
 
 ```
-## Permutation test for adonis under reduced model
-## Terms added sequentially (first to last)
-## Permutation: free
-## Number of permutations: 999
-## 
-## adonis2(formula = sed_gen_bray ~ solar_progress, data = sed_methanogens_metadata, by = "terms")
-##                Df SumOfSqs      R2      F Pr(>F)    
-## solar_progress  1  0.30783 0.11833 5.9052  0.001 ***
-## Residual       44  2.29362 0.88167                  
-## Total          45  2.60144 1.00000                  
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error in eval(YVAR, parent.frame(), environment(formula)): object 'sed_gen_bray' not found
 ```
 
 ``` r
@@ -2679,18 +3336,7 @@ adonis2(sed_gen_bray ~ Pond,
 ```
 
 ```
-## Permutation test for adonis under reduced model
-## Terms added sequentially (first to last)
-## Permutation: free
-## Number of permutations: 999
-## 
-## adonis2(formula = sed_gen_bray ~ Pond, data = sed_methanogens_metadata, by = "terms")
-##          Df SumOfSqs      R2      F Pr(>F)    
-## Pond      5   1.0401 0.39983 5.3295  0.001 ***
-## Residual 40   1.5613 0.60017                  
-## Total    45   2.6014 1.00000                  
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error in eval(YVAR, parent.frame(), environment(formula)): object 'sed_gen_bray' not found
 ```
 
 ``` r
@@ -2700,18 +3346,7 @@ adonis2(sed_gen_bray ~ as.factor(JDate),
 ```
 
 ```
-## Permutation test for adonis under reduced model
-## Terms added sequentially (first to last)
-## Permutation: free
-## Number of permutations: 999
-## 
-## adonis2(formula = sed_gen_bray ~ as.factor(JDate), data = sed_methanogens_metadata, by = "terms")
-##                  Df SumOfSqs      R2      F Pr(>F)    
-## as.factor(JDate)  3  0.55028 0.21153 3.7559  0.001 ***
-## Residual         42  2.05116 0.78847                  
-## Total            45  2.60144 1.00000                  
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error in eval(YVAR, parent.frame(), environment(formula)): object 'sed_gen_bray' not found
 ```
 
 ``` r
@@ -2720,28 +3355,19 @@ adonis2(sed_gen_bray ~ as.factor(JDate),
 sed_methanogens_permanova <- 
   adonis2(sed_gen_bray ~ solar_progress * Pond * JDate, 
           data = sed_methanogens_metadata, by = "terms");
+```
 
+```
+## Error in eval(YVAR, parent.frame(), environment(formula)): object 'sed_gen_bray' not found
+```
+
+``` r
 # Show the results! 
 sed_methanogens_permanova
 ```
 
 ```
-## Permutation test for adonis under reduced model
-## Terms added sequentially (first to last)
-## Permutation: free
-## Number of permutations: 999
-## 
-## adonis2(formula = sed_gen_bray ~ solar_progress * Pond * JDate, data = sed_methanogens_metadata, by = "terms")
-##                      Df SumOfSqs      R2       F Pr(>F)    
-## solar_progress        1  0.30783 0.11833 10.4653  0.001 ***
-## Pond                  4  0.73230 0.28150  6.2241  0.001 ***
-## JDate                 1  0.23423 0.09004  7.9632  0.001 ***
-## solar_progress:JDate  1  0.06602 0.02538  2.2446  0.038 *  
-## Pond:JDate            4  0.26098 0.10032  2.2182  0.002 ** 
-## Residual             34  1.00008 0.38443                   
-## Total                45  2.60144 1.00000                   
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error: object 'sed_methanogens_permanova' not found
 ```
 
 ### Methanotrophs
@@ -2753,13 +3379,25 @@ sed_methanogens_permanova
 sed_troph_bray <- 
   phyloseq::distance(scaled_methanotroph_sed_physeq, 
                      method = "bray", binary = FALSE)
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'physeq' in selecting a method for function 'distance': object 'scaled_methanotroph_sed_physeq' not found
+```
+
+``` r
 # pull out metadata 
 sed_methanotrophs_metadata <- 
   scaled_methanotroph_sed_physeq %>%
   sample_data() %>%
   data.frame()
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'sample_data': object 'scaled_methanotroph_sed_physeq' not found
+```
+
+``` r
 # Permutational Multivariate Analysis of Variance Using Distance Matrices
 # aka PERMANOVA using the adonis2 function from vegan 
 
@@ -2771,18 +3409,7 @@ adonis2(sed_troph_bray ~ solar_progress,
 ```
 
 ```
-## Permutation test for adonis under reduced model
-## Terms added sequentially (first to last)
-## Permutation: free
-## Number of permutations: 999
-## 
-## adonis2(formula = sed_troph_bray ~ solar_progress, data = sed_methanotrophs_metadata, by = "terms")
-##                Df SumOfSqs      R2      F Pr(>F)   
-## solar_progress  1   0.4234 0.10058 4.9204  0.002 **
-## Residual       44   3.7858 0.89942                 
-## Total          45   4.2092 1.00000                 
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error in eval(YVAR, parent.frame(), environment(formula)): object 'sed_troph_bray' not found
 ```
 
 ``` r
@@ -2792,18 +3419,7 @@ adonis2(sed_troph_bray ~ Pond,
 ```
 
 ```
-## Permutation test for adonis under reduced model
-## Terms added sequentially (first to last)
-## Permutation: free
-## Number of permutations: 999
-## 
-## adonis2(formula = sed_troph_bray ~ Pond, data = sed_methanotrophs_metadata, by = "terms")
-##          Df SumOfSqs      R2      F Pr(>F)    
-## Pond      5   1.2835 0.30494 3.5097  0.001 ***
-## Residual 40   2.9256 0.69506                  
-## Total    45   4.2092 1.00000                  
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error in eval(YVAR, parent.frame(), environment(formula)): object 'sed_troph_bray' not found
 ```
 
 ``` r
@@ -2813,18 +3429,7 @@ adonis2(sed_troph_bray ~ as.factor(JDate),
 ```
 
 ```
-## Permutation test for adonis under reduced model
-## Terms added sequentially (first to last)
-## Permutation: free
-## Number of permutations: 999
-## 
-## adonis2(formula = sed_troph_bray ~ as.factor(JDate), data = sed_methanotrophs_metadata, by = "terms")
-##                  Df SumOfSqs      R2      F Pr(>F)    
-## as.factor(JDate)  3   1.0430 0.24779 4.6119  0.001 ***
-## Residual         42   3.1662 0.75221                  
-## Total            45   4.2092 1.00000                  
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error in eval(YVAR, parent.frame(), environment(formula)): object 'sed_troph_bray' not found
 ```
 
 ``` r
@@ -2833,28 +3438,19 @@ adonis2(sed_troph_bray ~ as.factor(JDate),
 sed_methanotrophs_permanova <- 
   adonis2(sed_troph_bray ~ solar_progress * Pond * JDate, 
         data = sed_methanotrophs_metadata, by = "terms")
+```
 
+```
+## Error in eval(YVAR, parent.frame(), environment(formula)): object 'sed_troph_bray' not found
+```
+
+``` r
 # Show the results! 
 sed_methanotrophs_permanova
 ```
 
 ```
-## Permutation test for adonis under reduced model
-## Terms added sequentially (first to last)
-## Permutation: free
-## Number of permutations: 999
-## 
-## adonis2(formula = sed_troph_bray ~ solar_progress * Pond * JDate, data = sed_methanotrophs_metadata, by = "terms")
-##                      Df SumOfSqs      R2       F Pr(>F)    
-## solar_progress        1   0.4234 0.10058  7.6933  0.001 ***
-## Pond                  4   0.8602 0.20436  3.9078  0.001 ***
-## JDate                 1   0.5523 0.13122 10.0370  0.001 ***
-## solar_progress:JDate  1   0.0933 0.02217  1.6955  0.113    
-## Pond:JDate            4   0.4090 0.09717  1.8581  0.015 *  
-## Residual             34   1.8710 0.44451                   
-## Total                45   4.2092 1.00000                   
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error: object 'sed_methanotrophs_permanova' not found
 ```
 
 **Methanogens**
@@ -2887,27 +3483,37 @@ Together these variables explain 56% of the data
 ## Bray-Curtis
 betadispr_sed_methanogens_pond <- 
   betadisper(sed_gen_bray, sed_methanogens_metadata$Pond)
+```
 
+```
+## Error: object 'sed_gen_bray' not found
+```
+
+``` r
 betadispr_sed_methanogens_solar <- 
   betadisper(sed_gen_bray, sed_methanogens_metadata$solar_progress)
+```
 
+```
+## Error: object 'sed_gen_bray' not found
+```
+
+``` r
 betadispr_sed_methanogens_JDate <- 
   betadisper(sed_gen_bray, sed_methanogens_metadata$JDate)
+```
 
+```
+## Error: object 'sed_gen_bray' not found
+```
+
+``` r
 # permutest() performs a non-parametric permutation test, which is robust and valid for the kind of data used in beta diversity analysis (e.g., dissimilarity matrices).
 permutest(betadispr_sed_methanogens_pond) # not significant p = 0.659
 ```
 
 ```
-## 
-## Permutation test for homogeneity of multivariate dispersions
-## Permutation: free
-## Number of permutations: 999
-## 
-## Response: Distances
-##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.025322 0.0050644 0.6726    999  0.641
-## Residuals 40 0.301206 0.0075301
+## Error: object 'betadispr_sed_methanogens_pond' not found
 ```
 
 ``` r
@@ -2915,17 +3521,7 @@ permutest(betadispr_sed_methanogens_solar) # not significant p = 0.067
 ```
 
 ```
-## 
-## Permutation test for homogeneity of multivariate dispersions
-## Permutation: free
-## Number of permutations: 999
-## 
-## Response: Distances
-##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)  
-## Groups     1 0.012115 0.0121145 3.8732    999  0.049 *
-## Residuals 44 0.137622 0.0031278                       
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error: object 'betadispr_sed_methanogens_solar' not found
 ```
 
 ``` r
@@ -2933,15 +3529,7 @@ permutest(betadispr_sed_methanogens_JDate) # not significant p = 0.44
 ```
 
 ```
-## 
-## Permutation test for homogeneity of multivariate dispersions
-## Permutation: free
-## Number of permutations: 999
-## 
-## Response: Distances
-##           Df  Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     3 0.00639 0.0021299 0.8903    999  0.451
-## Residuals 42 0.10048 0.0023924
+## Error: object 'betadispr_sed_methanogens_JDate' not found
 ```
 
 ### Methanotrophs
@@ -2953,28 +3541,37 @@ permutest(betadispr_sed_methanogens_JDate) # not significant p = 0.44
 ## Bray-Curtis
 betadispr_sed_methanotrophs_pond <- 
   betadisper(sed_troph_bray, sed_methanotrophs_metadata$Pond)
+```
 
+```
+## Error: object 'sed_troph_bray' not found
+```
+
+``` r
 betadispr_sed_methanotrophs_solar <- 
   betadisper(sed_troph_bray, sed_methanotrophs_metadata$solar_progress)
+```
 
+```
+## Error: object 'sed_troph_bray' not found
+```
+
+``` r
 betadispr_sed_methanotrophs_JDate <-
   betadisper(sed_troph_bray, sed_methanotrophs_metadata$JDate)
+```
 
+```
+## Error: object 'sed_troph_bray' not found
+```
 
+``` r
 # permutest() performs a non-parametric permutation test, which is robust and valid for the kind of data used in beta diversity analysis (e.g., dissimilarity matrices).
 permutest(betadispr_sed_methanotrophs_pond) # not significant p = 0.515
 ```
 
 ```
-## 
-## Permutation test for homogeneity of multivariate dispersions
-## Permutation: free
-## Number of permutations: 999
-## 
-## Response: Distances
-##           Df  Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.04934 0.0098685 0.8364    999  0.519
-## Residuals 40 0.47196 0.0117990
+## Error: object 'betadispr_sed_methanotrophs_pond' not found
 ```
 
 ``` r
@@ -2982,15 +3579,7 @@ permutest(betadispr_sed_methanotrophs_solar) # not significant p = 0.682
 ```
 
 ```
-## 
-## Permutation test for homogeneity of multivariate dispersions
-## Permutation: free
-## Number of permutations: 999
-## 
-## Response: Distances
-##           Df  Sum Sq   Mean Sq     F N.Perm Pr(>F)
-## Groups     1 0.00118 0.0011830 0.146    999   0.73
-## Residuals 44 0.35661 0.0081048
+## Error: object 'betadispr_sed_methanotrophs_solar' not found
 ```
 
 ``` r
@@ -2998,17 +3587,7 @@ permutest(betadispr_sed_methanotrophs_JDate) # significant p = 0.007
 ```
 
 ```
-## 
-## Permutation test for homogeneity of multivariate dispersions
-## Permutation: free
-## Number of permutations: 999
-## 
-## Response: Distances
-##           Df  Sum Sq   Mean Sq      F N.Perm Pr(>F)   
-## Groups     3 0.03816 0.0127201 4.7482    999  0.008 **
-## Residuals 42 0.11252 0.0026789                        
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## Error: object 'betadispr_sed_methanotrophs_JDate' not found
 ```
 **Methanogens**
 With betadispr we find the PERMANOVA results are are valid as pond, treatment, and date are not significant but significant in the PERMANOVA. Thus our PERMANOVA result is reliable and the differences between groups are due to location/centroids of groups rather than differences in variation within groups 
@@ -3035,11 +3614,22 @@ water_ch4_phy_bc <- water_ch4_physeq %>%
     group_var <- sample_data(.)$solar_progress
     all(tapply(x, group_var, var, na.rm = TRUE) > 0)
   }, prune = TRUE)
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'sample_data': object 'water_ch4_physeq' not found
+```
 
+``` r
 # relevel solar_progress
 water_ch4_phy_bc@sam_data$solar_progress <- factor(water_ch4_phy_bc@sam_data$solar_progress, levels = c("No Solar", "Solar"))
+```
 
+```
+## Error: object 'water_ch4_phy_bc' not found
+```
+
+``` r
 # run ancombc2 for water methane cyclers
 # water_ch4_asv_output <- ancombc2(data = water_ch4_phy_bc,
 #                                  tax_level = "ASV", # Test for each phylum
@@ -3059,8 +3649,13 @@ water_ch4_phy_bc@sam_data$solar_progress <- factor(water_ch4_phy_bc@sam_data$sol
 # save(water_ch4_asv_output, file = "data/02_diff_abund/water_ch4_asv_output.RData")
 
 load("data/02_diff_abund/water_ch4_asv_output.RData")
+```
 
+```
+## Error in readChar(con, 5L, useBytes = TRUE): cannot open the connection
+```
 
+``` r
 # plot ASV differential abundance
 water_ch4_fsp <- 
   water_ch4_asv_output$res %>%
@@ -3079,13 +3674,25 @@ water_ch4_fsp <-
     Comparison = paste0(Ref1, " : ", Ref2)) %>% 
   dplyr::filter(diff == 1, passed == 1, abs(lfc) > 1) %>% # play around with log fold change
   select(ASV = taxon, Comparison, lfc, passed)
+```
 
+```
+## Error: object 'water_ch4_asv_output' not found
+```
+
+``` r
 # join by tax table
 clean_water_ch4 <-  
   water_ch4_fsp %>% 
   left_join(., as.data.frame(water_ch4_physeq@tax_table), 
             by = "ASV")
+```
 
+```
+## Error: object 'water_ch4_fsp' not found
+```
+
+``` r
 # plot log fold changes
 clean_water_ch4 %>% 
   ggplot(aes(x = ASV, y = lfc, fill = Order)) +
@@ -3096,7 +3703,9 @@ clean_water_ch4 %>%
   ggtitle("Water Column ASV Log-fold Change in FPV Ponds") 
 ```
 
-![](Analysis_for_Nick_files/figure-html/diff-abund-water-1.png)<!-- -->
+```
+## Error: object 'clean_water_ch4' not found
+```
 
 ``` r
 # plot differentially abundant ASVs overtime 
@@ -3111,7 +3720,13 @@ water_ch4_asv_df <-
       Depth_Class == "S" ~ "Surface Water",
       Depth_Class == "B" ~ "Bottom Water"),
     Depth_Class = factor(Depth_Class, levels = c("Surface Water", "Bottom Water")))
+```
 
+```
+## Error: object 'water_ch4_physeq' not found
+```
+
+``` r
 #2. plot asvs overtime 
 
 # methanogen = ASV_1063; Methanobacteriales order
@@ -3126,7 +3741,13 @@ metadata <-
       Depth_Class == "S" ~ "Surface Water",
       Depth_Class == "B" ~ "Bottom Water"),
     Depth_Class = factor(Depth_Class, levels = c("Surface Water", "Bottom Water")))
-    
+```
+
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'sample_data': object 'water_ch4_physeq' not found
+```
+
+``` r
 # plot Methanogen overtime
 water_ch4_asv1063 <- 
   water_ch4_asv_df %>% 
@@ -3149,12 +3770,20 @@ water_ch4_asv1063 <-
   ) +
   theme(legend.position = "bottom") +
   theme_bw()
+```
 
+```
+## Error: object 'water_ch4_asv_df' not found
+```
+
+``` r
 # Show the plot 
 water_ch4_asv1063 
 ```
 
-![](Analysis_for_Nick_files/figure-html/diff-abund-water-2.png)<!-- -->
+```
+## Error: object 'water_ch4_asv1063' not found
+```
 
 ``` r
 # methanotrophs 
@@ -3182,12 +3811,20 @@ water_ch4_trophs <-
   ) +
   theme(legend.position = "bottom") +
   theme_bw()
+```
 
+```
+## Error: object 'water_ch4_asv_df' not found
+```
+
+``` r
 # Show the plot 
 water_ch4_trophs
 ```
 
-![](Analysis_for_Nick_files/figure-html/diff-abund-water-3.png)<!-- -->
+```
+## Error: object 'water_ch4_trophs' not found
+```
 When we look at the water column of just our methane cyclers, we see that there are only log fold change increases. It is no suprise that Methylococcales has 4 differentially abundant ASVs, but ASV 32 is a log fold change just shy of 3! I am kinda shocked that the Methanobacteriales ASV 1063 is differentially abundant in the water column of solar ponds...
 
 
@@ -3208,11 +3845,23 @@ diff_abund_df <-
                                 "Methanobacterium_B", Genus),
                 Genus = if_else(Genus == "Methylobacter_C_601751", 
                                 "Methylobacter_C", Genus))
+```
 
+```
+## Error: object 'water_ch4_asv_df' not found
+```
+
+``` r
 # Method 1: Using paste() to combine labels
 diff_abund_df$combined_label <- 
   paste(diff_abund_df$Genus, diff_abund_df$ASV, sep = "\n")
+```
 
+```
+## Error: object 'diff_abund_df' not found
+```
+
+``` r
 # shapiro test
 diff_abund_df %>%
   group_by(ASV, solar_progress) %>%
@@ -3223,20 +3872,7 @@ diff_abund_df %>%
 ```
 
 ```
-## # A tibble: 10 × 4
-## # Groups:   ASV [5]
-##    ASV      solar_progress     shapiro_p     n
-##    <chr>    <chr>                  <dbl> <int>
-##  1 ASV_1063 FPV            0.0000000528     24
-##  2 ASV_1063 Open           0.00000000487    24
-##  3 ASV_13   FPV            0.0000738        24
-##  4 ASV_13   Open           0.0000242        24
-##  5 ASV_141  FPV            0.0000550        24
-##  6 ASV_141  Open           0.0000000713     24
-##  7 ASV_32   FPV            0.000157         24
-##  8 ASV_32   Open           0.000000340      24
-##  9 ASV_44   FPV            0.000000800      24
-## 10 ASV_44   Open           0.0000159        24
+## Error: object 'diff_abund_df' not found
 ```
 
 ``` r
@@ -3278,13 +3914,21 @@ diffAbund_boxplots <-
         strip.text = element_text(size = 10)); diffAbund_boxplots
 ```
 
-![](Analysis_for_Nick_files/figure-html/diff-abund-boxplots-1.png)<!-- -->
+```
+## Error: object 'diff_abund_df' not found
+```
 
 ``` r
 # Now, actually save the plot   
 # NOTE THAT ASV_
 ggsave(diffAbund_boxplots, width = 6, height = 4, dpi = 300,
         filename = "figures/Fig_4/Fig_4.png")
+```
+
+```
+## Error in `ggsave()`:
+## ! Cannot find directory 'figures/Fig_4'.
+## ℹ Please supply an existing directory or use `create.dir = TRUE`.
 ```
 
 
@@ -3300,11 +3944,22 @@ scaled_sed_ch4_physeq_bc <- scaled_sed_ch4_physeq %>%
     group_var <- sample_data(.)$solar_progress
     all(tapply(x, group_var, var, na.rm = TRUE) > 0)
   }, prune = TRUE)
+```
 
+```
+## Error: object 'scaled_sed_ch4_physeq' not found
+```
 
+``` r
 # relevel solar_progress 
 scaled_sed_ch4_physeq_bc@sam_data$solar_progress <- factor(scaled_sed_ch4_physeq_bc@sam_data$solar_progress, levels = c("Open", "FPV"))
+```
 
+```
+## Error: object 'scaled_sed_ch4_physeq_bc' not found
+```
+
+``` r
 # run ancombc2 for all sediment methane cyclers
 # sed_ch4_asv_output <- ancombc2(data = scaled_sed_ch4_physeq_bc,
 #                                  tax_level = "ASV", # Test for each phylum
@@ -3324,8 +3979,13 @@ scaled_sed_ch4_physeq_bc@sam_data$solar_progress <- factor(scaled_sed_ch4_physeq
 # save(sed_ch4_asv_output, file = "data/02_diff_abund/sed_ch4_asv_output.RData.RData")
 
 load("data/02_diff_abund/sed_ch4_asv_output.RData")
+```
 
+```
+## Error in readChar(con, 5L, useBytes = TRUE): cannot open the connection
+```
 
+``` r
 # plot ASV differential abundance
 sed_ch4_fsp <- sed_ch4_asv_output$res %>%
   select(taxon, starts_with("lfc"), starts_with("diff"), starts_with("passed_ss")) %>%
@@ -3343,10 +4003,22 @@ sed_ch4_fsp <- sed_ch4_asv_output$res %>%
     Comparison = paste0(Ref1, " : ", Ref2)) %>% 
   dplyr::filter(diff == 1, passed == 1, abs(lfc) > 1) %>% # play around with log fold change
   select(ASV = taxon, Comparison, lfc, passed)
+```
 
+```
+## Error: object 'sed_ch4_asv_output' not found
+```
+
+``` r
 # join by tax table
 clean_sed_ch4 <-  sed_ch4_fsp %>% left_join(., as.data.frame(scaled_sed_ch4_physeq@tax_table), by = "ASV")
+```
 
+```
+## Error: object 'sed_ch4_fsp' not found
+```
+
+``` r
 # plot log fold changes
 clean_sed_ch4 %>% 
   ggplot(aes(x = ASV, y = lfc, fill = Order)) +
@@ -3357,7 +4029,9 @@ clean_sed_ch4 %>%
   ggtitle("Sediment CH4 Cycler ASV Log-fold Change in FPV Ponds") 
 ```
 
-![](Analysis_for_Nick_files/figure-html/diff-abund-sediment-1.png)<!-- -->
+```
+## Error: object 'clean_sed_ch4' not found
+```
 
 ``` r
 # plot differentially abundant ASVs overtime 
@@ -3377,7 +4051,13 @@ methano_sed_asv_df <- scaled_sed_physeq_24 %>%
     ),
     solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open"),
     Depth_Class = "Sediment")  
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'physeq' in selecting a method for function 'taxa_are_rows': object 'scaled_sed_physeq_24' not found
+```
+
+``` r
 #2. plot asv overtime 
 
 # methanogen = ASV_4603; Methanosarcinales_A_2632 order
@@ -3386,8 +4066,13 @@ methano_sed_asv_df <- scaled_sed_physeq_24 %>%
 metadata <- scaled_sed_ch4_physeq %>%
   sample_data() %>%
   data.frame()
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'sample_data': object 'scaled_sed_ch4_physeq' not found
+```
 
+``` r
 # plot Methanogen overtime
 sed_ch4_asv4603 <- methano_sed_asv_df %>% 
   dplyr::filter(ASV == "ASV_4603") %>%
@@ -3411,10 +4096,19 @@ sed_ch4_asv4603 <- methano_sed_asv_df %>%
         legend.position = "bottom") +
   scale_x_discrete(guide = guide_axis(angle = 60)) +
   theme_bw()
+```
+
+```
+## Error: object 'methano_sed_asv_df' not found
+```
+
+``` r
 sed_ch4_asv4603
 ```
 
-![](Analysis_for_Nick_files/figure-html/diff-abund-sediment-2.png)<!-- -->
+```
+## Error: object 'sed_ch4_asv4603' not found
+```
 There is a differentially abundant ASV Methanosarcinales_A_2632 that is increased in solar ponds! When we plot the abundance overtime this ASV is barely in the community but it is higher in solar ponds. Doesnt really feel worth it to report considering its a minor contribution to community.
 
 
@@ -3458,13 +4152,21 @@ sed_difAbund_plot <-
         plot.title = element_text(size = 10)); sed_difAbund_plot
 ```
 
-![](Analysis_for_Nick_files/figure-html/plot-sed-ASV-diffAbund-1.png)<!-- -->
+```
+## Error: object 'methano_sed_asv_df' not found
+```
 
 ``` r
 # Now, actually save the plot   
 # NOTE THAT ASV_
 ggsave(sed_difAbund_plot, width = 3, height = 2, dpi = 300,
         filename = "figures/Fig_S2/Fig_S2.png")
+```
+
+```
+## Error in `ggsave()`:
+## ! Cannot find directory 'figures/Fig_S2'.
+## ℹ Please supply an existing directory or use `create.dir = TRUE`.
 ```
 
 
@@ -3478,7 +4180,13 @@ metadata <- water_ch4_physeq %>%
   sample_data() %>%
   data.frame() %>% 
   select(-Methanotroph_Methanogen)
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'sample_data': object 'water_ch4_physeq' not found
+```
+
+``` r
 # sediment + water methane cyclers 11 total 
 methanogens <- c("Methanosarcinales_A_2632", "Methanomicrobiales", "Methanobacteriales", "Methanomassiliicoccales", "Methanofastidiosales", "Methanotrichales", "Methanocellales", "Methanomethylicales")
 methanotrophs <- c("Methylococcales", "Methylacidiphilales", "Methylomirabilales")
@@ -3506,8 +4214,13 @@ water_ch4_order_df <- water_ch4_physeq %>%
   dplyr::filter(Date_Collected.x == "2024-07-11") %>% 
   group_by(Order, JDate, Pond, Depth_Class, solar_progress, Methanotroph_Methanogen, DNA_ID) %>% 
   summarize(Abundance = sum(Abundance)) 
-  
+```
 
+```
+## Error: object 'water_ch4_physeq' not found
+```
+
+``` r
 # community composition - water absolute abundances
 
 
@@ -3565,10 +4278,19 @@ waterch4_ord_cc_fpv <- water_ch4_order_df %>%
                             fill = NA, size = 1))+
   guides(fill = guide_legend(title.position = "left",
                              nrow=5, ncol= 3)) 
+```
+
+```
+## Error: object 'water_ch4_order_df' not found
+```
+
+``` r
 waterch4_ord_cc_fpv
 ```
 
-![](Analysis_for_Nick_files/figure-html/s3-com-composition-1.png)<!-- -->
+```
+## Error: object 'waterch4_ord_cc_fpv' not found
+```
 
 ``` r
 # relative sediment abundance
@@ -3589,8 +4311,13 @@ methano_sed_phy <- scaled_sed_physeq_24 %>%
     Depth_Class = "Sediment")  %>% 
   group_by(Order, Date_Collected, Pond, Depth_Class, solar_progress, Methanotroph_Methanogen, DNA_ID) %>% 
   summarize(Abundance = sum(Abundance)) 
+```
 
+```
+## Error in h(simpleError(msg, call)): error in evaluating the argument 'physeq' in selecting a method for function 'taxa_are_rows': object 'scaled_sed_physeq_24' not found
+```
 
+``` r
 # relative community plot 
 sedch4_order_cc <-  methano_sed_phy %>% 
   dplyr::filter(Date_Collected == "2024-07-11") %>% 
@@ -3619,11 +4346,19 @@ sedch4_order_cc <-  methano_sed_phy %>%
                             fill = NA, size = 1))+
   guides(fill = guide_legend(title.position = "left",
                              nrow=7, ncol= 3))
-    
+```
+
+```
+## Error: object 'methano_sed_phy' not found
+```
+
+``` r
 sedch4_order_cc
 ```
 
-![](Analysis_for_Nick_files/figure-html/s3-com-composition-2.png)<!-- -->
+```
+## Error: object 'sedch4_order_cc' not found
+```
 
 ``` r
 # plot community plots together
@@ -3632,22 +4367,48 @@ community <- ggarrange(waterch4_ord_cc_fpv, sedch4_order_cc,
             nrow = 2,
             labels = c("A.", "B."),
             align = "v")
+```
+
+```
+## Error: object 'waterch4_ord_cc_fpv' not found
+```
+
+``` r
 community
 ```
 
-![](Analysis_for_Nick_files/figure-html/s3-com-composition-3.png)<!-- -->
+```
+## Error: object 'community' not found
+```
 
 ``` r
 # combine water and sediment df for legend to export
 leg_water <- water_ch4_order_df %>% 
   select(Abundance, Order, Methanotroph_Methanogen)
+```
+
+```
+## Error: object 'water_ch4_order_df' not found
+```
+
+``` r
 leg_sed <- methano_sed_phy %>% 
   select(Abundance, Order, Methanotroph_Methanogen)
+```
 
+```
+## Error: object 'methano_sed_phy' not found
+```
+
+``` r
 illegal_bind <- rbind(leg_water, leg_sed)
+```
 
+```
+## Error: object 'leg_water' not found
+```
 
-
+``` r
 # plot illegally bound df to get legend of all 11 methane cycler species
 legend_ch4 <- illegal_bind %>% 
   mutate(Order = factor(Order, levels = ch4_legend_ord)) %>%
@@ -3666,21 +4427,48 @@ legend_ch4 <- illegal_bind %>%
         legend.position = "bottom",
         legend.title=element_text(size=10),
         legend.text = element_text(size = 9)) 
+```
+
+```
+## Error: object 'illegal_bind' not found
+```
+
+``` r
 legend_ch4
 ```
 
-![](Analysis_for_Nick_files/figure-html/s3-com-composition-4.png)<!-- -->
+```
+## Error: object 'legend_ch4' not found
+```
 
 ``` r
 # get legends
 legend_only <- cowplot::get_legend(legend_ch4)
+```
 
+```
+## Error: object 'legend_ch4' not found
+```
+
+``` r
 # theres randomly 5 grob objects and only the 3rd one has something?
 legend_list <- cowplot::get_plot_component(legend_ch4, "guide-box", return_all = TRUE)
+```
 
+```
+## Error: object 'legend_ch4' not found
+```
+
+``` r
 # extract legend grob
 legend_only <- legend_list[[3]]
+```
 
+```
+## Error: object 'legend_list' not found
+```
+
+``` r
 # Side by side
 combined_legends <- plot_grid(
   waterch4_ord_cc_fpv,
@@ -3692,10 +4480,19 @@ combined_legends <- plot_grid(
   labels = c("A.", "B."),
   rel_heights = c(1, 1, .5)
 )
+```
+
+```
+## Error: object 'waterch4_ord_cc_fpv' not found
+```
+
+``` r
 combined_legends
 ```
 
-![](Analysis_for_Nick_files/figure-html/s3-com-composition-5.png)<!-- -->
+```
+## Error: object 'combined_legends' not found
+```
 
 ``` r
 # now lets begin to save our image
@@ -3703,6 +4500,13 @@ png("figures/s3/s3_community_comp.png", width = 3900, height = 4000, res = 600)
 
 grid.newpage()
 grid.draw(combined_legends)
+```
+
+```
+## Error: object 'combined_legends' not found
+```
+
+``` r
 grid.text(label = "Methanogens", x = 0.4, y = 0.17, just = c("center", "bottom"),
           gp = gpar(fontface = "bold", cex = .9))
 grid.text(label = "Methanotrophs", x = 0.81, y = 0.17, just = c("center", "bottom"),
@@ -3712,8 +4516,7 @@ dev.off()
 ```
 
 ```
-## quartz_off_screen 
-##                 2
+## Error in dev.off(): QuartzBitmap_Output - unable to open file 'figures/s3/s3_community_comp.png'
 ```
 
 
@@ -4166,7 +4969,6 @@ devtools::session_info()
 ##  jquerylib          0.1.4      2021-04-26 [1] CRAN (R 4.4.0)
 ##  jsonlite           2.0.0      2025-03-27 [1] CRAN (R 4.4.1)
 ##  knitr              1.50       2025-03-16 [1] CRAN (R 4.4.1)
-##  labeling           0.4.3      2023-08-29 [1] CRAN (R 4.4.1)
 ##  later              1.4.2      2025-04-08 [1] CRAN (R 4.4.1)
 ##  lattice          * 0.22-7     2025-04-02 [2] CRAN (R 4.4.1)
 ##  lifecycle          1.0.4      2023-11-07 [1] CRAN (R 4.4.1)
@@ -4203,7 +5005,6 @@ devtools::session_info()
 ##  proxy              0.4-27     2022-06-09 [1] CRAN (R 4.4.1)
 ##  purrr            * 1.0.4      2025-02-05 [1] CRAN (R 4.4.1)
 ##  R6                 2.6.1      2025-02-15 [1] CRAN (R 4.4.1)
-##  ragg               1.4.0      2025-04-10 [1] CRAN (R 4.4.1)
 ##  rbibutils          2.3        2024-10-04 [1] CRAN (R 4.4.1)
 ##  RColorBrewer       1.1-3      2022-04-03 [1] CRAN (R 4.4.1)
 ##  Rcpp               1.0.14     2025-01-12 [1] CRAN (R 4.4.1)
@@ -4234,8 +5035,6 @@ devtools::session_info()
 ##  stringi            1.8.7      2025-03-27 [1] CRAN (R 4.4.1)
 ##  stringr          * 1.5.1      2023-11-14 [1] CRAN (R 4.4.0)
 ##  survival           3.8-3      2024-12-17 [2] CRAN (R 4.4.3)
-##  systemfonts        1.2.3      2025-04-30 [1] CRAN (R 4.4.1)
-##  textshaping        1.0.1      2025-05-01 [1] CRAN (R 4.4.1)
 ##  TH.data            1.1-3      2025-01-17 [1] CRAN (R 4.4.1)
 ##  tibble           * 3.2.1      2023-03-20 [1] CRAN (R 4.4.0)
 ##  tidyr            * 1.3.1      2024-01-24 [1] CRAN (R 4.4.1)
@@ -4246,7 +5045,6 @@ devtools::session_info()
 ##  UCSC.utils         1.2.0      2024-11-08 [1] Bioconductor 3.20 (R 4.4.1)
 ##  urlchecker         1.0.1      2021-11-30 [1] CRAN (R 4.4.1)
 ##  usethis            3.1.0      2024-11-26 [1] CRAN (R 4.4.1)
-##  utf8               1.2.5      2025-05-01 [1] CRAN (R 4.4.1)
 ##  vctrs              0.6.5      2023-12-01 [1] CRAN (R 4.4.0)
 ##  vegan            * 2.6-10     2025-01-29 [1] CRAN (R 4.4.1)
 ##  withr              3.0.2      2024-10-28 [1] CRAN (R 4.4.1)
