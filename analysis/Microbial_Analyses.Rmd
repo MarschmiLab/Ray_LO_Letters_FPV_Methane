@@ -1,6 +1,6 @@
 ---
 title: "Water Column and Sediment Methanogens & Methanotrophs in FPV Ponds"
-author: "sophiaaredas"
+author: "Sophia Aredas & Mar Schmidt"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   html_document:
