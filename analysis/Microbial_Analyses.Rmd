@@ -47,10 +47,7 @@ knitr::opts_chunk$set(eval = TRUE,
 
 ```{r load-packages}
 # Efficiently load packages 
-pacman::p_load(phyloseq, ggpubr, tidyverse, patchwork, 
-               ggh4x, speedyseq, rstatix, dplyr, purrr, 
-               vegan, ANCOMBC, cowplot, grid, scales,
-               install = FALSE)
+pacman::p_load(phyloseq, ggpubr, tidyverse, patchwork, ggh4x, speedyseq, rstatix, dplyr, purrr, vegan, ANCOMBC, cowplot, grid, scales, install = FALSE)
 
 source("code/functions.R") # contains scale_reads
 source("code/colors_and_shapes.R")
@@ -61,18 +58,20 @@ set.seed(0909199)
 
 # Load in Data
 
-Loading in our scaled phyloseq objects for each sample type. Each sample
-type (water and sediment) has been scaled down to the minimum reads
-separately. We scale down to the minimum number of reads to
-standardize/normalize our data to allow for more accurate comparisons
-between reads to account for uneven sequencing depth across samples (may
-arise to do seequencing runs or library prep efficiency, etc.)
+Loading in our .RData objects.
+
+1. Water samples have flow cytometry derived absolute abundances.
+
+2. Sediments do not have absolute abundance measurements incorporated. Instead, it has been scaled down to the minimum reads. Note: we scale down to the minimum number of reads to standardize/normalize our data to allow for more accurate comparisons between reads to account for uneven sequencing depth across samples (may arise to do seequencing runs or library prep efficiency, etc.)
 
 And we will add in our metadata as well!
 
 ```{r load-metadata}
-# water physeq with absolute abundance counts
-load("data/00_load_data/full_abs_physeq.RData")
+# water physeq with absolute abundance counts, this hasnt pruned the taxa out yet
+# load("data/00_load_data/full_abs_physeq.RData")
+
+# or we can also load in water physeq that has absolute abundance as well
+load("data/00_load_data/water_physeq.RData")
 
 # sediment scaled physeq
 load("data/00_load_data/scaled_sed_physeq.RData")
@@ -89,8 +88,14 @@ sample_data(new_archaea_rooted_physeq)$JDate <-
   lubridate::yday(sample_data(new_archaea_rooted_physeq)$Date_Collected)
 
 # load in metadata
-load("data/00_load_data/metadata.RData")
+load("data/00_load_data/meta_track_23_24.RData")
+
+metadata <- meta_track_23_24
 ```
+
+# Identify putative CH4 cyclers
+Here we will take our water and sediment physeq objects and run the latest version of FAPROTAXV2. This takes either taxonomic names, trained on SILVA database but does recognize some GreenGenes but with the GreenGenes2 update, i can confirm it predicts marginally less due to the renaming. Thus we will utilize the 16S rRNA seuqences where it places our sequences against a phylogenetic reference tree to determine putative metabolic functions. It does use different hidden state prediction algorithms but I will be sticking with the default (binomial) for now since the optimized version is still under development. 
+
 
 # Prepare Phyloseq Objects
 Here we will work with our two sample types (water and sediment) for the entire July 11th, 2024 year. Microbes identified as methane cyclers were determined at the Order level on taxonomic classfication.
@@ -98,22 +103,27 @@ Here we will work with our two sample types (water and sediment) for the entire 
 We incorporated total cell counts from flow cytometry for water samples (full_abs_physeq.RData)
 For our sediment samples, we do not have absolute abundance measures so we will need to calculate the relative abundance and rarify our samples to the minimum read depth (20822)
 
-### Water - All time points
+### Water 
+lets do a little experiment first with the water_physeq. this has data from both years and maybe the reason why its not matching up to my combined two year analysis is that i subset the years?
+
+I htink i figured it out, i probably need to filter by ach year separately 
+
+
 ```{r water-phyloseq-24}
 # filter for all time points in 2024
-water_physeq_24 <- subset_samples(full_abs_physeq, Year == "2024")
+water_physeq_24 <- subset_samples(water_physeq, Year == "2024")
 
-# prune taxa 
+# prune taxa, defitely significant reduction in asvs (updated: 15464) (old:15427 compared to 24931)
 water_physeq_24 <- water_physeq_24 %>% 
   prune_taxa(taxa_sums(.) > 0,.)
 
-# melt physeq into data frame for all taxa
-water_physeq_ch4 <- water_physeq_24 %>% 
+# # melt physeq into data frame for all taxa
+water_physeq_ch4 <- water_physeq_24 %>%
   psmelt() # melt into dataframe
 
 # melt physeq into data frame for just methane cyclers at Order level
 
-# pull unique methane cycler taxonomic information 
+# pull unique methane cycler taxonomic information , this will be updated shortly bc wrong rn
 methane_cyclers_distinct <- water_physeq_24 %>% 
   psmelt() %>% # melt into dataframe 
   dplyr::filter(str_detect(Order, "^Meth")) %>% # filtering for methanogens / methanotroph
@@ -124,103 +134,166 @@ methane_cyclers_distinct
 methanogens <- c("Methanosarcinales_A_2632", "Methanomicrobiales", "Methanobacteriales", "Methanomassiliicoccales", "Methanofastidiosales", "Methanotrichales", "Methanocellales")
 methanotrophs <- c("Methylococcales", "Methylacidiphilales", "Methylomirabilales")
 
-# filter phyloseq
-methane_cyclers_filt <- water_physeq_24%>% 
-  psmelt() %>% # melt into dataframe 
-  dplyr::filter(Order %in% c(methanogens, methanotrophs)) %>% 
+# filter phyloseq, trying to preserve abundance values
+water_ch4_physeq_24 <- subset_taxa(
+  water_physeq_24,
+  Order %in% c(methanogens, methanotrophs)
+)
+
+# to mutate if methanogen or methanotroph convert to df
+tax_df_2024 <- as.data.frame(tax_table(water_ch4_physeq_24))
+
+# add designation
+tax_df_2024 <- tax_df_2024 %>%
   mutate(
     Methanotroph_Methanogen = case_when(
       Order %in% methanogens ~ "Methanogen",
       Order %in% methanotrophs ~ "Methanotroph",
-      TRUE ~ "Other"))
+      TRUE ~ NA_character_
+    )
+  )
 
-head(methane_cyclers_filt)
+# convert back to matrix and put back into phyloseq object format
+tax_table(water_ch4_physeq_24) <- tax_table(as.matrix(tax_df_2024))
 
+# intuition check to see if we made column in tax table
+head(as.data.frame(tax_table(water_ch4_physeq_24))) # looks good!
 
-# 2. Create phyloseq for methane cyclers filtered data frame
-
-# put into wide format for OTU table
-otu_wide_ch4 <- methane_cyclers_filt %>% 
-  select(ASV, Sample, Abundance) %>% 
-  pivot_wider(names_from = Sample, values_from = Abundance, values_fill = 0) # pivot wider
-
-
-# convert to matrix and OTU/ASV names
-otu_mat_ch4 <- as.matrix(otu_wide_ch4[, -1])
-rownames(otu_mat_ch4) <- otu_wide_ch4$ASV
-otu_table_ch4 <- otu_table(otu_mat_ch4, taxa_are_rows = TRUE)
-
-
-# create tax table
-tax_ch4 <- methane_cyclers_filt %>% 
-  select(OTU, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, ASVseqs) %>% 
-  distinct(ASV, .keep_all = TRUE) %>%
-  column_to_rownames("OTU")
-
-tax_ch4_mat <- as.matrix(tax_ch4)
-
-tax_ch4_table <- tax_table(tax_ch4_mat)
-
-# sample data
-sam_data_ch4 <- methane_cyclers_filt
-
-# Convert back to sample_data
-sam_data_ch4 <- sam_data_ch4 %>% 
-  select(DNA_ID, Sample, Pond, Depth_Class, solar_progress, everything()) %>%
-  distinct(Sample, .keep_all = TRUE) %>%  # one row per sample
-  select(-c(Abundance, OTU, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, ASVseqs)) %>% 
-  mutate(
-    Depth_Class = factor(Depth_Class, levels = c("S", "B")),
-    solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open")) %>% 
-  column_to_rownames("Sample") %>% 
-  sample_data()
-
-# create all time point phyloseq object
-water_ch4_physeq <- phyloseq(
-  otu_table(otu_table_ch4, taxa_are_rows = TRUE),
-  tax_ch4_table,
-  sam_data_ch4
-)
-water_ch4_physeq
+# old filtering that i think was messing up abudnances
+# methane_cyclers_filt <- water_physeq_24 %>% 
+#   psmelt() %>% # melt into dataframe 
+#   dplyr::filter(Order %in% c(methanogens, methanotrophs)) %>% 
+#   mutate(
+#     Methanotroph_Methanogen = case_when(
+#       Order %in% methanogens ~ "Methanogen",
+#       Order %in% methanotrophs ~ "Methanotroph",
+#       TRUE ~ "Other"))
+# 
+# head(methane_cyclers_filt)
+# 
+# 
+# # 2. Create phyloseq for methane cyclers filtered data frame
+# 
+# # put into wide format for OTU table
+# otu_wide_ch4 <- methane_cyclers_filt %>% 
+#   select(ASV, Sample, Abundance) %>% 
+#   pivot_wider(names_from = Sample, values_from = Abundance, values_fill = 0) # pivot wider
+# 
+# 
+# # convert to matrix and OTU/ASV names
+# otu_mat_ch4 <- as.matrix(otu_wide_ch4[, -1])
+# rownames(otu_mat_ch4) <- otu_wide_ch4$ASV
+# otu_table_ch4 <- otu_table(otu_mat_ch4, taxa_are_rows = TRUE)
+# 
+# 
+# # create tax table
+# tax_ch4 <- methane_cyclers_filt %>% 
+#   select(OTU, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, ASVseqs) %>% 
+#   distinct(ASV, .keep_all = TRUE) %>%
+#   column_to_rownames("OTU")
+# 
+# tax_ch4_mat <- as.matrix(tax_ch4)
+# 
+# tax_ch4_table <- tax_table(tax_ch4_mat)
+# 
+# # sample data
+# sam_data_ch4 <- methane_cyclers_filt
+# 
+# # Convert back to sample_data
+# sam_data_ch4 <- sam_data_ch4 %>% 
+#   select(DNA_ID, Sample, Pond, Depth_Class, solar_progress, everything()) %>%
+#   distinct(Sample, .keep_all = TRUE) %>%  # one row per sample
+#   select(-c(Abundance, OTU, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, ASVseqs)) %>% 
+#   mutate(
+#     Depth_Class = factor(Depth_Class, levels = c("S", "B")),
+#     solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open")) %>% 
+#   column_to_rownames("Sample") %>% 
+#   sample_data()
+# 
+# # create all time point phyloseq object
+# water_ch4_physeq <- phyloseq(
+#   otu_table(otu_table_ch4, taxa_are_rows = TRUE),
+#   tax_ch4_table,
+#   sam_data_ch4
+# )
+# water_ch4_physeq
 
 # save phyloseq object
-save(water_ch4_physeq, file = "data/01_phyloseq/water_ch4_physeq.RData")
+save(water_ch4_physeq_24, file = "data/01_phyloseq/water_ch4_physeq_24.RData")
 
-
-# tax glom at Order level for methane cyclers phyloseq
-water_physeq_ch4_order <- water_ch4_physeq %>% 
-  tax_glom(taxrank = "ASV") %>% 
-  psmelt() %>% 
+# create df for plotting 
+# summarize methane cyclers by order and sample metadata
+water_physeq_ch4_order <- water_ch4_physeq_24 %>%
+  tax_glom(taxrank = "ASV") %>%
+  psmelt() %>%          
   filter(Order %in% c(methanogens, methanotrophs)) %>% 
   mutate(
     Methanotroph_Methanogen = case_when(
-      Order %in% methanogens ~ "Methanogen",
-      Order %in% methanotrophs ~ "Methanotroph"
+      Order %in% methanogens   ~ "Methanogen",
+      Order %in% methanotrophs ~ "Methanotroph",
+      TRUE ~ NA_character_
     )
-  ) %>% 
-  group_by(Pond, solar_progress, Depth_Class, Methanotroph_Methanogen, JDate) %>% 
-  summarize(
+  ) %>%
+  group_by(Pond, solar_progress, Depth_Class, Methanotroph_Methanogen, JDate, Phylum, Class, Order, Family, Genus, ASV) %>% 
+  summarise(
     total_cells_ml = sum(Abundance, na.rm = TRUE),
     .groups = "drop"
   )
-water_physeq_ch4_order 
 
-
-# create df for plotting 
-methano_water_df <- water_physeq_ch4_order %>% 
-  select(Pond, Methanotroph_Methanogen, total_cells_ml, Depth_Class, solar_progress, JDate) %>%
+# now make dataframe for plotting
+methano_water_df <- water_physeq_ch4_order %>%
   mutate(
-    Depth_Class = case_when(
-    Depth_Class == "S"  ~ "Surface Water",
-    Depth_Class == "B"  ~ "Bottom Water"
+    Depth_Class = recode(Depth_Class,
+      "S" = "Surface Water",
+      "B" = "Bottom Water"
     ),
     Depth_Class = factor(Depth_Class, levels = c("Surface Water", "Bottom Water")),
-    solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open"),
+    solar_progress = recode(solar_progress,
+      "Solar" = "FPV",
+      "No Solar" = "Open"
+    ),
     solar_methano = paste(solar_progress, Methanotroph_Methanogen, sep = " "),
     solar_methano = factor(
       solar_methano,
       levels = c("FPV Methanogen", "Open Methanogen", "FPV Methanotroph", "Open Methanotroph")
-    ))
+    )
+  ) %>%
+  select(Pond, JDate, Depth_Class, solar_progress, Methanotroph_Methanogen, total_cells_ml, solar_methano, ASV)
+
+# tax glom at Order level for methane cyclers phyloseq
+# water_physeq_ch4_order <- water_ch4_physeq %>% 
+#   tax_glom(taxrank = "ASV") %>% 
+#   psmelt() %>% 
+#   filter(Order %in% c(methanogens, methanotrophs)) %>% 
+#   mutate(
+#     Methanotroph_Methanogen = case_when(
+#       Order %in% methanogens ~ "Methanogen",
+#       Order %in% methanotrophs ~ "Methanotroph"
+#     )
+#   ) %>% 
+#   group_by(Pond, solar_progress, Depth_Class, Methanotroph_Methanogen, JDate) %>% 
+#   summarize(
+#     total_cells_ml = sum(Abundance, na.rm = TRUE),
+#     .groups = "drop"
+#   )
+# water_physeq_ch4_order 
+# 
+# 
+# # create df for plotting 
+# methano_water_df <- water_physeq_ch4_order %>% 
+#   select(Pond, Methanotroph_Methanogen, total_cells_ml, Depth_Class, solar_progress, JDate) %>%
+#   mutate(
+#     Depth_Class = case_when(
+#     Depth_Class == "S"  ~ "Surface Water",
+#     Depth_Class == "B"  ~ "Bottom Water"
+#     ),
+#     Depth_Class = factor(Depth_Class, levels = c("Surface Water", "Bottom Water")),
+#     solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open"),
+#     solar_methano = paste(solar_progress, Methanotroph_Methanogen, sep = " "),
+#     solar_methano = factor(
+#       solar_methano,
+#       levels = c("FPV Methanogen", "Open Methanogen", "FPV Methanotroph", "Open Methanotroph")
+#     ))
 
 # save methane cycler order data frame
 save(water_physeq_ch4_order, file = "data/01_phyloseq/water_physeq_ch4_order.RData")
@@ -836,7 +909,7 @@ methano_sed_24 <- methano_sed_df %>%
   geom_smooth(aes(group = solar_progress), se = FALSE) +
   geom_point(aes(shape = Pond), size = 2) +
   #ggh4x::facet_grid2(.~Methanotroph_Methanogen, scales = "free_y") +
-  scale_color_manual(values = solar_colors) +
+  #scale_color_manual(values = solar_colorsv2) +
   scale_shape_manual(values = pond_shapes) +
   scale_x_continuous(
     breaks = seq(180, 240, by = 20), # even ticks
@@ -864,7 +937,7 @@ methanotroph_sed_24 <- methano_sed_df %>%
   geom_smooth(aes(group = solar_progress), se = FALSE) +
   geom_point(aes(shape = Pond), size = 2) +
   #ggh4x::facet_grid2(.~Methanotroph_Methanogen, scales = "free_y") +
-  scale_color_manual(values = solar_colors) +
+  #scale_color_manual(values = solar_colorsv2) +
   scale_shape_manual(values = pond_shapes) +
   scale_x_continuous(
   breaks = seq(180, 240, by = 20),
@@ -2169,7 +2242,7 @@ water_ch4_phy_bc@sam_data$solar_progress <- factor(water_ch4_phy_bc@sam_data$sol
 
 # save(water_ch4_asv_output, file = "data/02_diff_abund/water_ch4_asv_output.RData")
 
-load("data/02_diff_abund/water_ch4_asv_output.RData")
+#load("data/02_diff_abund/water_ch4_asv_output.RData")
 
 
 # plot ASV differential abundance
@@ -2296,12 +2369,15 @@ When we look at the water column of just our methane cyclers, we see that there 
 ```{r diff-abund-boxplots}
 # Prepare the dataframe with only those 5 ASVs
 diff_abund_df <- 
-  water_ch4_asv_df %>%
+  water_physeq_ch4_order %>% 
+  #methano_water_df %>% 
+  #water_physeq_ch4_order %>% 
+  #water_ch4_asv_df %>%
   dplyr::filter(ASV %in% c("ASV_1063", "ASV_13", "ASV_141", "ASV_32", "ASV_44")) %>% 
   group_by(JDate, Pond, Depth_Class, solar_progress, 
            Methanotroph_Methanogen, 
-           Order, Class, Family, Genus, Species, ASV) %>%
-  summarize(total_cells_ml = sum(Abundance)) %>%
+           Order, Class, Family, Genus, ASV) %>%
+  # summarize(total_cells_ml = sum(Abundance)) %>%
   as.data.frame() %>%
   dplyr::mutate(Genus = ifelse(ASV== "ASV_13", Order, Genus),
                 Genus = if_else(Genus == "Methanobacterium_B_963", 
