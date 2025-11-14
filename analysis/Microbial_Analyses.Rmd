@@ -110,12 +110,10 @@ water_physeq_24 <- subset_samples(water_physeq, Year == "2024")
 water_physeq_24 <- water_physeq_24 %>% 
   prune_taxa(taxa_sums(.) > 0,.)
 
-# # melt physeq into data frame for all taxa
+# melt physeq into data frame for all taxa
 water_physeq_ch4_df <- water_physeq_24 %>%
   speedyseq::psmelt() # melt into dataframe
 
-# save phyloseq object
-#save(water_physeq_24, file = "data/01_phyloseq/water_ch4_physeq_24.RData")
 ```
 
 ### Sediment 
@@ -145,11 +143,11 @@ scaled_sed_physeq <-
 scaled_sed_physeq_24 <- scaled_sed_physeq 
 
 # pull unique methane cycler taxonomic information 
-scaled_sed_physeq_24 <- scaled_sed_physeq_24 %>% 
+scaled_sed_24_df <- scaled_sed_physeq_24 %>% 
   speedyseq::psmelt() # melt into dataframe 
 
 # save phyloseq object
-save(scaled_sed_ch4_physeq, file = "data/01_phyloseq/scaled_sed_ch4_physeq.RData")
+save(scaled_sed_24_df, file = "data/01_phyloseq/scaled_sed_24_df.RData")
 ```  
 
 # FAPROTAXv2 - Predict Metabolic Functions (CH4 Cyclers)
@@ -230,7 +228,7 @@ Now we will get our function table and find the predicted metabolic functions th
 
 First we will extract all functions then narrow in on CH4 cyclers. This will also be paired with taxonomic identification of known methane cyclers at the genus level.
 
-left off here: filtering out for methanogens and methanotrophs specifically!
+ASVs not classified to the family or genus level were filtered out from analysis despite FAPROTAXv2 predictions
 ```{r pull-faprotaxv2-asvs}
 # Read the text file of faprotaxv2 report from the previous chunk!
 lines <- readLines("data/02A_Water_FAPROTAXv2/ch4_water_report.txt")
@@ -267,1368 +265,492 @@ asv_df <- data.frame(function_group, asv_id = asv_ids)
 
 # now lets specifically pull out the ch4 cyclers
 water_ch4_cyclers_asv_df <- asv_df %>% 
-  dplyr::filter(str_detect(function_group, "^meth")) # filtering for methanogens / methanotroph. will get some others but we will filter those out
+  dplyr::filter(function_group %in% c(
+                "acetoclastic_methanogenesis.value",
+                "hydrogenotrophic_methanogenesis.value",
+                "methanogenesis_by_CO2_reduction_with_H2.value",
+                "methanogenesis_by_disproportionation_of_methyl_groups.value",
+                "methanogenesis_by_reduction_of_methyl_compounds_with_H2.value",
+                "methanogenesis_using_formate.value",
+                "methanogenesis.value",
+                "methanotrophy.value")) #%>% 
+  # dplyr::mutate(
+  #   CH4_Cycler = dplyr::case_when(
+  #     grepl("methanogenesis", function_group) ~ "Methanogen",
+  #     grepl("methanotrophy", function_group) ~ "Methanotroph",
+  #     TRUE ~ NA_character_))
+
+# quick check to see if we have any duplicated asvs
+duplicates <- water_ch4_cyclers_asv_df %>%
+  dplyr::group_by(asv_id) %>%
+  dplyr::summarise(
+    n_function_groups = dplyr::n_distinct(function_group), # number of function groups
+    function_groups = paste(unique(function_group), collapse = ", ") # if theres another one where asv is duplicated
+  ) %>%
+  dplyr::filter(n_function_groups > 1) # count
+duplicates # awesome methanogenesis functions overlap
 
 
-# join sulfur reducers with water_physeq_asv
-water_ _joined <- water_ch4_cyclers_asv_df %>%
-  dplyr::inner_join(sulfate_reducer_asv_df, 
-                    by = c("ASV" = "asv_id"))
+# methanogens have multiple annotations but they are all methanogenesis, we will keep the first occurrence of each asv since the specific function subtype doesnt matter to much to me right now
+water_ch4_cyclers_asv_unique <- water_ch4_cyclers_asv_df %>%
+  dplyr::distinct(asv_id, .keep_all = TRUE)
 
-# 661 total asvs
+# join ch4 cyclers with water_physeq_ch4_df
+water_ch4_joined <- water_physeq_ch4_df %>%
+  dplyr::inner_join(water_ch4_cyclers_asv_unique, 
+                    by = c("ASV" = "asv_id")) # 20112 observations!
+
+# tidy up dataframe
+water_ch4_joined <- water_ch4_joined %>% 
+  dplyr::select(function_group, Kingdom, Phylum, Class, Order,
+                Family, Genus, Species, ASV, ASVseqs) 
+
 
 # check out unqiue taxanomic levels
-sulfate_reducer_joined$Phylum %>% unique()
-sulfate_reducer_joined$Order %>% unique()
+water_ch4_joined$Phylum %>% unique()
+water_ch4_joined$Order %>% unique()
+water_ch4_joined$Genus %>% unique()
+water_ch4_joined$ASV %>% unique()
 
+# filter out NA at order level
+water_ch4_joined <- water_ch4_joined %>% 
+  dplyr::filter(!is.na(Family)) # 16368
 
-# lets do a rough plot of who is here 
-sulfate_df <- water_physeq_asv_df %>%
+# create dataframe for sipmlified distinct ASV to verify
+simplified_af <- water_ch4_joined %>% 
+  distinct(Genus, .keep_all = TRUE) 
+simplified_af
+
+# now comparing with literature who is identified as a ch4 cycler
+# filtering out incorrectly identified asvs, or asvs with no literature supporting their predicted metabolic function
+water_ch4_joined_clean_faprotax <- water_ch4_joined %>% 
   dplyr::filter(
-    solar_progress != "In Progress",
-    ASV %in% sulfate_reducer_joined$ASV) %>% 
-  dplyr::group_by(
-    Year, solar_progress, Depth_Class, Phylum,
-    Genus
-  ) %>%
-  dplyr::summarize(
-    total_cells_ml = sum(Abundance, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
+    !Genus %in% c(
+    "Derxia", "UBA10450", "UBA11358", "Alsobacter", "UBA3015", "GAS474", "JAAUTS01",
+    "UBA6215", "LW23", "WYBW01", "Pedosphaera", "Azospirillum", "YA12-FULL-60-10",
+    "Beijerinckia", "SXTU01", "AV2", "Lenti-01", "PWTM01", "UBA95"),
+    !Family %in% c("J093", "UBA10450"),
+    !ASV %in% c("ASV_23314", "ASV_301", "ASV_3420", "ASV_2686", "ASV_2686", "ASV_3289")) # total 10560
+
+# notes for my exclusions:
+# 1. cannot find any information for derxia being methanotroph
+# 2. UBA10450 (family) is within Chthoniobacterales (order) within Verrucomicrobiota. since this is at family level its hard to say what is function is. im finding its involved in complex carbon degradation and could maybe be a methanotroph and have other pathways to break this down but with this uncertainty and especially since no genus level identification will omit for now. most are apparently aerobic/anaerobic chemoorganotrophs
+  # verruco methanotrophs are within methylacidiphilaceae family https://www.mdpi.com/2076-2607/12/11/2271
+# 3. UBA11358 (family and genus) within Verrucomicrobiota i cant find solid evidence for methanotrophy either but based on these MAGs seems they are involved in other h2 metabolisms and stuff; biorxiv https://www.biorxiv.org/content/10.1101/2024.07.02.601631v1
+# 4. aslobacter soli is a chemo-organotroph incapable of growth on C1 substrates [https://www.microbiologyresearch.org/content/journal/ijsem/10.1099/ijsem.0.003088#R1]
+# 5. Methylacidiphilales (order), UBA3015 (family), UBA3015 (genus). not methanotroph likely heterotroph invovled in plant degradation. [https://registry.seqco.de/names/48695; https://www.nature.com/articles/s41467-025-63266-9]
+# 6. GAS474 lacks genes for methanotrophy likely methylotroph or complex carbon degrader [https://www.nature.com/articles/s41522-024-00583-9]
+# 7. JAAUTS01 no evidence for known methanotrophy
+# 8. UBA6215 within Omnitrophota are not known to be methanotrophs but have diverse metabolic capabilities like acetogenesis and potentially parasitic? [https://www.nature.com/articles/s41564-022-01319-1]
+# 9. LW23 likely methylotroph [https://www.mdpi.com/2076-2607/9/12/2566?utm_source=researchgate.net&medium=article]
+# 10. WYBW01 methylotroph [https://www.biorxiv.org/content/10.1101/2025.02.12.637893v3.full]
+# 11. Pedosphaera no evidence for methanotrophy
+# 12. Azospirillum is a methylotroph, no evidence for methanotrophy [https://www.nature.com/articles/s43247-024-01656-5]
+# 13. YA12-FULL-60-10 no evidence for methanotrphy [https://www.mdpi.com/2076-2607/8/6/920?utm_source=researchgate.net&medium=article]
+# 14. Beijerinckia chemoheterotroph, not capable of methylotrophic or methanotrophy. [https://journals.asm.org/doi/10.1128/jb.00656-10]
+# 15. SXTU01 not known methanotroph, no literature supporting this or found
+# 16. AV2, no evidence for methanotrophy
+# 17. Lenti-01, no evidence for methanotrophy. specialists for degrading sulfated polysaccharides [https://pmc.ncbi.nlm.nih.gov/articles/PMC8857213/#:~:text=A%20phylogenetic%20reconstruction%20using%20conserved,also%20determined%20(Supplementary%20results).]
+# 18. PWTM01 no reports of methanotrophy
+# 19. UBA95 could not find support for methanogenesis, seems to have other metabolic capabilities like secondary metabolites and nitrogen cycling.
+# 20. JO93 not methanotroph likely, in different order with that doesnt have known methanotrophs
+# 21. removing ASVs within Beijerinckiaceae family that are NA at genus level as not all genera are capable of methanotrophy
+
+
+# distinct at family level for ch4 cycler
+# one NA at genus but family is all known methanotrophs
+# these are just intuition checks!
+water_ch4_joined_clean_faprotax$Family %>% unique()
+faprotaxv2_family <- unique(water_ch4_joined_clean_faprotax$Family)
+
+
+# now lets create data frame to search in case faprotax missed a literature-based identified methanotroph 
+water_24_taxonomysearch <- water_physeq_ch4_df %>%
+  dplyr::select(OTU, Kingdom:ASVseqs) %>% 
+  distinct(OTU, .keep_all = TRUE) %>% # one ASV per row
+  dplyr::filter(!is.na(Family)) # cannot be na and family level and below
+
+# rationale to include this above:
+  #1. 2-02-FULL-66-22 contains nitrite-dependent anaerobic methane oxidizing (N-DAMO) bacteria that couple anaerobic methane oxidation to nitrite reduction.
+  #2. Methanomethylophilaceae within Methanomassiliicoccales is a methanogen
+
+# additional information from searching:
+  #1. UBA12499 within Rokubacteriales in Methylomirobiota is a methylotroph, no known genes to oxidize methane.
+
+
+# create dataframes for manual search 
+water_24_manual <- water_24_taxonomysearch %>%
+  dplyr::filter(Family %in% c("2-02-FULL-66-22", "Methanomethylophilaceae")) %>%  # family level to also include manually (e.g., specific N-DAMO methanotroph and methanogen
+  dplyr::distinct(ASV, .keep_all = TRUE) # one ASV per row
+    
+
+# finalize dataframe column orders before merging
+water_ch4_joined_clean_faprotax_trim <- water_ch4_joined_clean_faprotax %>%
+  dplyr::select(-function_group)
+
+water_ch4_manual_trim <- water_24_manual %>% 
+  dplyr::select(-OTU)
+
+
+# bind rows
+water_ch4_cyclers_complete_df <- dplyr::bind_rows(
+  water_ch4_joined_clean_faprotax_trim,
+  water_ch4_manual_trim
+)
+
+# list of all our CH4 cycler ASVs to filter phyloseq 
+ch4_asv_list <- water_ch4_cyclers_complete_df$ASV
+
+# filter phyloseq for CH4 cyclers at the ASV level
+water_ch4_cyclers_physeq <- water_physeq_24 %>% 
+  subset_taxa(ASV %in% ch4_asv_list)
+
+
+# create list of CH4 cylcers at the family level!
+water_methanogens <- c("Methanotrichaceae", "Methanospirillaceae_2121", "Methanobacteriaceae",
+                 "Methanospirillaceae_2125", "Methanosarcinaceae","Methanocellaceae", 
+                 "Methanomicrobiaceae", "Methanofastidiosaceae", "Methanomethylophilaceae")
+water_methanotrophs <- c("Methylomonadaceae", "Methylococcaceae","Beijerinckiaceae", "2-02-FULL-66-22")
+
+# add if methanogen or methanotroph to column
+tax_tab <- as.data.frame(tax_table(water_ch4_cyclers_physeq))
+
+tax_tab$CH4_Cycler <- dplyr::case_when(
+  tax_tab$Family %in% water_methanogens ~ "Methanogen",
+  tax_tab$Family %in% water_methanotrophs   ~ "Methanotroph",
+  TRUE ~ "NA"
+)
+
+
+tax_table(water_ch4_cyclers_physeq) <- tax_table(as.matrix(tax_tab))
+
+water_ch4_cyclers_physeq # 225 total ASVs
+
+# save phyloseq object
+save(water_ch4_cyclers_physeq, file = "data/01_phyloseq/water_ch4_cyclers_physeq.RData")
+
+# melt into dataframe for plotting CH4 cyclers
+water_ch4_cyclers_df <- water_ch4_cyclers_physeq %>%
+  speedyseq::psmelt() %>%  # melt into dataframe
   dplyr::mutate(
-    metabolic_group = "Sulfate Reducers"
-  )
-
-#sulfate_df$Phylum %>% unique()
-
-# sulfate_df <- sulfate_df %>%
-#   dplyr::filter(!is.na(Genus)) 
-
-# violin
-sulf_plot <- sulfate_df %>%
-  #dplyr::group_by(Genus) %>%
- # dplyr::filter(all(tapply(total_cells_ml, solar_progress, sum) > 0)) %>%  # keep genera where solar_progress groups cells have more than 0
-  #dplyr::ungroup() %>%
-  dplyr::filter(Phylum == "Desulfobacterota_G_459546") %>% 
-  ggplot(aes(x = solar_progress, y = total_cells_ml, color = solar_progress)) +
-  geom_violin(aes(fill = solar_progress, color = solar_progress), trim = TRUE, alpha = 0.5, width = 1) +
-  geom_boxplot(outlier.shape = NA, width = 0.1, color = "black",position = position_dodge(0.6), alpha = 0) +
-  # geom_point(size = 2, alpha = 0.8, shape = 16, color = "black",
-  #   position = position_jitterdodge(jitter.width = 0.25, dodge.width = 0.6)) +
-  geom_point(
-  aes(fill = solar_progress),   # inside color
-  shape = 21,                   # circle with outline
-  color = "black",              # outline color
-  size = 2,
-  stroke = 0.3,                 # outline thickness
-  position = position_jitterdodge(jitter.width = 0.25, dodge.width = 0.6)
-) +
-  # geom_violin(aes(fill = solar_progress), trim = FALSE, alpha = 0.5, width = 1) +
-  # geom_boxplot(width = .1, outlier.shape = NA, alpha = 0, color = "black", position = position_dodge(0.6)) +
-  labs(color = "Treatment", x = NULL, y = "Cells per mL (log10)") + 
-  #ggh4x::facet_nested_wrap(Year ~ polished_tax, scales = "free_y", nrow = 2, ncol = 4) +
-  #ggh4x::facet_grid2(vars(Year), vars(polished_tax), render_empty = TRUE) +
-  ggh4x::facet_grid2(metabolic_group ~Year, scales = "free_y") +
-  scale_color_manual(values = solar_colorsv2) +
-  scale_fill_manual(values = solar_colorsv2) +
-  scale_y_log10(
-    labels = scales::label_number(scale_cut = scales::cut_short_scale()),
-    name = expression("log10[Absolute Abundance]")
-  ) +
- # scale_shape_manual(values = pond_shapes) +
-  # scale_y_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale()),
-  #                    name = expression("Cells ("*10^6*"/mL)")) +
-  # scale_y_continuous(
-  # trans = scales::pseudo_log_trans(base = 10, sigma = 30000),
-  # labels = scales::label_number(scale_cut = scales::cut_short_scale()),
-  # name = expression("Cells per mL")) +
-  theme_fpv +
-  # guides(
-  #   #color = guide_legend(ncol = 2, override.aes = list(size = 3)),
-  #   shape = guide_legend(ncol = 2, override.aes = list(size = 3))
-  # ) +
-  stat_compare_means(
-    method = "wilcox.test",
-    label = "p.format",
-    size = 3,
-    show.legend = FALSE
-  ) +
-  guides(color = guide_legend(
-    ncol = 2,
-    override.aes = list(shape = 16, size = 4)
-  )) +
-  theme(
-    legend.position = "none",
-    axis.text.x = element_text(size = 10),
-    axis.text.y = element_text(size = 10),
-    strip.text = element_text(face = "bold", size = 10)
-  )
-
-sulf_plot
-```
-
-``` {plotfaprov2results}
-# load in function table. should have function as rows, columns as samples, and each sample has abundance for that given function 
-ch4_water_faprov2 <- read_tsv("data/02A_Water_FAPROTAXv2/ch4_water_function_table_16S.tsv.tsv")
-
-# get output 
-ch4_water_fx <- ch4_water_faprov2 %>%
-  dplyr::rename(metabolic_function = `function`) %>% 
-  pivot_longer(matches("*SR*|SA*"), names_to = "DNA_ID", values_to = "Count") %>% 
-  group_by(metabolic_function, DNA_ID) %>%
-  dplyr::summarize(med_count = median(Count)) %>% 
-  ungroup() %>%
-  group_by(metabolic_function) %>% # Group by functional annotation
-  filter(any(med_count!=0)) %>% # Get rid of any groups that are all zero
-  ungroup() %>% 
-  left_join(., metadata, by = "DNA_ID") %>% # join metadata
-  group_by(solar_progress, metabolic_function) %>%
-  dplyr::summarize(mean_count = mean(med_count),
-            sum_med = sum(med_count)) %>% # For each functional group, find the mean count in that group and total number of observations
-  ungroup() %>%
-  dplyr::group_by(metabolic_function) %>% 
-  dplyr::mutate(rel_abund = mean_count / sum(mean_count),
-         sum_count = sum(sum_med),
-         sum_count = round(sum_count)) %>% 
-         # metabolic_function = paste0(metabolic_function, " (", sum_count, ")"))
-         # metabolic_function = str_replace_all(metabolic_function, "_", " "),
-         # metabolic_function = str_to_title(metabolic_function)) %>% # For each functional group, calculate the relative abundance of counts in that Comp_Group
-  separate(metabolic_function, into = c("metabolic_function", "extra"), sep = "\\.", remove = TRUE) %>%
-  dplyr::select(-extra) %>% 
-  dplyr::filter(sum_count > 100) # Only include groups that we observed at least 100 counts for - might include later
-
-wide_fapro <- ch4_water_fx %>%
-  dplyr::select(-mean_count, -sum_count, -sum_med) %>%
-  pivot_wider(names_from = metabolic_function, values_from = rel_abund, values_fill = 0) # Convert to wide (in preparation for matrix)
-
-sum_fapro_mat <- as.matrix(wide_fapro[-1]) # Convert to matrix (drop grouping column)
-
-rownames(sum_fapro_mat) <- wide_fapro$solar_progress # Add grouping column back as rownames
-
-# Calculate distance, cluster, and find the order of each comp group
-comp_group_order <- dist(sum_fapro_mat) %>%
-  hclust() %>%
-  as.dendrogram() %>%
-  order.dendrogram()
-
-# Calculate distance, cluster, and find the order for each functional group
-func_group_order <- dist(t(sum_fapro_mat)) %>%
-  hclust() %>%
-  as.dendrogram() %>%
-  order.dendrogram()
-
-
-heatmap_plot <- ch4_water_fx %>%
-  arrange(desc(rel_abund)) %>% 
-  mutate(solar_progress = factor(solar_progress, levels = rownames(sum_fapro_mat)[comp_group_order]),
-         group = factor(metabolic_function, levels = colnames(sum_fapro_mat)[func_group_order])) %>% # Reorder factor levels based on dendrogram
-  ggplot(aes(x = solar_progress, y = metabolic_function, fill = round(rel_abund, digits = 2))) + 
-  geom_tile(color = "black") +
-  scale_fill_gradient2(low = "dodgerblue3", mid = "white", high = "firebrick",
-                       na.value = "white",
-                       name = NULL, midpoint = 0.5) +
-  geom_text(aes(label = round(rel_abund, digits = 2)), color = "black", size = 3) +
-  labs(x = NULL, y = NULL, title = "Relative Abundance of Detection within metabolic group") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5),
-        legend.position = "none",
-        panel.grid = element_blank(), text = element_text(size = 7))
-
-# Plot total observations as single-column heatmap
-n_plot <- ch4_water_fx %>%
-  mutate(solar_progress = factor(solar_progress, levels = rownames(sum_fapro_mat)[comp_group_order]),
-         group = factor(metabolic_function, levels = colnames(sum_fapro_mat)[func_group_order])) %>%
-  ggplot(aes(x="1", y = metabolic_function, fill = log10(sum_count))) + 
-  geom_tile() + 
-  theme_void() + 
-  labs(fill = "Log10 Total\nCounts") 
-
-# Arrange together
-faprotaxv2_water_24 <- ggarrange(plotlist =  list(heatmap_plot, NULL, n_plot), widths = c(2,-.5,1), align = "hv", nrow = 1)
-faprotax_23_24
-
-# plot relevant functions
-sig_fapro <- ch4_water_fx %>% 
-  dplyr::filter(rel_abund < 0.45 | rel_abund > 0.55) %>%
-  dplyr::filter(
-    metabolic_function == "anaerobic_chemoheterotrophy"| 
-    metabolic_function == "aerobic_chemoheterotrophy"| 
-    metabolic_function == "aerobic_anoxygenic_phototrophy" | 
-    metabolic_function == "anoxygenic_photoautotrophy" | 
-    metabolic_function == "anoxygenic_photoautotrophy_S_oxidizing" | 
-    metabolic_function == "aromatic_compound_degradation" |
-    metabolic_function == "anoxygenic_photoautotrophy_Fe_oxidizing" |
-    metabolic_function == "anoxygenic_photoautotrophy_H2_oxidizing" |
-    metabolic_function == "dark_sulfide_oxidation" | 
-    metabolic_function == "dark_sulfite_oxidation" | 
-    metabolic_function == "iron_respiration" |
-    metabolic_function == "iron_oxidation" |
-    metabolic_function == "manganese_respiration" | 
-    metabolic_function == "methanotrophy" |
-    metabolic_function == "methylotrophy" | 
-    metabolic_function == "photoheterotrophy" | 
-    metabolic_function == "respiration_of_sulfur_compounds" |
-    metabolic_function == "sulfur_reduction" | 
-    metabolic_function == "sulfur_respiration"|
-    metabolic_function == "oxygenic_photoautotrophy" | 
-    metabolic_function == "nonphotosynthetic_cyanobacteria" |
-    metabolic_function == "obligate_anaerobes" | 
-    metabolic_function == "nitrogen_fixation"| 
-    metabolic_function == "dissimilatory_arsenate_reduction" | 
-    metabolic_function == "reductive_acetogenesis")
-sig_fapro
-
-sig_wide_fapro <- sig_fapro %>%
-  dplyr::select(-mean_count, -sum_count, -sum_med) %>%
-  pivot_wider(names_from = metabolic_function, values_from = rel_abund, values_fill = 0) # Convert to wide (in preparation for matrix)
-
-sig_sum_fapro_mat <- as.matrix(sig_wide_fapro[-1]) # Convert to matrix (drop grouping column)
-
-rownames(sig_sum_fapro_mat) <- sig_wide_fapro$solar_progress # Add grouping column back as rownames
-
-# Calculate distance, cluster, and find the order of each comp group
-sig_comp_group_order <- dist(sig_sum_fapro_mat) %>%
-  hclust() %>%
-  as.dendrogram() %>%
-  order.dendrogram()
-
-# Calculate distance, cluster, and find the order for each functional group
-sig_func_group_order <- dist(t(sig_sum_fapro_mat)) %>%
-  hclust() %>%
-  as.dendrogram() %>%
-  order.dendrogram()
-
-
-sig_heatmap_plot <- sig_fapro %>%
-  mutate(solar_progress = factor(solar_progress, levels = rownames(sig_sum_fapro_mat)[sig_comp_group_order]),
-         group = factor(metabolic_function, levels = colnames(sig_sum_fapro_mat)[sig_func_group_order])) %>% # Reorder factor levels based on dendrogram
-  ggplot(aes(x = solar_progress, y = metabolic_function, fill = round(rel_abund, digits = 2))) + 
-  geom_tile(color = "black") +
-  scale_fill_gradient2(low = "dodgerblue3", mid = "white", high = "firebrick",
-                       na.value = "white",
-                       name = NULL, midpoint = 0.5) +
-  geom_text(aes(label = round(rel_abund, digits = 2)), color = "black", size = 3) +
-  labs(x = NULL, y = NULL, title = "Relative Abundance of Detection within Metabolic Group") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.9),
-        legend.position = "none",
-        panel.grid = element_blank(), text = element_text(size = 9))
-
-# Plot total observations as single-column heatmap
-sig_n_plot <- sig_fapro %>%
-  mutate(solar_progress = factor(solar_progress, levels = rownames(sig_sum_fapro_mat)[sig_comp_group_order]),
-         group = factor(metabolic_function, levels = colnames(sig_sum_fapro_mat)[sig_func_group_order])) %>%
-  ggplot(aes(x="1", y = metabolic_function, fill = log10(sum_count))) + 
-  geom_tile() + 
-  theme_void() + 
-  labs(fill = "Log10 Total\nCounts") 
-
-# Arrange together
-pmm <- ggarrange(plotlist =  list(sig_heatmap_plot, NULL, sig_n_plot), widths = c(4,-1,1.4), align = "hv", nrow = 1)
-pmm
-
-# ggsave(p1, width = 8, height = 7, units = "in",
-#         filename = "analysis/figures/10A_Water_Functional_Annontation_SA/p1.png")
-
-
-# Binomial
-hsp_bn <- read_tsv("data/10A_Water_Functional_Annontation_SA/faprotax2/function_table_16sfastav5_bionomial.tsv")
-
-# different output than before
-plot_new_f2_fx1 <- hsp_bn %>%
-  dplyr::rename(metabolic_function = `function`) %>% 
-  pivot_longer(matches("*SR*|SA*"), names_to = "DNA_ID", values_to = "Count") %>% 
-  group_by(metabolic_function, DNA_ID) %>%
-  dplyr::summarize(med_count = median(Count)) %>% # Combine rarefied replicates
-  ungroup() %>%
-  group_by(metabolic_function) %>% # Group by functional annotation
-  filter(any(med_count!=0)) %>% # Get rid of any groups that are all zero
-  ungroup() %>% 
-  left_join(., metadata, by = "DNA_ID") %>% # join metadata
-  dplyr::filter(solar_progress != "Pre-FPV") %>% # filter out in progress
-  group_by(solar_progress, metabolic_function) %>%
-  dplyr::summarize(mean_count = mean(med_count),
-            sum_med = sum(med_count)) %>% # For each functional group, find the mean count in that group and total number of observations
-  ungroup() %>%
-  dplyr::group_by(metabolic_function) %>% 
-  dplyr::mutate(rel_abund = mean_count / sum(mean_count),
-         sum_count = sum(sum_med),
-         sum_count = round(sum_count)) %>% 
-         # metabolic_function = paste0(metabolic_function, " (", sum_count, ")"))
-         # metabolic_function = str_replace_all(metabolic_function, "_", " "),
-         # metabolic_function = str_to_title(metabolic_function)) %>% # For each functional group, calculate the relative abundance of counts in that Comp_Group
-  separate(metabolic_function, into = c("metabolic_function", "extra"), sep = "\\.", remove = TRUE) %>%
-  dplyr::select(-extra) %>% 
-  dplyr::filter(sum_count > 100) # Only include groups that we observed at least 100 counts for - might include later
-
-wide_fapro <- plot_new_f2_fx1 %>%
-  dplyr::select(-mean_count, -sum_count, -sum_med) %>%
-  pivot_wider(names_from = metabolic_function, values_from = rel_abund, values_fill = 0) # Convert to wide (in preparation for matrix)
-
-sum_fapro_mat <- as.matrix(wide_fapro[-1]) # Convert to matrix (drop grouping column)
-
-rownames(sum_fapro_mat) <- wide_fapro$solar_progress # Add grouping column back as rownames
-
-# Calculate distance, cluster, and find the order of each comp group
-comp_group_order <- dist(sum_fapro_mat) %>%
-  hclust() %>%
-  as.dendrogram() %>%
-  order.dendrogram()
-
-# Calculate distance, cluster, and find the order for each functional group
-func_group_order <- dist(t(sum_fapro_mat)) %>%
-  hclust() %>%
-  as.dendrogram() %>%
-  order.dendrogram()
-
-
-heatmap_plot <- plot_new_f2_fx1 %>%
-  mutate(solar_progress = factor(solar_progress, levels = rownames(sum_fapro_mat)[comp_group_order]),
-         group = factor(metabolic_function, levels = colnames(sum_fapro_mat)[func_group_order])) %>% # Reorder factor levels based on dendrogram
-  ggplot(aes(x = solar_progress, y = metabolic_function, fill = round(rel_abund, digits = 2))) + 
-  geom_tile(color = "black") +
-  scale_fill_gradient2(low = "dodgerblue3", mid = "white", high = "firebrick",
-                       na.value = "white",
-                       name = NULL, midpoint = 0.5) +
-  geom_text(aes(label = round(rel_abund, digits = 2)), color = "black", size = 3) +
-  labs(x = NULL, y = NULL, title = "Relative Abundance of Detection within metabolic group") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5),
-        legend.position = "none",
-        panel.grid = element_blank(), text = element_text(size = 7))
-
-# Plot total observations as single-column heatmap
-n_plot <- plot_new_f2_fx1 %>%
-  mutate(solar_progress = factor(solar_progress, levels = rownames(sum_fapro_mat)[comp_group_order]),
-         group = factor(metabolic_function, levels = colnames(sum_fapro_mat)[func_group_order])) %>%
-  ggplot(aes(x="1", y = metabolic_function, fill = log10(sum_count))) + 
-  geom_tile() + 
-  theme_void() + 
-  labs(fill = "Log10 Total\nCounts") 
-
-# Arrange together
-faprotax_23_24 <- ggarrange(plotlist =  list(heatmap_plot, NULL, n_plot), widths = c(2,-.5,1), align = "hv", nrow = 1)
-faprotax_23_24
-
-# plot relevant functions
-sig_fapro <- plot_new_f2_fx1 %>% 
-  dplyr::filter(rel_abund < 0.45 | rel_abund > 0.55) %>%
-  dplyr::filter(
-    metabolic_function == "anaerobic_chemoheterotrophy"| 
-    metabolic_function == "aerobic_chemoheterotrophy"| 
-    metabolic_function == "aerobic_anoxygenic_phototrophy" | 
-    metabolic_function == "anoxygenic_photoautotrophy" | 
-    metabolic_function == "anoxygenic_photoautotrophy_S_oxidizing" | 
-    metabolic_function == "aromatic_compound_degradation" |
-    metabolic_function == "anoxygenic_photoautotrophy_Fe_oxidizing" |
-    metabolic_function == "anoxygenic_photoautotrophy_H2_oxidizing" |
-    metabolic_function == "dark_sulfide_oxidation" | 
-    metabolic_function == "dark_sulfite_oxidation" | 
-    metabolic_function == "iron_respiration" |
-    metabolic_function == "iron_oxidation" |
-    metabolic_function == "manganese_respiration" | 
-    metabolic_function == "methanotrophy" |
-    metabolic_function == "methylotrophy" | 
-    metabolic_function == "photoheterotrophy" | 
-    metabolic_function == "respiration_of_sulfur_compounds" |
-    metabolic_function == "sulfur_reduction" | 
-    metabolic_function == "sulfur_respiration"|
-    metabolic_function == "oxygenic_photoautotrophy" | 
-    metabolic_function == "nonphotosynthetic_cyanobacteria" |
-    metabolic_function == "obligate_anaerobes" | 
-    metabolic_function == "nitrogen_fixation"| 
-    metabolic_function == "dissimilatory_arsenate_reduction" | 
-    metabolic_function == "reductive_acetogenesis")
-sig_fapro
-
-sig_wide_fapro <- sig_fapro %>%
-  dplyr::select(-mean_count, -sum_count, -sum_med) %>%
-  pivot_wider(names_from = metabolic_function, values_from = rel_abund, values_fill = 0) # Convert to wide (in preparation for matrix)
-
-sig_sum_fapro_mat <- as.matrix(sig_wide_fapro[-1]) # Convert to matrix (drop grouping column)
-
-rownames(sig_sum_fapro_mat) <- sig_wide_fapro$solar_progress # Add grouping column back as rownames
-
-# Calculate distance, cluster, and find the order of each comp group
-sig_comp_group_order <- dist(sig_sum_fapro_mat) %>%
-  hclust() %>%
-  as.dendrogram() %>%
-  order.dendrogram()
-
-# Calculate distance, cluster, and find the order for each functional group
-sig_func_group_order <- dist(t(sig_sum_fapro_mat)) %>%
-  hclust() %>%
-  as.dendrogram() %>%
-  order.dendrogram()
-
-# heatmap plot
-sig_heatmap_plot <- sig_fapro %>%
-  mutate(solar_progress = factor(solar_progress, levels = rownames(sig_sum_fapro_mat)[sig_comp_group_order]),
-         group = factor(metabolic_function, levels = colnames(sig_sum_fapro_mat)[sig_func_group_order])) %>% # Reorder factor levels based on dendrogram
-  ggplot(aes(x = solar_progress, y = metabolic_function, fill = round(rel_abund, digits = 2))) + 
-  geom_tile(color = "black") +
-  scale_fill_gradient2(low = "dodgerblue3", mid = "white", high = "firebrick",
-                       na.value = "white",
-                       name = NULL, midpoint = 0.5) +
-  geom_text(aes(label = round(rel_abund, digits = 2)), color = "black", size = 3) +
-  labs(x = NULL, y = NULL, title = "Relative Abundance of Detection within Metabolic Group") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.9),
-        legend.position = "none",
-        panel.grid = element_blank(), text = element_text(size = 9))
-
-
-# Plot total observations as single-column heatmap
-sig_n_plot <- sig_fapro %>%
-  mutate(solar_progress = factor(solar_progress, levels = rownames(sig_sum_fapro_mat)[sig_comp_group_order]),
-         group = factor(metabolic_function, levels = colnames(sig_sum_fapro_mat)[sig_func_group_order])) %>%
-  ggplot(aes(x="1", y = metabolic_function, fill = log10(sum_count))) + 
-  geom_tile() + 
-  theme_void() + 
-  labs(fill = "Log10 Total\nCounts") 
-
-# Arrange together
-pbn <- ggarrange(plotlist =  list(sig_heatmap_plot, NULL, sig_n_plot), widths = c(4,-1,1.4), align = "hv", nrow = 1)
-pbn
-
-# Nearest Neighbot
-hsp_nn <- read_tsv("data/10A_Water_Functional_Annontation_SA/faprotax2/function_table_16sfastav6_nn.tsv")
-
-# different output than before
-plot_new_f2_fx1 <- hsp_nn %>%
-  dplyr::rename(metabolic_function = `function`) %>% 
-  pivot_longer(matches("*SR*|SA*"), names_to = "DNA_ID", values_to = "Count") %>% 
-  group_by(metabolic_function, DNA_ID) %>%
-  dplyr::summarize(med_count = median(Count)) %>% # Combine rarefied replicates
-  ungroup() %>%
-  group_by(metabolic_function) %>% # Group by functional annotation
-  filter(any(med_count!=0)) %>% # Get rid of any groups that are all zero
-  ungroup() %>% 
-  left_join(., metadata, by = "DNA_ID") %>% # join metadata
-  dplyr::filter(solar_progress != "Pre-FPV") %>% # filter out in progress
-  group_by(solar_progress, metabolic_function) %>%
-  dplyr::summarize(mean_count = mean(med_count),
-            sum_med = sum(med_count)) %>% # For each functional group, find the mean count in that group and total number of observations
-  ungroup() %>%
-  dplyr::group_by(metabolic_function) %>% 
-  dplyr::mutate(rel_abund = mean_count / sum(mean_count),
-         sum_count = sum(sum_med),
-         sum_count = round(sum_count)) %>% 
-         # metabolic_function = paste0(metabolic_function, " (", sum_count, ")"))
-         # metabolic_function = str_replace_all(metabolic_function, "_", " "),
-         # metabolic_function = str_to_title(metabolic_function)) %>% # For each functional group, calculate the relative abundance of counts in that Comp_Group
-  separate(metabolic_function, into = c("metabolic_function", "extra"), sep = "\\.", remove = TRUE) %>%
-  dplyr::select(-extra) %>% 
-  dplyr::filter(sum_count > 100) # Only include groups that we observed at least 100 counts for - might include later
-
-wide_fapro <- plot_new_f2_fx1 %>%
-  dplyr::select(-mean_count, -sum_count, -sum_med) %>%
-  pivot_wider(names_from = metabolic_function, values_from = rel_abund, values_fill = 0) # Convert to wide (in preparation for matrix)
-
-sum_fapro_mat <- as.matrix(wide_fapro[-1]) # Convert to matrix (drop grouping column)
-
-rownames(sum_fapro_mat) <- wide_fapro$solar_progress # Add grouping column back as rownames
-
-# Calculate distance, cluster, and find the order of each comp group
-comp_group_order <- dist(sum_fapro_mat) %>%
-  hclust() %>%
-  as.dendrogram() %>%
-  order.dendrogram()
-
-# Calculate distance, cluster, and find the order for each functional group
-func_group_order <- dist(t(sum_fapro_mat)) %>%
-  hclust() %>%
-  as.dendrogram() %>%
-  order.dendrogram()
-
-
-heatmap_plot <- plot_new_f2_fx1 %>%
-  arrange(desc(rel_abund)) %>% 
-  mutate(solar_progress = factor(solar_progress, levels = rownames(sum_fapro_mat)[comp_group_order]),
-         group = factor(metabolic_function, levels = colnames(sum_fapro_mat)[func_group_order])) %>% # Reorder factor levels based on dendrogram
-  ggplot(aes(x = solar_progress, y = metabolic_function, fill = round(rel_abund, digits = 2))) + 
-  geom_tile(color = "black") +
-  scale_fill_gradient2(low = "dodgerblue3", mid = "white", high = "firebrick",
-                       na.value = "white",
-                       name = NULL, midpoint = 0.5) +
-  geom_text(aes(label = round(rel_abund, digits = 2)), color = "black", size = 3) +
-  labs(x = NULL, y = NULL, title = "Relative Abundance of Detection within metabolic group") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5),
-        legend.position = "none",
-        panel.grid = element_blank(), text = element_text(size = 7))
-
-# Plot total observations as single-column heatmap
-n_plot <- plot_new_f2_fx1 %>%
-  mutate(solar_progress = factor(solar_progress, levels = rownames(sum_fapro_mat)[comp_group_order]),
-         group = factor(metabolic_function, levels = colnames(sum_fapro_mat)[func_group_order])) %>%
-  ggplot(aes(x="1", y = metabolic_function, fill = log10(sum_count))) + 
-  geom_tile() + 
-  theme_void() + 
-  labs(fill = "Log10 Total\nCounts") 
-
-# Arrange together
-faprotax_23_24 <- ggarrange(plotlist =  list(heatmap_plot, NULL, n_plot), widths = c(2,-.5,1), align = "hv", nrow = 1)
-faprotax_23_24
-
-# plot relevant functions
-sig_fapro <- plot_new_f2_fx1 %>% 
-  dplyr::filter(rel_abund < 0.45 | rel_abund > 0.55) %>%
-  dplyr::filter(
-    metabolic_function == "anaerobic_chemoheterotrophy"| 
-    metabolic_function == "aerobic_chemoheterotrophy"| 
-    metabolic_function == "aerobic_anoxygenic_phototrophy" | 
-    metabolic_function == "anoxygenic_photoautotrophy" | 
-    metabolic_function == "anoxygenic_photoautotrophy_S_oxidizing" | 
-    metabolic_function == "aromatic_compound_degradation" |
-    metabolic_function == "anoxygenic_photoautotrophy_Fe_oxidizing" |
-    metabolic_function == "anoxygenic_photoautotrophy_H2_oxidizing" |
-    metabolic_function == "dark_sulfide_oxidation" | 
-    metabolic_function == "dark_sulfite_oxidation" | 
-    metabolic_function == "iron_respiration" |
-    metabolic_function == "iron_oxidation" |
-    metabolic_function == "manganese_respiration" | 
-    metabolic_function == "methanotrophy" |
-    metabolic_function == "methylotrophy" | 
-    metabolic_function == "photoheterotrophy" | 
-    metabolic_function == "respiration_of_sulfur_compounds" |
-    metabolic_function == "sulfur_reduction" | 
-    metabolic_function == "sulfur_respiration"|
-    metabolic_function == "oxygenic_photoautotrophy" | 
-    metabolic_function == "nonphotosynthetic_cyanobacteria" |
-    metabolic_function == "obligate_anaerobes" | 
-    metabolic_function == "nitrogen_fixation"| 
-    metabolic_function == "dissimilatory_arsenate_reduction" | 
-    metabolic_function == "reductive_acetogenesis")
-sig_fapro
-
-sig_wide_fapro <- sig_fapro %>%
-  dplyr::select(-mean_count, -sum_count, -sum_med) %>%
-  pivot_wider(names_from = metabolic_function, values_from = rel_abund, values_fill = 0) # Convert to wide (in preparation for matrix)
-
-sig_sum_fapro_mat <- as.matrix(sig_wide_fapro[-1]) # Convert to matrix (drop grouping column)
-
-rownames(sig_sum_fapro_mat) <- sig_wide_fapro$solar_progress # Add grouping column back as rownames
-
-# Calculate distance, cluster, and find the order of each comp group
-sig_comp_group_order <- dist(sig_sum_fapro_mat) %>%
-  hclust() %>%
-  as.dendrogram() %>%
-  order.dendrogram()
-
-# Calculate distance, cluster, and find the order for each functional group
-sig_func_group_order <- dist(t(sig_sum_fapro_mat)) %>%
-  hclust() %>%
-  as.dendrogram() %>%
-  order.dendrogram()
-
-
-sig_heatmap_plot <- sig_fapro %>%
-  mutate(solar_progress = factor(solar_progress, levels = rownames(sig_sum_fapro_mat)[sig_comp_group_order]),
-         group = factor(metabolic_function, levels = colnames(sig_sum_fapro_mat)[sig_func_group_order])) %>% # Reorder factor levels based on dendrogram
-  ggplot(aes(x = solar_progress, y = metabolic_function, fill = round(rel_abund, digits = 2))) + 
-  geom_tile(color = "black") +
-  scale_fill_gradient2(low = "dodgerblue3", mid = "white", high = "firebrick",
-                       na.value = "white",
-                       name = NULL, midpoint = 0.5) +
-  geom_text(aes(label = round(rel_abund, digits = 2)), color = "black", size = 3) +
-  labs(x = NULL, y = NULL, title = "Relative Abundance of Detection within Metabolic Group") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.9),
-        legend.position = "none",
-        panel.grid = element_blank(), text = element_text(size = 9))
-
-# Plot total observations as single-column heatmap
-sig_n_plot <- sig_fapro %>%
-  mutate(solar_progress = factor(solar_progress, levels = rownames(sig_sum_fapro_mat)[sig_comp_group_order]),
-         group = factor(metabolic_function, levels = colnames(sig_sum_fapro_mat)[sig_func_group_order])) %>%
-  ggplot(aes(x="1", y = metabolic_function, fill = log10(sum_count))) + 
-  geom_tile() + 
-  theme_void() + 
-  labs(fill = "Log10 Total\nCounts") 
-
-# Arrange together
-pnn <- ggarrange(plotlist =  list(sig_heatmap_plot, NULL, sig_n_plot), widths = c(4,-1,1.4), align = "hv", nrow = 1)
-pnn
-
-
-# No hsp flag
-no_hsp <- read_tsv("data/10A_Water_Functional_Annontation_SA/faprotax2/function_table_16sfastav4.tsv")
-
-# different output than before
-plot_new_f2_fx1 <- no_hsp %>%
-  dplyr::rename(metabolic_function = `function`) %>% 
-  pivot_longer(matches("*SR*|SA*"), names_to = "DNA_ID", values_to = "Count") %>% 
-  group_by(metabolic_function, DNA_ID) %>%
-  dplyr::summarize(med_count = median(Count)) %>% # Combine rarefied replicates
-  ungroup() %>%
-  group_by(metabolic_function) %>% # Group by functional annotation
-  filter(any(med_count!=0)) %>% # Get rid of any groups that are all zero
-  ungroup() %>% 
-  left_join(., metadata, by = "DNA_ID") %>% # join metadata
-  dplyr::filter(solar_progress != "Pre-FPV") %>% # filter out in progress
-  group_by(solar_progress, metabolic_function) %>%
-  dplyr::summarize(mean_count = mean(med_count),
-            sum_med = sum(med_count)) %>% # For each functional group, find the mean count in that group and total number of observations
-  ungroup() %>%
-  dplyr::group_by(metabolic_function) %>% 
-  dplyr::mutate(rel_abund = mean_count / sum(mean_count),
-         sum_count = sum(sum_med),
-         sum_count = round(sum_count)) %>% 
-         # metabolic_function = paste0(metabolic_function, " (", sum_count, ")"))
-         # metabolic_function = str_replace_all(metabolic_function, "_", " "),
-         # metabolic_function = str_to_title(metabolic_function)) %>% # For each functional group, calculate the relative abundance of counts in that Comp_Group
-  separate(metabolic_function, into = c("metabolic_function", "extra"), sep = "\\.", remove = TRUE) %>%
-  dplyr::select(-extra) %>% 
-  dplyr::filter(sum_count > 100) # Only include groups that we observed at least 100 counts for - might include later
-
-wide_fapro <- plot_new_f2_fx1 %>%
-  dplyr::select(-mean_count, -sum_count, -sum_med) %>%
-  pivot_wider(names_from = metabolic_function, values_from = rel_abund, values_fill = 0) # Convert to wide (in preparation for matrix)
-
-sum_fapro_mat <- as.matrix(wide_fapro[-1]) # Convert to matrix (drop grouping column)
-
-rownames(sum_fapro_mat) <- wide_fapro$solar_progress # Add grouping column back as rownames
-
-# Calculate distance, cluster, and find the order of each comp group
-comp_group_order <- dist(sum_fapro_mat) %>%
-  hclust() %>%
-  as.dendrogram() %>%
-  order.dendrogram()
-
-# Calculate distance, cluster, and find the order for each functional group
-func_group_order <- dist(t(sum_fapro_mat)) %>%
-  hclust() %>%
-  as.dendrogram() %>%
-  order.dendrogram()
-
-
-heatmap_plot <- plot_new_f2_fx1 %>%
-  arrange(desc(rel_abund)) %>% 
-  mutate(solar_progress = factor(solar_progress, levels = rownames(sum_fapro_mat)[comp_group_order]),
-         group = factor(metabolic_function, levels = colnames(sum_fapro_mat)[func_group_order])) %>% # Reorder factor levels based on dendrogram
-  ggplot(aes(x = solar_progress, y = metabolic_function, fill = round(rel_abund, digits = 2))) + 
-  geom_tile(color = "black") +
-  scale_fill_gradient2(low = "dodgerblue3", mid = "white", high = "firebrick",
-                       na.value = "white",
-                       name = NULL, midpoint = 0.5) +
-  geom_text(aes(label = round(rel_abund, digits = 2)), color = "black", size = 3) +
-  labs(x = NULL, y = NULL, title = "Relative Abundance of Detection within metabolic group") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5),
-        legend.position = "none",
-        panel.grid = element_blank(), text = element_text(size = 7))
-
-# Plot total observations as single-column heatmap
-n_plot <- plot_new_f2_fx1 %>%
-  mutate(solar_progress = factor(solar_progress, levels = rownames(sum_fapro_mat)[comp_group_order]),
-         group = factor(metabolic_function, levels = colnames(sum_fapro_mat)[func_group_order])) %>%
-  ggplot(aes(x="1", y = metabolic_function, fill = log10(sum_count))) + 
-  geom_tile() + 
-  theme_void() + 
-  labs(fill = "Log10 Total\nCounts") 
-
-# Arrange together
-faprotax_23_24 <- ggarrange(plotlist =  list(heatmap_plot, NULL, n_plot), widths = c(2,-.5,1), align = "hv", nrow = 1)
-faprotax_23_24
-
-# plot relevant functions
-sig_fapro <- plot_new_f2_fx1 %>% 
-  dplyr::filter(rel_abund < 0.45 | rel_abund > 0.55) %>%
-  dplyr::filter(
-    metabolic_function == "anaerobic_chemoheterotrophy"| 
-    metabolic_function == "aerobic_chemoheterotrophy"| 
-    metabolic_function == "aerobic_anoxygenic_phototrophy" | 
-    metabolic_function == "anoxygenic_photoautotrophy" | 
-    metabolic_function == "anoxygenic_photoautotrophy_S_oxidizing" | 
-    metabolic_function == "aromatic_compound_degradation" |
-    metabolic_function == "anoxygenic_photoautotrophy_Fe_oxidizing" |
-    metabolic_function == "anoxygenic_photoautotrophy_H2_oxidizing" |
-    metabolic_function == "dark_sulfide_oxidation" | 
-    metabolic_function == "dark_sulfite_oxidation" | 
-    metabolic_function == "iron_respiration" |
-    metabolic_function == "iron_oxidation" |
-    metabolic_function == "manganese_respiration" | 
-    metabolic_function == "methanotrophy" |
-    metabolic_function == "methylotrophy" | 
-    metabolic_function == "photoheterotrophy" | 
-    metabolic_function == "respiration_of_sulfur_compounds" |
-    metabolic_function == "sulfur_reduction" | 
-    metabolic_function == "sulfur_respiration"|
-    metabolic_function == "oxygenic_photoautotrophy" | 
-    metabolic_function == "nonphotosynthetic_cyanobacteria" |
-    metabolic_function == "obligate_anaerobes" | 
-    metabolic_function == "nitrogen_fixation"| 
-    metabolic_function == "dissimilatory_arsenate_reduction" | 
-    metabolic_function == "reductive_acetogenesis")
-sig_fapro
-
-sig_wide_fapro <- sig_fapro %>%
-  dplyr::select(-mean_count, -sum_count, -sum_med) %>%
-  pivot_wider(names_from = metabolic_function, values_from = rel_abund, values_fill = 0) # Convert to wide (in preparation for matrix)
-
-sig_sum_fapro_mat <- as.matrix(sig_wide_fapro[-1]) # Convert to matrix (drop grouping column)
-
-rownames(sig_sum_fapro_mat) <- sig_wide_fapro$solar_progress # Add grouping column back as rownames
-
-# Calculate distance, cluster, and find the order of each comp group
-sig_comp_group_order <- dist(sig_sum_fapro_mat) %>%
-  hclust() %>%
-  as.dendrogram() %>%
-  order.dendrogram()
-
-# Calculate distance, cluster, and find the order for each functional group
-sig_func_group_order <- dist(t(sig_sum_fapro_mat)) %>%
-  hclust() %>%
-  as.dendrogram() %>%
-  order.dendrogram()
-
-
-sig_heatmap_plot <- sig_fapro %>%
-  mutate(solar_progress = factor(solar_progress, levels = rownames(sig_sum_fapro_mat)[sig_comp_group_order]),
-         group = factor(metabolic_function, levels = colnames(sig_sum_fapro_mat)[sig_func_group_order])) %>% # Reorder factor levels based on dendrogram
-  ggplot(aes(x = solar_progress, y = metabolic_function, fill = round(rel_abund, digits = 2))) + 
-  geom_tile(color = "black") +
-  scale_fill_gradient2(low = "dodgerblue3", mid = "white", high = "firebrick",
-                       na.value = "white",
-                       name = NULL, midpoint = 0.5) +
-  geom_text(aes(label = round(rel_abund, digits = 2)), color = "black", size = 3) +
-  labs(x = NULL, y = NULL, title = "Relative Abundance of Detection within Metabolic Group") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.9),
-        legend.position = "none",
-        panel.grid = element_blank(), text = element_text(size = 9))
-
-# Plot total observations as single-column heatmap
-sig_n_plot <- sig_fapro %>%
-  mutate(solar_progress = factor(solar_progress, levels = rownames(sig_sum_fapro_mat)[sig_comp_group_order]),
-         group = factor(metabolic_function, levels = colnames(sig_sum_fapro_mat)[sig_func_group_order])) %>%
-  ggplot(aes(x="1", y = metabolic_function, fill = log10(sum_count))) + 
-  geom_tile() + 
-  theme_void() + 
-  labs(fill = "Log10 Total\nCounts") 
-
-# Arrange together
-pNoHSP <- ggarrange(plotlist =  list(sig_heatmap_plot, NULL, sig_n_plot), widths = c(4,-1,1.4), align = "hv", nrow = 1)
-pNoHSP
-
-# now lets evaluate plots tgt
-fapro_outputs <- 
-  ggarrange(pmm, pbn, pnn, pNoHSP,
-  nrow = 2, 
-  ncol = 2,
-  align = "hv",
-  labels = c("Markov.", "Binomial.", "NN.", "None."),
-  font.label = list(size =8),
-  widths = c(5, 5))
-fapro_outputs
-```
-
-```{r}
-# First, you'll need to calculate relative abundances and get metadata
-# Assuming you have a metadata file that maps DNA_ID to groups
-
-# Read metadata (adjust path as needed)
-metadata <- read_tsv("path/to/your/metadata.tsv")
-
-count_fapro <- faprotax2 %>%
-  pivot_longer(-`function`, names_to = "Sample", values_to = "Abundance" * 100) %>%
-  mutate(count = ifelse(Abundance > 0, 1, 0))  
-# Join with your functional data and calculate relative abundances
-heatmap_data <- plot_new_f2_fx %>%
-  left_join(metadata, by = "DNA_ID") %>%
-  group_by(DNA_ID) %>%
-  mutate(rel_abund = Count / sum(Count)) %>%
-  ungroup()
-
-# If you want to reorder based on clustering like in your example:
-# First create a matrix for clustering
-sum_fapro_mat <- heatmap_data %>%
-  select(metabolic_function, DNA_ID, rel_abund) %>%
-  pivot_wider(names_from = DNA_ID, values_from = rel_abund, values_fill = 0) %>%
-  column_to_rownames("metabolic_function") %>%
-  as.matrix()
-
-# Perform clustering
-comp_group_order <- hclust(dist(sum_fapro_mat))$order  # Cluster functions
-func_group_order <- hclust(dist(t(sum_fapro_mat)))$order  # Cluster samples
-
-# Create the heatmap
-heatmap_plot <- heatmap_data %>%
-  mutate(
-    metabolic_function = factor(metabolic_function, 
-                               levels = rownames(sum_fapro_mat)[comp_group_order]),
-    DNA_ID = factor(DNA_ID, 
-                   levels = colnames(sum_fapro_mat)[func_group_order])
-  ) %>%
-  ggplot(aes(x = DNA_ID, y = metabolic_function, fill = rel_abund)) + 
-  geom_tile(color = "black") +
-  scale_fill_gradient2(
-    low = "dodgerblue3", mid = "white", high = "firebrick",
-    na.value = "white",
-    name = "Relative\nAbundance", midpoint = 0.5
-  ) +
-  geom_text(aes(label = round(rel_abund, digits = 2)), color = "black", size = 3) +
-  labs(x = NULL, y = NULL, title = "Relative Abundance of Metabolic Functions") +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(hjust = 0.5),
-    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
-    panel.grid = element_blank(), 
-    text = element_text(size = 7)
-  )
-
-# Plot total observations
-n_plot <- heatmap_data %>%
-  group_by(metabolic_function) %>%
-  summarize(sum_count = sum(Count)) %>%
-  mutate(
-    metabolic_function = factor(metabolic_function, 
-                               levels = rownames(sum_fapro_mat)[comp_group_order])
-  ) %>%
-  ggplot(aes(x = "1", y = metabolic_function, fill = log10(sum_count))) + 
-  geom_tile() + 
-  theme_void() + 
-  labs(fill = "Log10 Total\nCounts") +
-  scale_fill_gradient(low = "lightblue", high = "darkblue")
-
-# Combine plots if desired
-library(patchwork)
-combined_plot <- n_plot + heatmap_plot + plot_layout(widths = c(1, 10))
-combined_plot
-```
-
-```{r}
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-
-# 1. Ensure function table is in long format
-plot_new_f2_fx1_long <- faprotax2 %>%
-  dplyr::rename(metabolic_function = `function`) %>%
-  pivot_longer(-metabolic_function, names_to = "DNA_ID", values_to = "Rel_abund") %>%
-  mutate(Rel_abund = as.numeric(Rel_abund))
-
-# 2. Calculate total ASV counts per sample
-sample_totals <- classic_otu_table_ex3 %>%
-  pivot_longer(-OTU, names_to = "DNA_ID", values_to = "Abundance") %>%
-  group_by(DNA_ID) %>%
-  summarise(Total_counts = sum(Abundance), .groups = "drop")
-
-# 3. Approximate absolute abundance per function
-plot_new_f2_fx1_abs <- plot_new_f2_fx1_long %>%
-  left_join(sample_totals, by = "DNA_ID") %>%
-  mutate(Abs_abund = Rel_abund * Total_counts) %>% 
-  left_join(metadata, by = "DNA_ID")
-
-# 4. Optional: log-transform for heatmap scaling
-plot_new_f2_fx1_abs <- plot_new_f2_fx1_abs %>%
-  mutate(Log10_Abs = log10(Abs_abund + 1))
-
-# 5. Heatmap of approximate absolute abundances
-ggplot(plot_new_f2_fx1_abs, aes(x = solar_progress, y = metabolic_function, fill = Log10_Abs)) +
-  geom_tile(color = "black") +
-  scale_fill_gradient2(low = "dodgerblue3", mid = "white", high = "firebrick",
-                       midpoint = median(plot_new_f2_fx1_abs$Log10_Abs),
-                       name = "Log10 Approx. Abundance") +
-  facet_wrap(~solar_progress, scales = "free_x") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1),
-        axis.text.y = element_text(size = 7))
-
-```
-
-``` {sed-ch4}  
-  dplyr::filter(str_detect(Order, "^Meth")) %>% # filtering for methanogens / methanotroph
-  distinct(Phylum,Class,Order)
-methane_cyclers_distinct
-
-# create a vector of our methanogens and methanotrophs at the Order level
-methanogens <- c("Methanosarcinales_A_2632", "Methanomicrobiales", "Methanobacteriales", "Methanomassiliicoccales", "Methanotrichales", "Methanocellales", "Methanomethylicales")
-methanotrophs <- c("Methylococcales", "Methylacidiphilales", "Methylomirabilales")
-
-# calculate relative abundance and identify methane cycler
-methano_sed_phy <- scaled_sed_physeq_24 %>%
-  speedyseq::tax_glom(taxrank = "ASV") %>% 
-  # Calculate the relative abundance
-  speedyseq::transform_sample_counts(function(x) {x/sum(x)}) %>%
-  psmelt() %>%
-  filter(Order %in% c(methanogens, methanotrophs)) %>%
-  mutate(
-    Methanotroph_Methanogen = case_when(
-      Order %in% methanogens ~ "Methanogen",
-      Order %in% methanotrophs ~ "Methanotroph"
-    ),
-    solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open"),
-    Depth_Class = "Sediment"
-  )
-
-# summarize order abundance of methane cycler in sediments
-methano_sed_df <- methano_sed_phy %>%
-  group_by(Pond, solar_progress, Depth_Class, Methanotroph_Methanogen, Date_Collected) %>%
-  summarize(order_abund = sum(Abundance), .groups = "drop")
-
-# convert time to Julian date
-methano_sed_df$JDate <- lubridate::yday(methano_sed_df$Date_Collected)
-
-# save .RData
-save(methano_sed_df, file = "data/01_phyloseq/methano_sed_df.RData")
+    solar_progress = recode(solar_progress, "FPV" = "FPV", "No FPV" = "Open"), # solar progress
+    Depth_Class = recode(Depth_Class,  # depth class
+      "S" = "Surface Water",
+      "B" = "Bottom Water")) %>% 
+  dplyr::select(DNA_ID, Abundance, Pond, solar_progress, CH4_Cycler, JDate, Date_Collected, Depth_Class,
+                Phylum, Class, Order, Family, Genus, ASV, Species)
+
+# save water CH4 cyclers df as .RData
+save(water_ch4_cyclers_df, file = "data/01_phyloseq/water_ch4_cyclers_df.RData")
 
 
 # write out to excel file 
-write.csv(methano_sed_df, "data/01_phyloseq/sed_microbial_communities.csv")
-
-
-
-# 2. Create phyloseq for methane cyclers filtered data frame
-
-# put into wide format for OTU table
-otu_wide_sed <- methano_sed_phy %>% 
-  select(ASV, Sample, Abundance) %>% 
-  pivot_wider(names_from = Sample, values_from = Abundance, values_fill = 0) # pivot wider
-
-
-# convert to matrix and OTU/ASV names
-otu_mat_sed <- as.matrix(otu_wide_sed[, -1])
-rownames(otu_mat_sed) <- otu_wide_sed$ASV
-otu_table_sed <- otu_table(otu_mat_sed, taxa_are_rows = TRUE)
-
-
-# create tax table
-tax_sed <- methano_sed_phy %>% 
-  select(OTU, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, ASVseqs, Methanotroph_Methanogen) %>% 
-  distinct(OTU, .keep_all = TRUE) %>%
-  column_to_rownames("OTU")
-
-tax_sed_mat <- as.matrix(tax_sed)
-
-tax_sed_table <- tax_table(tax_sed_mat)
-
-
-# convert to sample data from melted phyloseq object - note no methanotroph_methanogen information as thats in tax_table
-sam_data_sed <- methano_sed_phy %>%
-  select(DNA_ID, Sample, Pond, solar_progress, Date_Collected) %>%
-  distinct(Sample, .keep_all = TRUE) %>%
-  mutate(
-    Depth_Class = "Sediment",
-    JDate = lubridate::yday(Date_Collected)
-  ) %>%
-  select(Sample, DNA_ID, Pond, solar_progress, Depth_Class, Date_Collected, JDate) %>%
-  column_to_rownames("Sample") %>%
-  sample_data()
-
-
-# create all time points sediment phyloseq object
-scaled_sed_ch4_physeq <- phyloseq(
-  otu_table(otu_table_sed, taxa_are_rows = TRUE),
-  tax_sed_table,
-  sam_data_sed
-)
-scaled_sed_ch4_physeq
-
-
+write.csv(water_ch4_cyclers_df, "data/01_phyloseq/water_ch4_cyclers.csv")
 
 ```
+Here we used FAPROTAXv2 along with manual identification to functionally predict methanogens and methanotrophs in the water column. 
 
-``` {r water-phyloseq1234}
-# melt physeq into data frame for just methane cyclers at Order level
+We created:
+1. **water_ch4_cylers_physeq** phyloseq object that has all 2024 time points and filtered for *only* methane cyclers
 
-# pull unique methane cycler taxonomic information , this will be updated shortly bc wrong rn
-methane_cyclers_distinct <- water_physeq_24 %>% 
-  psmelt() %>% # melt into dataframe 
-  dplyr::filter(str_detect(Order, "^Meth")) %>% # filtering for methanogens / methanotroph
-  distinct(Phylum,Class, Order)
-methane_cyclers_distinct
+2. **water_ch4_cyclers_df** data frame that will be used for plotting that includes total cell counts and reformatted names such as depth and solar treatment. This was also saved as a .csv file called "water_ch4_cyclers.csv"
 
-# create a vector of our methanogens and methanotrophs at the Order level
-methanogens <- c("Methanosarcinales_A_2632", "Methanomicrobiales", "Methanobacteriales", "Methanomassiliicoccales", "Methanofastidiosales", "Methanotrichales", "Methanocellales")
-methanotrophs <- c("Methylococcales", "Methylacidiphilales", "Methylomirabilales")
+### Sediment - Create FASTA File
+Here we will start with a classic OTU table in TSV format but without taxonomic identities. Instead we will have 16S rRNA sequences in a fasta format to place OTUs on FAPROTAX reference tree and functionally annotate from there
+```{r faprotax2-ref16S-prep-sed}
+# set seed
+set.seed(09091999)
 
-# filter phyloseq, trying to preserve abundance values
-water_ch4_physeq_24 <- subset_taxa(
-  water_physeq_24,
-  Order %in% c(methanogens, methanotrophs)
+# 1. Create otu table 
+classic_otu_table_sed <- scaled_sed_physeq %>%
+  otu_table %>%
+  psmelt() %>%
+  pivot_wider(names_from = Sample, values_from = Abundance) 
+
+write_tsv(classic_otu_table_sed, file = paste0("data/02B_Sediment_FAPROTAXv2/sed_otu_table.tsv"))
+
+# create fasta file 
+otu_sed_24 <- psmelt(scaled_sed_physeq) %>%
+  dplyr::select(OTU, Kingdom:ASVseqs) %>% 
+    distinct(OTU, .keep_all = TRUE) %>% 
+  mutate(taxonomy = paste(Kingdom, Phylum, Class, Order, Family, sep=";")) %>% 
+  dplyr::select(OTU,ASVseqs)
+
+
+# use biostrings to create fasta file 
+dna_seqs <- DNAStringSet(otu_sed_24$ASVseqs)
+names(dna_seqs) <- otu_sed_24$OTU
+writeXStringSet(dna_seqs, "data/02B_Sediment_FAPROTAXv2/sed_16S_seqs.fasta")
+
+# intuition check, no news is good news
+# Check if OTU IDs match between the two files
+otu_ids_table <- otu_sed_24$OTU
+otu_ids_fasta <- names(dna_seqs)
+
+identical(sort(otu_ids_table), sort(otu_ids_fasta)) # check id table
+
+stopifnot(identical(names(dna_seqs), otu_sed_24$OTU)) # check that fasta df is good, no news is good news
+```
+Now that we have created our .fasta file from our water samples, we can now run FAPROTAXv2 on them to functionally predict.
+
+### Sediment - Run FAPROTAXv2
+First we will align our sequences to the reference sequences using mafft.
+```{r sed-faprotax2-fastas, engine = "bash", engine.opts = "l"}
+# move directory
+cd data/02B_Sediment_FAPROTAXv2
+
+# get mafft onto path -- make sure to copy this in terminal or nothing happens <3
+export PATH=/programs/mafft/bin:$PATH
+
+
+# align our 16S rRNA fasta list to FAPROTAX2 database reference OR align through mafft GUI website if crashing
+/programs/mafft/bin/mafft --auto --addfragments sed_16S_seqs.fasta --thread -12 --keeplength SILVA_FOCAL_ALIGNMENTS_SANITIZED_SUBSET.fasta > sed_output_alignment.fasta
+
+# gui website code that was run
+mafft --thread 12 --inputorder --keeplength --anysymbol --maxambiguous 0.0 --addfragments fragments --auto input > output
+
+# run script to functionally annotate
+# since we have already created alignment we place our aligned sequences in already and no need to add reference file
+
+# run script to create phylogenetic tree
+# first set environment to have epa-ng to create tree
+export LD_LIBRARY_PATH=/usr/local/gcc-7.3.0/lib64:/usr/local/gcc-7.3.0/lib
+export PATH=/programs/epa-ng-0.3.8/bin:$PATH
+export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH # was having issues for getting Rcpp to work but this got it to go!
+
+# run script with aligned mafft aligned fasta file and tree
+# running with default for now which uses the binomial hsp algorithm
+Rscript faprotax.R -i sed_otu_table.tsv -a alignment_ch4sed.fasta -o ch4_sed_function_table_16S.tsv --out_intermediates ch4_sed_intermediates -d /local/workdir/sna49/FS_CH4_Mech_Ray_LO_Letters/data/02B_Sediment_FAPROTAXv2 -r ch4_sed_report.txt  --otu_names_are_in_column "OTU" --hsp_algorithm "binomial"
+```
+
+### Sediment - Extract Predicted FAPROTAXv2 Results
+Now we will get our function table and find the predicted metabolic functions that correspond to methane cycling, methanogens or methanotrophs. It will provide the ASV as well as the predicted function.
+
+First we will extract all functions then narrow in on CH4 cyclers. This will also be paired with taxonomic identification of known methane cyclers at the genus level.
+
+ASVs not classified to the family or genus level were filtered out from analysis despite FAPROTAXv2 predictions
+```{r pull-faprotaxv2-sed-asvs}
+# Read the text file of faprotaxv2 report from the previous chunk!
+lines <- readLines("data/02B_Sediment_FAPROTAXv2/ch4_sed_report.txt")
+
+# create empty vectors
+function_group <- c()
+asv_ids <- c()
+
+# temporary variable to store current function name
+current_function <- NA
+
+for (line in lines) {
+  line <- str_trim(line)
+  
+  # function group name
+  if (str_detect(line, ":$")) {
+    current_function <- str_extract(line, "^[^\\s(]+")  # gets function name before the space
+  }
+  
+  # reads asv lines (i.e. ASV_8 (P = 1))
+  if (str_detect(line, "^ASV_\\d+")) {
+    asv_id <- str_extract(line, "ASV_\\d+")
+    function_group <- c(function_group, current_function)
+    asv_ids <- c(asv_ids, asv_id)
+  }
+}
+
+# Combine into dataframe
+asv_df <- data.frame(function_group, asv_id = asv_ids)
+
+# View if curious!
+#View(asv_df)
+
+
+# now lets specifically pull out the ch4 cyclers
+sed_ch4_cyclers_asv_df <- asv_df %>% 
+  dplyr::filter(function_group %in% c(
+                "acetoclastic_methanogenesis.value",
+                "hydrogenotrophic_methanogenesis.value",
+                "methanogenesis_by_CO2_reduction_with_H2.value",
+                "methanogenesis_by_disproportionation_of_methyl_groups.value",
+                "methanogenesis_by_reduction_of_methyl_compounds_with_H2.value",
+                "methanogenesis_using_formate.value",
+                "methanogenesis.value",
+                "methanotrophy.value")) 
+
+# quick check to see if we have any duplicated asvs
+duplicates <- sed_ch4_cyclers_asv_df %>%
+  dplyr::group_by(asv_id) %>%
+  dplyr::summarise(
+    n_function_groups = dplyr::n_distinct(function_group), # number of function groups
+    function_groups = paste(unique(function_group), collapse = ", ") # if theres another one where asv is duplicated
+  ) %>%
+  dplyr::filter(n_function_groups > 1) # count
+duplicates # awesome methanogenesis functions overlap
+
+
+# methanogens have multiple annotations but they are all methanogenesis, we will keep the first occurrence of each asv since the specific function subtype doesnt matter to much to me right now
+sed_ch4_cyclers_asv_unique <- sed_ch4_cyclers_asv_df %>%
+  dplyr::distinct(asv_id, .keep_all = TRUE)
+
+# join ch4 cyclers with sed_physeq_ch4_df
+sed_ch4_joined <- scaled_sed_24_df %>%
+  dplyr::inner_join(sed_ch4_cyclers_asv_unique, 
+                    by = c("ASV" = "asv_id")) # 36202 observations!
+
+# tidy up dataframe
+sed_ch4_joined <- sed_ch4_joined %>% 
+  dplyr::select(function_group, Kingdom, Phylum, Class, Order,
+                Family, Genus, Species, ASV, ASVseqs) 
+
+
+# check out unqiue taxanomic levels
+sed_ch4_joined$Phylum %>% unique()
+sed_ch4_joined$Order %>% unique()
+sed_ch4_joined$Genus %>% unique()
+sed_ch4_joined$ASV %>% unique()
+
+# filter out NA at order level
+sed_ch4_joined <- sed_ch4_joined %>% 
+  dplyr::filter(!is.na(Family)) # 25346
+
+# create dataframe for sipmlified distinct ASV to verify
+simplified_af <- sed_ch4_joined %>% 
+  distinct(Family, .keep_all = TRUE) 
+simplified_af
+
+# now comparing with literature who is identified as a ch4 cycler
+# filtering out incorrectly identified asvs, or asvs with no literature supporting their predicted metabolic function
+sed_ch4_joined_clean_faprotax <- sed_ch4_joined %>% 
+  dplyr::filter(
+    !Genus %in% c("AV2", "Alsobacter", "Beijerinckia", "BOG-1460", "DP16D-bin41", "MWDV01", "SLKG01", "UBA7542", 	
+                  "WLWN01", "UBA11358",  "UBA3015", "GAS474", "JAAUTS01","UBA6215", "LW23", "WYBW01", 
+                  "Pedosphaera", "YA12-FULL-60-10", "UBA10450", "UBA3939", "PWTM01", "UBA95", "Lenti-01"),
+    !Family %in% c("Pontiellaceae","J093", "UBA10450", "JAAZAB01", "UBA11358"),
+    !ASV %in% c("ASV_3646", "ASV_468", "ASV_24935", "ASV_3646", "ASV_468")) # total 14030
+
+# notes for my exclusions:
+# 1. cannot find any information for derxia being methanotroph
+# 2. UBA10450 (family) is within Chthoniobacterales (order) within Verrucomicrobiota. since this is at family level its hard to say what is function is. im finding its involved in complex carbon degradation and could maybe be a methanotroph and have other pathways to break this down but with this uncertainty and especially since no genus level identification will omit for now. most are apparently aerobic/anaerobic chemoorganotrophs
+  # verruco methanotrophs are within methylacidiphilaceae family https://www.mdpi.com/2076-2607/12/11/2271
+# 3. UBA11358 (family and genus) within Verrucomicrobiota i cant find solid evidence for methanotrophy either but based on these MAGs seems they are involved in other h2 metabolisms and stuff; biorxiv https://www.biorxiv.org/content/10.1101/2024.07.02.601631v1
+# 4. aslobacter soli is a chemo-organotroph incapable of growth on C1 substrates [https://www.microbiologyresearch.org/content/journal/ijsem/10.1099/ijsem.0.003088#R1]
+# 5. Methylacidiphilales (order), UBA3015 (family), UBA3015 (genus). not methanotroph likely heterotroph invovled in plant degradation. [https://registry.seqco.de/names/48695; https://www.nature.com/articles/s41467-025-63266-9]
+# 6. GAS474 lacks genes for methanotrophy likely methylotroph or complex carbon degrader [https://www.nature.com/articles/s41522-024-00583-9]
+# 7. JAAUTS01 no evidence for known methanotrophy
+# 8. UBA6215 within Omnitrophota are not known to be methanotrophs but have diverse metabolic capabilities like acetogenesis and potentially parasitic? [https://www.nature.com/articles/s41564-022-01319-1]
+# 9. LW23 likely methylotroph [https://www.mdpi.com/2076-2607/9/12/2566?utm_source=researchgate.net&medium=article]
+# 10. WYBW01 methylotroph [https://www.biorxiv.org/content/10.1101/2025.02.12.637893v3.full]
+# 11. Pedosphaera no evidence for methanotrophy
+# 12. Azospirillum is a methylotroph, no evidence for methanotrophy [https://www.nature.com/articles/s43247-024-01656-5]
+# 13. YA12-FULL-60-10 no evidence for methanotrphy [https://www.mdpi.com/2076-2607/8/6/920?utm_source=researchgate.net&medium=article]
+# 14. Beijerinckia chemoheterotroph, not capable of methylotrophic or methanotrophy. [https://journals.asm.org/doi/10.1128/jb.00656-10]
+# 15. SXTU01 not known methanotroph, no literature supporting this or found
+# 16. AV2, no evidence for methanotrophy
+# 17. Lenti-01, no evidence for methanotrophy. specialists for degrading sulfated polysaccharides [https://pmc.ncbi.nlm.nih.gov/articles/PMC8857213/#:~:text=A%20phylogenetic%20reconstruction%20using%20conserved,also%20determined%20(Supplementary%20results).]
+# 18. PWTM01 no reports of methanotrophy
+# 19. UBA95 could not find support for methanogenesis, seems to have other metabolic capabilities like secondary metabolites and nitrogen cycling.
+# 20. JO93 not methanotroph likely, in different order with that doesnt have known methanotrophs
+# 21. removing ASVs within Beijerinckiaceae family that are NA at genus level as not all genera are capable of methanotrophy
+# 22. BOG-1460 is not known methanotroph
+# 23. DP16D-bin41 not known methanotroph
+# 24. VSJD01 not known methanotroph 
+
+
+# distinct at family level for ch4 cycler
+# one NA at genus but family is all known methanotrophs
+# these are just intuition checks!
+sed_ch4_joined_clean_faprotax$Family %>% unique()
+faprotaxv2_family <- unique(sed_ch4_joined_clean_faprotax$Family)
+
+
+# now lets create data frame to search in case faprotax missed a literature-based identified methanotroph 
+sed_24_taxonomysearch <- scaled_sed_24_df %>%
+  dplyr::select(OTU, Kingdom:ASVseqs) %>% 
+  distinct(OTU, .keep_all = TRUE) %>% # one ASV per row
+  dplyr::filter(!is.na(Family)) # cannot be na and family level and below
+
+# rationale to include this above:
+  #1. Methanomassiliicoccales (order level) methanogens to capture family and genus level; methylotrophic methanogen
+  #2. Methanomethylicaceae (family) methyltrophic methanogen
+  #3. 2-02-FULL-66-22 contains nitrite-dependent anaerobic methane oxidizing (N-DAMO) bacteria that couple anaerobic methane oxidation to nitrite reduction.
+
+
+# create dataframes for manual search 
+sed_24_manual <- sed_24_taxonomysearch %>%
+  dplyr::filter(Family %in% c("2-02-FULL-66-22", "Methanomethylophilaceae") |
+                Order %in% c("Methanomassiliicoccales")) %>%  # family level to also include manually (e.g., specific N-DAMO methanotroph and methanogen
+  dplyr::distinct(ASV, .keep_all = TRUE) # one ASV per row
+    
+
+# finalize dataframe column orders before merging
+sed_ch4_joined_clean_faprotax_trim <- sed_ch4_joined_clean_faprotax %>%
+  dplyr::select(-function_group)
+
+sed_ch4_manual_trim <- sed_24_manual %>% 
+  dplyr::select(-OTU)
+
+
+# bind rows
+sed_ch4_cyclers_complete_df <- dplyr::bind_rows(
+  sed_ch4_joined_clean_faprotax_trim,
+  sed_ch4_manual_trim
 )
 
-# to mutate if methanogen or methanotroph convert to df
-tax_df_2024 <- as.data.frame(tax_table(water_ch4_physeq_24))
+# list of all our CH4 cycler ASVs to filter phyloseq 
+ch4_asv_list <- sed_ch4_cyclers_complete_df$ASV
 
-# add designation
-tax_df_2024 <- tax_df_2024 %>%
-  mutate(
-    Methanotroph_Methanogen = case_when(
-      Order %in% methanogens ~ "Methanogen",
-      Order %in% methanotrophs ~ "Methanotroph",
-      TRUE ~ NA_character_
-    )
-  )
-
-# convert back to matrix and put back into phyloseq object format
-tax_table(water_ch4_physeq_24) <- tax_table(as.matrix(tax_df_2024))
-
-# intuition check to see if we made column in tax table
-head(as.data.frame(tax_table(water_ch4_physeq_24))) # looks good!
-
-# old filtering that i think was messing up abudnances
-# methane_cyclers_filt <- water_physeq_24 %>% 
-#   psmelt() %>% # melt into dataframe 
-#   dplyr::filter(Order %in% c(methanogens, methanotrophs)) %>% 
-#   mutate(
-#     Methanotroph_Methanogen = case_when(
-#       Order %in% methanogens ~ "Methanogen",
-#       Order %in% methanotrophs ~ "Methanotroph",
-#       TRUE ~ "Other"))
-# 
-# head(methane_cyclers_filt)
-# 
-# 
-# # 2. Create phyloseq for methane cyclers filtered data frame
-# 
-# # put into wide format for OTU table
-# otu_wide_ch4 <- methane_cyclers_filt %>% 
-#   select(ASV, Sample, Abundance) %>% 
-#   pivot_wider(names_from = Sample, values_from = Abundance, values_fill = 0) # pivot wider
-# 
-# 
-# # convert to matrix and OTU/ASV names
-# otu_mat_ch4 <- as.matrix(otu_wide_ch4[, -1])
-# rownames(otu_mat_ch4) <- otu_wide_ch4$ASV
-# otu_table_ch4 <- otu_table(otu_mat_ch4, taxa_are_rows = TRUE)
-# 
-# 
-# # create tax table
-# tax_ch4 <- methane_cyclers_filt %>% 
-#   select(OTU, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, ASVseqs) %>% 
-#   distinct(ASV, .keep_all = TRUE) %>%
-#   column_to_rownames("OTU")
-# 
-# tax_ch4_mat <- as.matrix(tax_ch4)
-# 
-# tax_ch4_table <- tax_table(tax_ch4_mat)
-# 
-# # sample data
-# sam_data_ch4 <- methane_cyclers_filt
-# 
-# # Convert back to sample_data
-# sam_data_ch4 <- sam_data_ch4 %>% 
-#   select(DNA_ID, Sample, Pond, Depth_Class, solar_progress, everything()) %>%
-#   distinct(Sample, .keep_all = TRUE) %>%  # one row per sample
-#   select(-c(Abundance, OTU, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, ASVseqs)) %>% 
-#   mutate(
-#     Depth_Class = factor(Depth_Class, levels = c("S", "B")),
-#     solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open")) %>% 
-#   column_to_rownames("Sample") %>% 
-#   sample_data()
-# 
-# # create all time point phyloseq object
-# water_ch4_physeq <- phyloseq(
-#   otu_table(otu_table_ch4, taxa_are_rows = TRUE),
-#   tax_ch4_table,
-#   sam_data_ch4
-# )
-# water_ch4_physeq
+# filter phyloseq for CH4 cyclers at the ASV level
+sed_ch4_cyclers_physeq <- scaled_sed_physeq %>% 
+  subset_taxa(ASV %in% ch4_asv_list)
 
 
+# create list of CH4 cylcers at the family level!
+sed_methanogens <- c("Methanotrichaceae", "Methanospirillaceae_2121", "Methanobacteriaceae",
+                 "Methanospirillaceae_2125", "Methanosarcinaceae","Methanocellaceae", 
+                 "Methanomicrobiaceae", "Methanoperedenaceae", "UBA472", "Methanomassiliicoccaceae")
+sed_methanotrophs <- c("Methylomonadaceae", "Methylococcaceae","Beijerinckiaceae", "2-02-FULL-66-22")
 
-# create df for plotting 
-# summarize methane cyclers by order and sample metadata
-water_physeq_ch4_order <- water_ch4_physeq_24 %>%
-  tax_glom(taxrank = "ASV") %>%
-  psmelt() %>%          
-  filter(Order %in% c(methanogens, methanotrophs)) %>% 
-  mutate(
-    Methanotroph_Methanogen = case_when(
-      Order %in% methanogens   ~ "Methanogen",
-      Order %in% methanotrophs ~ "Methanotroph",
-      TRUE ~ NA_character_
-    )
-  ) %>%
-  group_by(Pond, solar_progress, Depth_Class, Methanotroph_Methanogen, JDate, Phylum, Class, Order, Family, Genus, ASV) %>% 
-  summarise(
-    total_cells_ml = sum(Abundance, na.rm = TRUE),
-    .groups = "drop"
-  )
+# add if methanogen or methanotroph to column
+tax_tab <- as.data.frame(tax_table(sed_ch4_cyclers_physeq))
 
-# now make dataframe for plotting
-methano_water_df <- water_physeq_ch4_order %>%
-  mutate(
-    Depth_Class = recode(Depth_Class,
-      "S" = "Surface Water",
-      "B" = "Bottom Water"
-    ),
-    Depth_Class = factor(Depth_Class, levels = c("Surface Water", "Bottom Water")),
-    solar_progress = recode(solar_progress,
-      "Solar" = "FPV",
-      "No Solar" = "Open"
-    ),
-    solar_methano = paste(solar_progress, Methanotroph_Methanogen, sep = " "),
-    solar_methano = factor(
-      solar_methano,
-      levels = c("FPV Methanogen", "Open Methanogen", "FPV Methanotroph", "Open Methanotroph")
-    )
-  ) %>%
-  select(Pond, JDate, Depth_Class, solar_progress, Methanotroph_Methanogen, total_cells_ml, solar_methano, ASV)
-
-# tax glom at Order level for methane cyclers phyloseq
-# water_physeq_ch4_order <- water_ch4_physeq %>% 
-#   tax_glom(taxrank = "ASV") %>% 
-#   psmelt() %>% 
-#   filter(Order %in% c(methanogens, methanotrophs)) %>% 
-#   mutate(
-#     Methanotroph_Methanogen = case_when(
-#       Order %in% methanogens ~ "Methanogen",
-#       Order %in% methanotrophs ~ "Methanotroph"
-#     )
-#   ) %>% 
-#   group_by(Pond, solar_progress, Depth_Class, Methanotroph_Methanogen, JDate) %>% 
-#   summarize(
-#     total_cells_ml = sum(Abundance, na.rm = TRUE),
-#     .groups = "drop"
-#   )
-# water_physeq_ch4_order 
-# 
-# 
-# # create df for plotting 
-# methano_water_df <- water_physeq_ch4_order %>% 
-#   select(Pond, Methanotroph_Methanogen, total_cells_ml, Depth_Class, solar_progress, JDate) %>%
-#   mutate(
-#     Depth_Class = case_when(
-#     Depth_Class == "S"  ~ "Surface Water",
-#     Depth_Class == "B"  ~ "Bottom Water"
-#     ),
-#     Depth_Class = factor(Depth_Class, levels = c("Surface Water", "Bottom Water")),
-#     solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open"),
-#     solar_methano = paste(solar_progress, Methanotroph_Methanogen, sep = " "),
-#     solar_methano = factor(
-#       solar_methano,
-#       levels = c("FPV Methanogen", "Open Methanogen", "FPV Methanotroph", "Open Methanotroph")
-#     ))
-
-# save methane cycler order data frame
-save(water_physeq_ch4_order, file = "data/01_phyloseq/water_physeq_ch4_order.RData")
-
-# write out to excel file for plotting main figure
-write.csv(methano_water_df, "data/01_phyloseq/watercol_microbial_communities.csv")
-```
-We created:
-1. **water_ch4_physeq** that has all 2024 time points and filtered for *only* methane cyclers
-
-2. **water_physeq_ch4_order** ASV agglomerated with total cell counts for methane cyclers
-
-3. **methano_water_df** data frame that will be used for plotting that includes total cell counts and reformatted names such as depth and solar treatment. This was also saved as a .csv file called "watercol_microbial_communities.csv"
+tax_tab$CH4_Cycler <- dplyr::case_when(
+  tax_tab$Family %in% sed_methanogens ~ "Methanogen",
+  tax_tab$Family %in% sed_methanotrophs   ~ "Methanotroph",
+  TRUE ~ "NA"
+)
 
 
-We created:
-1. **scaled_sed_ch4_physeq** phyloseq object that was scaled down to minimum read depth (20822)
+tax_table(sed_ch4_cyclers_physeq) <- tax_table(as.matrix(tax_tab))
 
-2. **methano_sed_phy** agglomerated at ASV level and also includes renaming of objects like depth class as well as methane cycler identification. 
+sed_ch4_cyclers_physeq # 341 total ASVs
 
-3. **methano_sed_df** dataframe calculated with relative abundance counts
+# save phyloseq object
+save(sed_ch4_cyclers_physeq, file = "data/01_phyloseq/sed_ch4_cyclers_physeq.RData")
 
-# Identify putative CH4 cyclers
-Here we will take our water and sediment physeq objects and run the latest version of FAPROTAXV2. This takes either taxonomic names, trained on SILVA database but does recognize some GreenGenes but with the GreenGenes2 update, i can confirm it predicts marginally less due to the renaming. Thus we will utilize the 16S rRNA seuqences where it places our sequences against a phylogenetic reference tree to determine putative metabolic functions. It does use different hidden state prediction algorithms but I will be sticking with the default (binomial) for now since the optimized version is still under development. 
-
-
-### Sediment - Methanogen + Methanotroph Phyloseqs
-
-To see how our methanogens and methanotrophs differ in our sediment communities we will create two separate physeqs for methanogen and methanotrophs
-
-#### Create Methanogen Phyloseq
-```{r sed-methanogen-physeq}
-# pull unique methane cycler taxonomic information 
-methane_cyclers_distinct <- scaled_sed_physeq_24 %>% 
-  psmelt() %>% # melt into dataframe 
-  dplyr::filter(str_detect(Order, "^Methano")) %>% # filtering for methanogens / methanotroph
-  distinct(Phylum,Class,Order)
-methane_cyclers_distinct
-
-# create a vector of our methanogens and methanotrophs at the Order level
-methanogens <- c("Methanosarcinales_A_2632", "Methanomicrobiales", "Methanobacteriales", "Methanomassiliicoccales", "Methanotrichales", "Methanocellales", "Methanomethylicales")
-
-# calculate relative abundance and identify methane cycler
-methanogen_sed_phy <- scaled_sed_physeq_24 %>%
-  speedyseq::tax_glom(taxrank = "ASV") %>% 
+# melt into dataframe for plotting CH4 cyclers
+sed_ch4_cyclers_df <- sed_ch4_cyclers_physeq %>%
+  #speedyseq::tax_glom(taxrank = "ASV") %>% 
   # Calculate the relative abundance
   speedyseq::transform_sample_counts(function(x) {x/sum(x)}) %>%
-  psmelt() %>%
-  filter(Order %in% c(methanogens)) %>% # filtering for methanogens only
-  mutate(
-    Methanotroph_Methanogen = case_when(
-      Order %in% methanogens ~ "Methanogen",
-      Order %in% methanotrophs ~ "Methanotroph"
-    ),
-    solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open"),
-    Depth_Class = "Sediment"
-  )
+  psmelt() %>% 
+  dplyr::mutate(
+    solar_progress = recode(solar_progress, "FPV" = "FPV", "No FPV" = "Open"), # solar progress
+    Depth_Class = recode(Depth_Class,  # depth class
+      "SD" = "Sediment")) %>% 
+  dplyr::select(DNA_ID, Abundance, Pond, solar_progress, CH4_Cycler, JDate, Date_Collected, Depth_Class,
+                Phylum, Class, Order, Family, Genus, ASV, Species)
 
-# intuition check 
-unique(methanogen_sed_phy$Methanotroph_Methanogen)
-
-# summarize order abundance of methanogen in sediments
-methanogen_sed_df <- methanogen_sed_phy %>%
-  group_by(Pond, solar_progress, Methanotroph_Methanogen, Date_Collected, Depth_Class) %>%
-  summarize(order_abund = sum(Abundance), .groups = "drop")
-
-# add Julian Date
-methanogen_sed_df$JDate <- lubridate::yday(methanogen_sed_df$Date_Collected)
-
-# save .RData
-save(methanogen_sed_df, file = "data/01_phyloseq/methanogen_sed_df.RData")
+# save water CH4 cyclers df as .RData
+save(sed_ch4_cyclers_df, file = "data/01_phyloseq/sed_ch4_cyclers_df.RData")
 
 
-
-
-
-# create phyloseq object for methanogens 
-
-# put into wide format for OTU table
-otu_wide_sed <- methanogen_sed_phy %>% 
-  select(ASV, Sample, Abundance) %>% 
-  pivot_wider(names_from = Sample, values_from = Abundance, values_fill = 0) # pivot wider
-
-
-# convert to matrix and OTU/ASV names
-otu_mat_sed <- as.matrix(otu_wide_sed[, -1])
-rownames(otu_mat_sed) <- otu_wide_sed$ASV
-otu_table_sed <- otu_table(otu_mat_sed, taxa_are_rows = TRUE)
-
-
-# create tax table
-tax_sed <- methanogen_sed_phy %>% 
-  select(OTU, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, ASVseqs, Methanotroph_Methanogen) %>% 
-  distinct(OTU, .keep_all = TRUE) %>%
-  column_to_rownames("OTU")
-
-tax_sed_mat <- as.matrix(tax_sed)
-
-tax_sed_table <- tax_table(tax_sed_mat)
-
-
-# convert to sample data from melted phyloseq object
-sam_data_sed <- methanogen_sed_phy %>%
-  select(DNA_ID, Sample, Pond, solar_progress, Date_Collected) %>%
-  distinct(Sample, .keep_all = TRUE) %>%
-  mutate(
-    Depth_Class = "Sediment",
-    JDate = lubridate::yday(Date_Collected)
-  ) %>%
-  select(Sample, DNA_ID, Pond, solar_progress, Depth_Class, Date_Collected, JDate) %>%
-  column_to_rownames("Sample") %>%
-  sample_data()
-
-
-# create methanogen sediment phyloseq object
-scaled_methanogen_sed_physeq <- phyloseq(
-  otu_table(otu_table_sed, taxa_are_rows = TRUE),
-  tax_sed_table,
-  sam_data_sed
-)
-scaled_methanogen_sed_physeq
-
-# save phyloseq object
-save(scaled_methanogen_sed_physeq, file = "data/01_phyloseq/scaled_methanogen_sed_physeq.RData")
+# write out to excel file 
+write.csv(sed_ch4_cyclers_df, "data/01_phyloseq/sed_ch4_cyclers.csv")
 ```
+Here we used FAPROTAXv2 along with manual identification to functionally predict methanogens and methanotrophs in the sediments. 
 
 We created:
-1. **scaled_methanogen_sed_physeq** which has been specifically filtered for methanogens and saved as a phyloseq object
+1. **sed_ch4_cylers_physeq** phyloseq object that has all 2024 time points and filtered for *only* methane cyclers. This was from our scaled phyloseq that was scaled down to the minimum read number 20826
 
-
-#### Create Methanotroph Phyloseq
-```{r sed-methanotroph-phyloseq}
-# pull unique methane cycler taxonomic information 
-methane_cyclers_distinct <- scaled_sed_physeq_24 %>% 
-  psmelt() %>% # melt into dataframe 
-  dplyr::filter(str_detect(Order, "^Methyl")) %>% # filtering for methanogens / methanotroph
-  distinct(Phylum,Class,Order)
-methane_cyclers_distinct
-
-# create a vector of our methanogens and methanotrophs at the Order level
-methanotrophs <- c("Methylococcales", "Methylacidiphilales", "Methylomirabilales")
-
-# calculate relative abundance and identify methane cycler
-methanotroph_sed_phy <- scaled_sed_physeq_24 %>%
-  speedyseq::tax_glom(taxrank = "ASV") %>% 
-  # Calculate the relative abundance
-  transform_sample_counts(function(x) {x/sum(x)}) %>%
-  psmelt() %>%
-  filter(Order %in% c(methanotrophs)) %>% # filtering for only methanotrophs
-  mutate(
-    Methanotroph_Methanogen = case_when(
-      Order %in% methanogens ~ "Methanogen",
-      Order %in% methanotrophs ~ "Methanotroph" # filtering for just methanotrophs
-    ),
-    solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open"),
-    Depth_Class = "Sediment"
-  )
-
-# summarize order abundance of methanotrophs in sediments
-methanotroph_sed_df <- methanotroph_sed_phy %>%
-  group_by(Pond, solar_progress, Methanotroph_Methanogen, Date_Collected, Depth_Class) %>%
-  summarize(order_abund = sum(Abundance), .groups = "drop")
-
-# add julian date
-methanotroph_sed_df$JDate <- lubridate::yday(methanotroph_sed_df$Date_Collected)
-
-# save .RData
-save(methanotroph_sed_df, file = "data/01_phyloseq/methanotroph_sed_df.RData")
-
-
-
-
-
-
-
-# Create phyloseq for sediment methanogens
-
-# put into wide format for OTU table
-otu_wide_sed <- methanotroph_sed_phy %>% 
-  select(ASV, Sample, Abundance) %>% 
-  pivot_wider(names_from = Sample, values_from = Abundance, values_fill = 0) # pivot wider
-
-
-# convert to matrix and OTU/ASV names
-otu_mat_sed <- as.matrix(otu_wide_sed[, -1])
-rownames(otu_mat_sed) <- otu_wide_sed$ASV
-otu_table_sed <- otu_table(otu_mat_sed, taxa_are_rows = TRUE)
-
-
-# create tax table
-tax_sed <- methanotroph_sed_phy %>% 
-  select(OTU, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, ASVseqs, Methanotroph_Methanogen) %>% 
-  distinct(OTU, .keep_all = TRUE) %>%
-  column_to_rownames("OTU")
-
-tax_sed_mat <- as.matrix(tax_sed)
-
-tax_sed_table <- tax_table(tax_sed_mat)
-
-
-# convert to sample data from melted phyloseq object
-sam_data_sed <- methanotroph_sed_phy %>%
-  select(DNA_ID, Sample, Pond, solar_progress, Date_Collected) %>%
-  distinct(Sample, .keep_all = TRUE) %>%
-  mutate(
-    Depth_Class = "Sediment",
-    JDate = lubridate::yday(Date_Collected)
-  ) %>%
-  select(Sample, DNA_ID, Pond, solar_progress, Depth_Class, Date_Collected, JDate) %>%
-  column_to_rownames("Sample") %>%
-  sample_data()
-
-
-# create all taxa phyloseq object
-scaled_methanotroph_sed_physeq <- phyloseq(
-  otu_table(otu_table_sed, taxa_are_rows = TRUE),
-  tax_sed_table,
-  sam_data_sed
-)
-scaled_methanotroph_sed_physeq
-
-# save phyloseq object
-save(scaled_methanotroph_sed_physeq, file = "data/01_phyloseq/scaled_methanotroph_sed_physeq.RData")
-```
-We created:
-1. **scaled_methanotroph_sed_physeq** which has been specifically filtered for methanotrophs and saved as a phyloseq object
+2. **sed_ch4_cyclers_df** data frame that will be used for plotting that includes relative abundance and reformatted names such as depth and solar treatment. This was also saved as a .csv file called "sed_ch4_cyclers.csv"
 
 
 # Normality of Methane Cyclers in Ponds
@@ -1639,51 +761,63 @@ Lets configure our dataframe and then check to see how our data is distributed w
 We will split this up by sample type where we will do water first then sediments in next chunk
 
 ### Water
+left off here
 ```{r normality-water}
 # factor solar progress
-methano_water_df$solar_progress <- factor(
-  methano_water_df$solar_progress,
+water_ch4_cyclers_df$solar_progress <- factor(
+  water_ch4_cyclers_df$solar_progress,
   levels = c("FPV", "Open"))
 
+# factor depth
+water_ch4_cyclers_df$Depth_Class <- factor(
+  water_ch4_cyclers_df$Depth_Class,
+  levels = c("Surface Water", "Bottom Water"))
+
 # now add interaction column to our df
-methano_water_df <- methano_water_df %>%
-  mutate(group = interaction(Methanotroph_Methanogen, Depth_Class, sep = " "))
+water_ch4_cyclers_df <- water_ch4_cyclers_df %>%
+  mutate(group = interaction(CH4_Cycler, Depth_Class, sep = " ")) %>% 
+  group_by(ASV, group, solar_progress) %>%
+  summarise(
+    total_abundance = sum(Abundance, na.rm = TRUE), # total across all samples
+    n_samples = sum(Abundance > 0), # count how many times it appeared in a sample
+    .groups = "drop"
+  )
 
 # qq plot to visualize normality
-ggplot(methano_water_df, aes(sample = total_cells_ml)) +
+ggplot(water_ch4_cyclers_df, aes(sample = total_abundance)) +
   stat_qq() +
   stat_qq_line() +
   facet_wrap(~ group, scales = "free") +
   theme_minimal() +
-  labs(title = "Q-Q Plots: Order Abundance by Group")
+  labs(title = "Q-Q Plots: Water Abundance by Group")
 
 # lets plot density histogram by group too
-ggplot(methano_water_df, aes(x = total_cells_ml, fill = group)) +
-  geom_histogram(aes(y = ..density..), bins = 30, alpha = 0.5, color = "black") +
+ggplot(water_ch4_cyclers_df, aes(x = total_abundance, fill = group)) +
+  geom_histogram(aes(y = ..density..), bins = 10, alpha = 0.5, color = "black") +
   geom_density(alpha = 0.6) +
   facet_wrap(~ group, scales = "free") +
   theme_minimal() +
-  labs(title = "Histogram and Density of Order Abundance by Group",
-       x = "Order Absolute Cell Abundance\n(cells per ml)",
+  labs(title = "Histogram and Density of Abundance by Group",
+       x = "Absolute Cell Abundance",
        y = "Density") +
   theme(legend.position = "none")
 
 # now lets plot density histogram by further facetting by treatment
-ggplot(methano_water_df, aes(x = total_cells_ml, fill = group)) +
-  geom_histogram(aes(y = ..density..), bins = 30, alpha = 0.5, color = "black") +
+ggplot(water_ch4_cyclers_df, aes(x = total_abundance, fill = group)) +
+  geom_histogram(aes(y = ..density..), bins = 10, alpha = 0.5, color = "black") +
   geom_density(alpha = 0.6) +
   facet_wrap(~ group + solar_progress, scales = "free") +
   theme_minimal() +
   labs(title = "Histogram and Density of Order Abundance by Group and Solar Progress",
-       x = "Order Absolute Cell Abundance\n(cells per ml)",
+       x = "Absolute Cell Abundance",
        y = "Density") +
   theme(legend.position = "none")
 
 # shapiro test
-methano_water_df %>%
+water_ch4_cyclers_df %>%
   group_by(group) %>%
   summarise(
-    shapiro_p = shapiro.test(total_cells_ml)$p.value,
+    shapiro_p = shapiro.test(total_abundance)$p.value,
     n = n()
   )
 
@@ -4237,6 +3371,15 @@ final_plot <- final_water / final_sed
 final_plot
 ```
 
+# Papers of Note
+1. in situ manipulation of methane on microbial communities. the references are also good for looking more into synthropy and resilience!
+ - https://www.nature.com/articles/s43247-024-01656-5
+ 
+2. thesis of verrucomicrobiota methanotrophy. sulfur rich and methane environments is where they can thrive which is interesting!
+  - https://repository.ubn.ru.nl/bitstream/handle/2066/195209/195209.pdf?sequence=5
+  
+3. i forgot what this is about but 
+ - https://www.nature.com/articles/s41396-023-01363-7
 
 ### Analysis Notes
 
