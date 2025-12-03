@@ -1,6 +1,7 @@
 .DS_Store
 .Rhistory
 .Rproj.user
+.Rdata
 data/01_phyloseq/scaled_sed_24_df.RData
 data/02A_Water_FAPROTAXv2/SILVA_FOCAL_ALIGNMENTS_SANITIZED.fasta
 data/02A_Water_FAPROTAXv2/alignment_ch4water.fasta
