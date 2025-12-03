@@ -21,4 +21,5 @@ data/02B_Sediment_FAPROTAXv2/SILVA_FOCAL_ALIGNMENTS_SANITIZED.fasta
 data/02B_Sediment_FAPROTAXv2/alignment_ch4sed.fasta
 data/02B_Sediment_FAPROTAXv2/SILVA2species_and_traits.tsv
 data/02B_Sediment_FAPROTAXv2/ch4_sed_intermediates/*
+data/02B_Sediment_FAPROTAXv2/sed_16S_seqs.fasta
 
