@@ -1,9 +1,19 @@
 .DS_Store
 .Rhistory
 .Rproj.user
+data/01_phyloseq/scaled_sed_24_df.RData
 data/02A_Water_FAPROTAXv2/SILVA_FOCAL_ALIGNMENTS_SANITIZED.fasta
 data/02A_Water_FAPROTAXv2/alignment_ch4water.fasta
+data/02A_Water_FAPROTAXv2/aligned_water_ch4.fasta
 data/02A_Water_FAPROTAXv2/ch4_water_intermediates2
 data/02A_Water_FAPROTAXv2/SILVA_FOCAL_ALIGNMENTS_SANITIZED_SUBSET.fasta
-
+data/02A_Water_FAPROTAXv2/SILVA2species_and_traits.tsv
+data/02A_Water_FAPROTAXv2/tree.tre
+data/02A_Water_FAPROTAXv2/faprotax.R
+data/02B_Sediment_FAPROTAXv2/tree.tre
+data/02B_Sediment_FAPROTAXv2/faprotax.R
+data/02B_Sediment_FAPROTAXv2/SILVA_FOCAL_ALIGNMENTS_SANITIZED_SUBSET.fasta
+data/02B_Sediment_FAPROTAXv2/SILVA_FOCAL_ALIGNMENTS_SANITIZED.fasta
+data/02B_Sediment_FAPROTAXv2/alignment_ch4sed.fasta
+data/02B_Sediment_FAPROTAXv2/SILVA2species_and_traits.tsv
 
