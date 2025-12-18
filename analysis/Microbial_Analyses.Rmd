@@ -113,7 +113,6 @@ water_physeq_24 <- water_physeq_24 %>%
 # melt physeq into data frame for all taxa
 water_physeq_ch4_df <- water_physeq_24 %>%
   speedyseq::psmelt() # melt into dataframe
-
 ```
 
 ### Sediment 
@@ -625,7 +624,7 @@ sed_ch4_joined$ASV %>% unique()
 sed_ch4_joined <- sed_ch4_joined %>% 
   dplyr::filter(!is.na(Family)) # 23628
 
-# create dataframe for sipmlified distinct ASV to verify
+# create dataframe for simplified distinct ASV to verify
 simplified_af <- sed_ch4_joined %>% 
   distinct(Family, .keep_all = TRUE) 
 simplified_af
@@ -1058,7 +1057,7 @@ methanotroph_surface <- methanotroph_surface_sum %>%
   theme(axis.text.x =  element_text(size = 8,colour = "black"),
          axis.text.y =  element_text(size = 8,colour = "black"),
          axis.title.x = element_blank(),
-        axis.title.y = element_markdown(size = 8))+
+        axis.title.y = element_text(size = 8))+
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = solar_colors)+
   theme(legend.position = "none")
@@ -2321,6 +2320,65 @@ With betadispr we find the PERMANOVA results are are valid as pond, treatment, a
 With betadispr we find the PERMANOVA results are are valid as pond and treatment are not significant but significant in the PERMANOVA. Thus our PERMANOVA result is reliable and the differences between groups are due to location/centroids of groups rather than differences in variation within groups 
 
 However, date is statistically significant in PERMANOVA and in the betadispr indicating that theres variability in within the sampling dates so there are likely differences in community composition and probably heterogeneity over time. 
+
+
+
+## Top Sediment Methanogen ASVs Over Time 
+
+```{r methanogen-over-time}
+# Create a dataframe 
+sed_methanogens_df <- 
+  sed_methanogens_physeq %>%
+  speedyseq::psmelt() %>% # melt into dataframe
+  dplyr::select(OTU, Sample, Abundance, DNA_ID, Date_Collected, Deployment_Depth_m, Pond, solar_progress, JDate, Kingdom:CH4_Cycler) %>%
+  dplyr::select(-ASVseqs) %>%
+  mutate(solar_progress = recode(solar_progress, "No FPV" = "Open"))
+
+## Summary Stats of the ASVs for some perusing 
+sed_methanogen_asv_stats <- 
+  sed_methanogens_df %>%
+  group_by(ASV) %>%
+  summarize(mean = mean(Abundance), median = median(Abundance), min = min(Abundance), max = max(Abundance)) 
+
+## Check by FPV and Open 
+sed_methanogen_asv_stats_FPV <- 
+  sed_methanogens_df %>%
+  group_by(ASV, solar_progress) %>%
+  summarize(mean = mean(Abundance), median = median(Abundance), min = min(Abundance), max = max(Abundance)) 
+
+# Just create a vector with the ASV names 
+sed_methanogen_asvs <- 
+  sed_methanogen_asv_stats %>%
+  dplyr::filter(mean > 1e-03) %>% # PULL ASVs with a mean of 0.0015 or 0.15% abundance or higher 
+  pull(ASV) 
+
+length(sed_methanogen_asvs) 
+
+# Make a new df with only these ASVs 
+sed_methanogen_abund_asvs_df <- 
+  sed_methanogens_df %>%
+  dplyr::filter(ASV %in% sed_methanogen_asvs)
+
+# TIME TO PLOT 
+top21_sed_methanogen_ASVS_plot <- 
+  sed_methanogen_abund_asvs_df %>%
+  group_by(JDate, Pond, solar_progress, Abundance, ASV) %>%
+  ggplot(aes(x = JDate, y = Abundance, color = solar_progress)) + 
+  facet_wrap(~ASV, scales = "free_y") +
+  geom_line(aes(group = interaction(Pond, ASV)), 
+            alpha = 0.2) +
+  labs(x = "Day of Year", y = "Relative Abundance", 
+       title = "Top 21 Sediment Methanogen ASVs") + 
+  geom_point(aes(shape = Pond), size = 2) +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) + 
+  theme(legend.position = "bottom")
+
+# Save the plot   
+ggsave(top21_sed_methanogen_ASVS_plot, 
+       width = 10, height = 10, dpi = 300,
+       filename = "figures/bonus/sed_methogen_ASV_time.png")
+```
 
 
 # Figure 4
