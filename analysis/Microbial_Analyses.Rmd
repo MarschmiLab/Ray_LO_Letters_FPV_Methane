@@ -2362,7 +2362,7 @@ sed_methanogen_abund_asvs_df <-
 # TIME TO PLOT 
 top21_sed_methanogen_ASVS_plot <- 
   sed_methanogen_abund_asvs_df %>%
-  mutate(ASV_Genus = paste0(Genus, "\n", ASV)) %>%
+  mutate(ASV_Genus = paste0(ASV, "\n", Genus)) %>%
   group_by(JDate, Pond, solar_progress, Abundance, ASV) %>%
   ggplot(aes(x = JDate, y = Abundance, color = solar_progress)) + 
   facet_wrap(~ASV_Genus, scales = "free_y") +
