@@ -2362,9 +2362,10 @@ sed_methanogen_abund_asvs_df <-
 # TIME TO PLOT 
 top21_sed_methanogen_ASVS_plot <- 
   sed_methanogen_abund_asvs_df %>%
+  mutate(ASV_Genus = paste0(Genus, "\n", ASV)) %>%
   group_by(JDate, Pond, solar_progress, Abundance, ASV) %>%
   ggplot(aes(x = JDate, y = Abundance, color = solar_progress)) + 
-  facet_wrap(~ASV, scales = "free_y") +
+  facet_wrap(~ASV_Genus, scales = "free_y") +
   geom_line(aes(group = interaction(Pond, ASV)), 
             alpha = 0.2) +
   labs(x = "Day of Year", y = "Relative Abundance", 
@@ -2372,11 +2373,11 @@ top21_sed_methanogen_ASVS_plot <-
   geom_point(aes(shape = Pond), size = 2) +
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) + 
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom"); top21_sed_methanogen_ASVS_plot
 
 # Save the plot   
 ggsave(top21_sed_methanogen_ASVS_plot, 
-       width = 10, height = 10, dpi = 300,
+       width = 12, height = 10, dpi = 300,
        filename = "figures/bonus/sed_methogen_ASV_time.png")
 ```
 
