@@ -1,7 +1,7 @@
 ---
 title: "Water Column and Sediment Methanogens & Methanotrophs in FPV Ponds"
 author: "Sophia Aredas & Mar Schmidt"
-date: "18 November, 2025"
+date: "03 December, 2025"
 output:
   html_document:
     code_folding: show
@@ -35,7 +35,7 @@ which will be added to the google document.
 
 ``` r
 # Efficiently load packages 
-pacman::p_load(phyloseq, ggpubr, tidyverse, patchwork, ggh4x, speedyseq, rstatix, dplyr, purrr, vegan, ANCOMBC, microViz,  cowplot, grid, scales, Biostrings, stringr, install = FALSE)
+pacman::p_load(phyloseq, ggpubr, tidyverse, patchwork, ggh4x, speedyseq, rstatix, dplyr, purrr, vegan, ANCOMBC, microViz,  cowplot, grid, scales, Biostrings, stringr, lmerTest, install = FALSE)
 
 source("code/functions.R") # contains scale_reads
 source("code/colors_and_shapes.R")
@@ -118,7 +118,7 @@ sed_phy <- subset_samples(new_archaea_rooted_physeq, SampleType == "Sediment")
 sed_physeq <- subset_samples(sed_phy, !(sample_names(sed_phy) %in% c("SA_D046", "SA_D047")))
 
 # prune taxa 
-sed_phy <- sed_phy %>% 
+sed_phy <- sed_physeq %>% 
   prune_taxa(taxa_sums(.) > 0,.)
 
 # Intuition check of number of sequences per sample
@@ -869,8 +869,8 @@ sed_ch4_joined$Genus %>% unique()
 ## [19] "UBA288"                  "Methylotetracoccus"      "YA12-FULL-60-10"         "Alsobacter"              "Methyloterricola"        "Methylomonas"            "Methanobacterium_F_896"  "Methanoperedens_A"       "UBA3939"                
 ## [28] "UBA11358"                "Methyloglobulus"         "Pedosphaera"             "Methanospirillum"        "UBA6215"                 "Methylococcus"           "MWDV01"                  "Crenothrix"              "Lenti-01"               
 ## [37] "WLWN01"                  "UBA7542"                 "Beijerinckia"            "Methanolinea_B"          "Methanobacterium_C"      "Methylomagnum"           "Methanomethylovorans"    "PWTM01"                  "Methylosoma"            
-## [46] "VSJD01"                  "UBA95"                   "JAAUTS01"                "SLKG01"                  "Methanobrevibacter_A"    "BOG-1460"                "GAS474"                  "Methylocaldum"           "Methanobrevibacter_D"   
-## [55] "UBA3015"                 "DP16D-bin41"
+## [46] "VSJD01"                  "UBA95"                   "JAAUTS01"                "SLKG01"                  "Methanobrevibacter_A"    "BOG-1460"                "GAS474"                  "Methylocaldum"           "UBA3015"                
+## [55] "DP16D-bin41"
 ```
 
 ``` r
@@ -878,52 +878,51 @@ sed_ch4_joined$ASV %>% unique()
 ```
 
 ```
-##   [1] "ASV_14"    "ASV_54"    "ASV_102"   "ASV_110"   "ASV_262"   "ASV_165"   "ASV_592"   "ASV_216"   "ASV_683"   "ASV_231"   "ASV_184"   "ASV_434"   "ASV_568"   "ASV_615"   "ASV_203"   "ASV_431"   "ASV_363"   "ASV_286"   "ASV_517"   "ASV_409"  
-##  [21] "ASV_400"   "ASV_415"   "ASV_302"   "ASV_321"   "ASV_352"   "ASV_559"   "ASV_650"   "ASV_1116"  "ASV_340"   "ASV_510"   "ASV_884"   "ASV_177"   "ASV_712"   "ASV_642"   "ASV_674"   "ASV_853"   "ASV_208"   "ASV_495"   "ASV_499"   "ASV_831"  
+##   [1] "ASV_14"    "ASV_54"    "ASV_102"   "ASV_110"   "ASV_262"   "ASV_165"   "ASV_592"   "ASV_216"   "ASV_683"   "ASV_231"   "ASV_184"   "ASV_434"   "ASV_568"   "ASV_615"   "ASV_203"   "ASV_431"   "ASV_363"   "ASV_286"   "ASV_409"   "ASV_400"  
+##  [21] "ASV_415"   "ASV_302"   "ASV_517"   "ASV_321"   "ASV_352"   "ASV_559"   "ASV_650"   "ASV_1116"  "ASV_340"   "ASV_510"   "ASV_884"   "ASV_177"   "ASV_712"   "ASV_642"   "ASV_674"   "ASV_853"   "ASV_208"   "ASV_495"   "ASV_499"   "ASV_831"  
 ##  [41] "ASV_580"   "ASV_494"   "ASV_2783"  "ASV_656"   "ASV_1005"  "ASV_572"   "ASV_1957"  "ASV_1069"  "ASV_3716"  "ASV_1762"  "ASV_3502"  "ASV_1233"  "ASV_634"   "ASV_806"   "ASV_662"   "ASV_1433"  "ASV_2261"  "ASV_2551"  "ASV_1229"  "ASV_786"  
 ##  [61] "ASV_919"   "ASV_2179"  "ASV_2182"  "ASV_1130"  "ASV_2044"  "ASV_3329"  "ASV_2263"  "ASV_1399"  "ASV_1063"  "ASV_1626"  "ASV_1900"  "ASV_940"   "ASV_2834"  "ASV_2525"  "ASV_1018"  "ASV_2152"  "ASV_2861"  "ASV_3238"  "ASV_3463"  "ASV_1512" 
 ##  [81] "ASV_2717"  "ASV_2740"  "ASV_3333"  "ASV_3112"  "ASV_3078"  "ASV_5033"  "ASV_6554"  "ASV_2442"  "ASV_2228"  "ASV_1969"  "ASV_1402"  "ASV_3717"  "ASV_2021"  "ASV_2065"  "ASV_2572"  "ASV_6185"  "ASV_1809"  "ASV_2676"  "ASV_5191"  "ASV_12068"
 ## [101] "ASV_2331"  "ASV_5762"  "ASV_8704"  "ASV_1765"  "ASV_2539"  "ASV_3245"  "ASV_5812"  "ASV_2366"  "ASV_4270"  "ASV_4480"  "ASV_13112" "ASV_1308"  "ASV_2746"  "ASV_4832"  "ASV_4736"  "ASV_2057"  "ASV_8076"  "ASV_2691"  "ASV_5704"  "ASV_4603" 
-## [121] "ASV_1855"  "ASV_3646"  "ASV_4541"  "ASV_4382"  "ASV_4385"  "ASV_10663" "ASV_10561" "ASV_7020"  "ASV_2961"  "ASV_3857"  "ASV_5490"  "ASV_3084"  "ASV_2730"  "ASV_3141"  "ASV_4071"  "ASV_4227"  "ASV_1865"  "ASV_2703"  "ASV_4868"  "ASV_2471" 
-## [141] "ASV_7659"  "ASV_9646"  "ASV_5986"  "ASV_5100"  "ASV_15401" "ASV_2045"  "ASV_6333"  "ASV_4642"  "ASV_5431"  "ASV_2432"  "ASV_6703"  "ASV_6755"  "ASV_4179"  "ASV_5578"  "ASV_6331"  "ASV_15867" "ASV_5114"  "ASV_4564"  "ASV_6633"  "ASV_4272" 
-## [161] "ASV_2284"  "ASV_4211"  "ASV_4390"  "ASV_9335"  "ASV_10183" "ASV_8142"  "ASV_3464"  "ASV_11418" "ASV_6715"  "ASV_8598"  "ASV_10635" "ASV_4143"  "ASV_7809"  "ASV_8516"  "ASV_5943"  "ASV_1479"  "ASV_11806" "ASV_4825"  "ASV_3184"  "ASV_4403" 
-## [181] "ASV_4639"  "ASV_4696"  "ASV_5398"  "ASV_15341" "ASV_8692"  "ASV_11854" "ASV_4364"  "ASV_11223" "ASV_5014"  "ASV_5280"  "ASV_9916"  "ASV_12837" "ASV_7441"  "ASV_9250"  "ASV_6110"  "ASV_5614"  "ASV_7186"  "ASV_822"   "ASV_14113" "ASV_1801" 
-## [201] "ASV_6648"  "ASV_8322"  "ASV_4057"  "ASV_2690"  "ASV_3398"  "ASV_3800"  "ASV_6182"  "ASV_2916"  "ASV_9038"  "ASV_13733" "ASV_9821"  "ASV_1357"  "ASV_2874"  "ASV_3370"  "ASV_3731"  "ASV_4416"  "ASV_5977"  "ASV_12006" "ASV_12229" "ASV_11032"
-## [221] "ASV_13133" "ASV_5124"  "ASV_9267"  "ASV_12797" "ASV_6302"  "ASV_6913"  "ASV_10200" "ASV_4634"  "ASV_7707"  "ASV_7175"  "ASV_5284"  "ASV_2959"  "ASV_6306"  "ASV_7121"  "ASV_19804" "ASV_2664"  "ASV_5391"  "ASV_5923"  "ASV_8036"  "ASV_8393" 
-## [241] "ASV_12926" "ASV_9846"  "ASV_14973" "ASV_8804"  "ASV_6851"  "ASV_8281"  "ASV_7899"  "ASV_8492"  "ASV_8300"  "ASV_976"   "ASV_1755"  "ASV_5258"  "ASV_7697"  "ASV_13440" "ASV_4087"  "ASV_7654"  "ASV_8304"  "ASV_9237"  "ASV_11373" "ASV_8798" 
-## [261] "ASV_14184" "ASV_6812"  "ASV_6857"  "ASV_10578" "ASV_5453"  "ASV_11325" "ASV_14944" "ASV_14946" "ASV_10191" "ASV_9448"  "ASV_14976" "ASV_3467"  "ASV_44"    "ASV_10610" "ASV_6258"  "ASV_8120"  "ASV_4774"  "ASV_4069"  "ASV_6701"  "ASV_8702" 
-## [281] "ASV_13089" "ASV_3959"  "ASV_6643"  "ASV_10021" "ASV_13667" "ASV_6792"  "ASV_6917"  "ASV_12785" "ASV_3522"  "ASV_1008"  "ASV_11199" "ASV_10199" "ASV_8554"  "ASV_9781"  "ASV_10276" "ASV_12048" "ASV_11336" "ASV_11788" "ASV_15736" "ASV_8886" 
-## [301] "ASV_16395" "ASV_16396" "ASV_5896"  "ASV_7811"  "ASV_9756"  "ASV_16375" "ASV_10799" "ASV_16969" "ASV_468"   "ASV_10035" "ASV_5254"  "ASV_10354" "ASV_12696" "ASV_17257" "ASV_2677"  "ASV_6759"  "ASV_11575" "ASV_11777" "ASV_3190"  "ASV_7243" 
-## [321] "ASV_11849" "ASV_16981" "ASV_16982" "ASV_13099" "ASV_13761" "ASV_15876" "ASV_17622" "ASV_12832" "ASV_17000" "ASV_16331" "ASV_16332" "ASV_12438" "ASV_6697"  "ASV_12509" "ASV_15794" "ASV_16287" "ASV_16825" "ASV_11017" "ASV_11957" "ASV_9492" 
-## [341] "ASV_16922" "ASV_9479"  "ASV_951"   "ASV_11746" "ASV_12016" "ASV_9006"  "ASV_17274" "ASV_6530"  "ASV_9210"  "ASV_11229" "ASV_13351" "ASV_14930" "ASV_17563" "ASV_10639" "ASV_12267" "ASV_1663"  "ASV_1677"  "ASV_17006" "ASV_17473" "ASV_17616"
-## [361] "ASV_4105"  "ASV_25026" "ASV_13756" "ASV_6870"  "ASV_10476" "ASV_6645"  "ASV_14757" "ASV_8460"  "ASV_9778"  "ASV_7180"  "ASV_12452" "ASV_1252"  "ASV_19448" "ASV_10611" "ASV_23510" "ASV_7032"  "ASV_16217" "ASV_17270" "ASV_11825" "ASV_16425"
-## [381] "ASV_18313" "ASV_19077" "ASV_7017"  "ASV_7355"  "ASV_9139"  "ASV_9739"  "ASV_17540" "ASV_18343" "ASV_6853"  "ASV_10182" "ASV_7365"  "ASV_18862" "ASV_8789"  "ASV_11932" "ASV_10644" "ASV_16971" "ASV_11828" "ASV_9867"  "ASV_12211" "ASV_12218"
-## [401] "ASV_13672" "ASV_14822" "ASV_10495" "ASV_18058" "ASV_14745" "ASV_11170" "ASV_13623" "ASV_17636" "ASV_20892" "ASV_8122"  "ASV_13375" "ASV_19109" "ASV_19962" "ASV_21000" "ASV_21009" "ASV_21011" "ASV_6704"  "ASV_13674" "ASV_27038" "ASV_15397"
-## [421] "ASV_13301" "ASV_16856" "ASV_5547"  "ASV_32339" "ASV_14352" "ASV_14797" "ASV_22190" "ASV_18882" "ASV_6749"  "ASV_19573" "ASV_20517" "ASV_10136" "ASV_15192" "ASV_25193" "ASV_25194" "ASV_11412" "ASV_12736" "ASV_3580"  "ASV_14058" "ASV_3305" 
-## [441] "ASV_13612" "ASV_4563"  "ASV_13637" "ASV_15913" "ASV_17573" "ASV_19917" "ASV_3075"  "ASV_9765"  "ASV_9500"  "ASV_6586"  "ASV_20720" "ASV_16289" "ASV_20635" "ASV_8213"  "ASV_9249"  "ASV_12287" "ASV_16965" "ASV_16968" "ASV_12024" "ASV_11602"
-## [461] "ASV_13077" "ASV_13717" "ASV_15802" "ASV_12765" "ASV_16341" "ASV_17483" "ASV_13001" "ASV_16177" "ASV_15385" "ASV_12500" "ASV_26725" "ASV_12001" "ASV_12168" "ASV_20796" "ASV_14512" "ASV_17529" "ASV_18073" "ASV_465"   "ASV_11184" "ASV_12994"
-## [481] "ASV_20831" "ASV_13980" "ASV_15210" "ASV_9853"  "ASV_13591" "ASV_13613" "ASV_21643" "ASV_12507" "ASV_18272" "ASV_18999" "ASV_25157" "ASV_25165" "ASV_12027" "ASV_16794" "ASV_18084" "ASV_12519" "ASV_12706" "ASV_14967" "ASV_15618" "ASV_1945" 
-## [501] "ASV_21821" "ASV_22202" "ASV_22203" "ASV_22217" "ASV_23244" "ASV_23728" "ASV_11700" "ASV_29564" "ASV_14066" "ASV_19718" "ASV_7494"  "ASV_8468"  "ASV_17280" "ASV_36729" "ASV_29827" "ASV_10454" "ASV_12372" "ASV_13676" "ASV_13755" "ASV_14474"
-## [521] "ASV_13437" "ASV_376"   "ASV_22941" "ASV_13607" "ASV_22725" "ASV_22727" "ASV_24358" "ASV_24362" "ASV_26154" "ASV_26163" "ASV_16266" "ASV_17980" "ASV_17982" "ASV_10277" "ASV_25297" "ASV_23413" "ASV_25450" "ASV_19748" "ASV_23685" "ASV_25384"
-## [541] "ASV_13702" "ASV_18629" "ASV_20727" "ASV_23255" "ASV_11983" "ASV_17288" "ASV_17952" "ASV_22792" "ASV_21710" "ASV_21738" "ASV_21741" "ASV_23109" "ASV_23112" "ASV_24771" "ASV_7156"  "ASV_11349" "ASV_16416" "ASV_18949" "ASV_18720" "ASV_16206"
-## [561] "ASV_24992" "ASV_25048" "ASV_27049" "ASV_29587" "ASV_29597" "ASV_10606" "ASV_12732" "ASV_22994" "ASV_11994" "ASV_1674"  "ASV_27421" "ASV_357"   "ASV_7610"  "ASV_12434" "ASV_22966" "ASV_24596" "ASV_28856" "ASV_11486" "ASV_19481" "ASV_24394"
-## [581] "ASV_10909" "ASV_27205" "ASV_20572" "ASV_1367"  "ASV_14329" "ASV_17475" "ASV_21844" "ASV_27559" "ASV_30260" "ASV_30263" "ASV_37654" "ASV_37660" "ASV_37671" "ASV_38100" "ASV_15179" "ASV_38686" "ASV_119"   "ASV_34017" "ASV_4168"  "ASV_16664"
-## [601] "ASV_17159" "ASV_23157" "ASV_24799" "ASV_26708" "ASV_29853" "ASV_33473" "ASV_18054" "ASV_24568" "ASV_26415" "ASV_26419" "ASV_21768" "ASV_13296" "ASV_15124" "ASV_1711"  "ASV_28507" "ASV_31529" "ASV_17520" "ASV_38217" "ASV_20738" "ASV_20764"
-## [621] "ASV_27178" "ASV_20460" "ASV_493"   "ASV_12888" "ASV_1510"  "ASV_19569" "ASV_26371" "ASV_26383" "ASV_26394" "ASV_10257" "ASV_15202" "ASV_15936" "ASV_20254" "ASV_27376" "ASV_27377" "ASV_27379" "ASV_27383" "ASV_30048" "ASV_33695" "ASV_33714"
-## [641] "ASV_33719" "ASV_828"   "ASV_21722" "ASV_26623" "ASV_27077" "ASV_33070" "ASV_34118" "ASV_20585" "ASV_26853" "ASV_22027" "ASV_30220" "ASV_21758" "ASV_29322" "ASV_26238" "ASV_26241" "ASV_1600"  "ASV_26652" "ASV_25332" "ASV_25341" "ASV_27449"
-## [661] "ASV_24935" "ASV_26867" "ASV_22813" "ASV_24424" "ASV_36880" "ASV_8857"  "ASV_17321" "ASV_18001" "ASV_22244" "ASV_31410" "ASV_37573" "ASV_37603" "ASV_26173" "ASV_37713" "ASV_33766" "ASV_33778" "ASV_38716" "ASV_38725" "ASV_19439" "ASV_31961"
-## [681] "ASV_31995" "ASV_42666" "ASV_26199" "ASV_32002" "ASV_31604" "ASV_35800" "ASV_35818" "ASV_42102" "ASV_42147" "ASV_42151" "ASV_33345" "ASV_33352" "ASV_33358" "ASV_33361" "ASV_33385" "ASV_38114" "ASV_38148" "ASV_38172" "ASV_38179" "ASV_44900"
-## [701] "ASV_20394" "ASV_21535" "ASV_32085" "ASV_36438" "ASV_24956" "ASV_34029" "ASV_34046" "ASV_34087" "ASV_37120" "ASV_39119" "ASV_39164" "ASV_39181" "ASV_39194" "ASV_39209" "ASV_8274"  "ASV_44334" "ASV_29263" "ASV_37097" "ASV_43685" "ASV_33421"
-## [721] "ASV_8424"  "ASV_39089" "ASV_46020" "ASV_46052" "ASV_36855" "ASV_36857" "ASV_43368" "ASV_45078" "ASV_9672"  "ASV_31921" "ASV_31925" "ASV_31933" "ASV_31935" "ASV_35698" "ASV_35726" "ASV_42044" "ASV_33301" "ASV_33314" "ASV_26299" "ASV_28661"
-## [741] "ASV_28666" "ASV_31715" "ASV_31722" "ASV_35939" "ASV_6126"  "ASV_18045" "ASV_22894" "ASV_36204" "ASV_35741" "ASV_42072" "ASV_38663" "ASV_45474" "ASV_45485" "ASV_24737" "ASV_24742" "ASV_32319" "ASV_32322" "ASV_36680" "ASV_46189" "ASV_32711"
-## [761] "ASV_32712" "ASV_37240" "ASV_43847" "ASV_43865" "ASV_45988" "ASV_37188" "ASV_43778" "ASV_35836" "ASV_23067" "ASV_36787" "ASV_38531" "ASV_38534" "ASV_30119" "ASV_38575" "ASV_38578" "ASV_19639" "ASV_29388" "ASV_29402" "ASV_37295" "ASV_37326"
-## [781] "ASV_43905" "ASV_31674" "ASV_31675" "ASV_42262" "ASV_32800" "ASV_32802" "ASV_43972"
+## [121] "ASV_1855"  "ASV_3646"  "ASV_4541"  "ASV_4382"  "ASV_4385"  "ASV_10663" "ASV_10561" "ASV_7020"  "ASV_2961"  "ASV_3857"  "ASV_5490"  "ASV_3084"  "ASV_2730"  "ASV_3141"  "ASV_4071"  "ASV_1865"  "ASV_2703"  "ASV_4868"  "ASV_2471"  "ASV_7659" 
+## [141] "ASV_9646"  "ASV_5986"  "ASV_5100"  "ASV_15401" "ASV_2045"  "ASV_6333"  "ASV_4642"  "ASV_5431"  "ASV_2432"  "ASV_6703"  "ASV_6755"  "ASV_4179"  "ASV_5578"  "ASV_6331"  "ASV_15867" "ASV_5114"  "ASV_4564"  "ASV_6633"  "ASV_4272"  "ASV_2284" 
+## [161] "ASV_4211"  "ASV_4390"  "ASV_9335"  "ASV_10183" "ASV_8142"  "ASV_11418" "ASV_6715"  "ASV_8598"  "ASV_10635" "ASV_4143"  "ASV_7809"  "ASV_8516"  "ASV_5943"  "ASV_1479"  "ASV_11806" "ASV_4825"  "ASV_3184"  "ASV_4403"  "ASV_4639"  "ASV_4696" 
+## [181] "ASV_5398"  "ASV_15341" "ASV_11854" "ASV_4364"  "ASV_11223" "ASV_5014"  "ASV_3464"  "ASV_5280"  "ASV_9916"  "ASV_12837" "ASV_7441"  "ASV_9250"  "ASV_6110"  "ASV_5614"  "ASV_7186"  "ASV_822"   "ASV_4227"  "ASV_14113" "ASV_1801"  "ASV_6648" 
+## [201] "ASV_8322"  "ASV_4057"  "ASV_2690"  "ASV_3398"  "ASV_3800"  "ASV_6182"  "ASV_2916"  "ASV_9038"  "ASV_13733" "ASV_9821"  "ASV_1357"  "ASV_2874"  "ASV_3370"  "ASV_3731"  "ASV_4416"  "ASV_12006" "ASV_12229" "ASV_11032" "ASV_13133" "ASV_5124" 
+## [221] "ASV_9267"  "ASV_12797" "ASV_6302"  "ASV_6913"  "ASV_10200" "ASV_4634"  "ASV_7707"  "ASV_7175"  "ASV_5284"  "ASV_2959"  "ASV_6306"  "ASV_7121"  "ASV_19804" "ASV_2664"  "ASV_5391"  "ASV_5923"  "ASV_8036"  "ASV_8393"  "ASV_12926" "ASV_9846" 
+## [241] "ASV_14973" "ASV_8804"  "ASV_6851"  "ASV_8281"  "ASV_7899"  "ASV_8492"  "ASV_8300"  "ASV_976"   "ASV_1755"  "ASV_5258"  "ASV_7697"  "ASV_13440" "ASV_4087"  "ASV_7654"  "ASV_8304"  "ASV_9237"  "ASV_11373" "ASV_8798"  "ASV_14184" "ASV_6812" 
+## [261] "ASV_6857"  "ASV_10578" "ASV_5453"  "ASV_11325" "ASV_14944" "ASV_14946" "ASV_10191" "ASV_9448"  "ASV_14976" "ASV_3467"  "ASV_44"    "ASV_10610" "ASV_6258"  "ASV_8120"  "ASV_4774"  "ASV_4069"  "ASV_6701"  "ASV_8702"  "ASV_13089" "ASV_3959" 
+## [281] "ASV_10021" "ASV_13667" "ASV_6792"  "ASV_6917"  "ASV_12785" "ASV_3522"  "ASV_1008"  "ASV_11199" "ASV_10199" "ASV_8554"  "ASV_9781"  "ASV_10276" "ASV_12048" "ASV_5977"  "ASV_11336" "ASV_11788" "ASV_15736" "ASV_8886"  "ASV_16395" "ASV_16396"
+## [301] "ASV_5896"  "ASV_9756"  "ASV_16375" "ASV_10799" "ASV_16969" "ASV_468"   "ASV_10035" "ASV_5254"  "ASV_10354" "ASV_12696" "ASV_17257" "ASV_2677"  "ASV_6759"  "ASV_11575" "ASV_11777" "ASV_3190"  "ASV_7243"  "ASV_11849" "ASV_16981" "ASV_16982"
+## [321] "ASV_13099" "ASV_13761" "ASV_15876" "ASV_17622" "ASV_12832" "ASV_17000" "ASV_16331" "ASV_16332" "ASV_12438" "ASV_6697"  "ASV_12509" "ASV_15794" "ASV_16287" "ASV_16825" "ASV_11017" "ASV_11957" "ASV_9492"  "ASV_16922" "ASV_9479"  "ASV_7811" 
+## [341] "ASV_951"   "ASV_11746" "ASV_12016" "ASV_9006"  "ASV_17274" "ASV_6530"  "ASV_9210"  "ASV_11229" "ASV_13351" "ASV_14930" "ASV_17563" "ASV_10639" "ASV_12267" "ASV_1663"  "ASV_1677"  "ASV_17006" "ASV_17473" "ASV_17616" "ASV_4105"  "ASV_25026"
+## [361] "ASV_13756" "ASV_6870"  "ASV_10476" "ASV_6645"  "ASV_14757" "ASV_8460"  "ASV_9778"  "ASV_7180"  "ASV_12452" "ASV_1252"  "ASV_19448" "ASV_10611" "ASV_23510" "ASV_7032"  "ASV_16217" "ASV_17270" "ASV_11825" "ASV_16425" "ASV_18313" "ASV_19077"
+## [381] "ASV_7017"  "ASV_7355"  "ASV_9139"  "ASV_9739"  "ASV_17540" "ASV_6643"  "ASV_18343" "ASV_6853"  "ASV_10182" "ASV_7365"  "ASV_18862" "ASV_8789"  "ASV_11932" "ASV_10644" "ASV_16971" "ASV_11828" "ASV_9867"  "ASV_12211" "ASV_12218" "ASV_13672"
+## [401] "ASV_14822" "ASV_10495" "ASV_18058" "ASV_14745" "ASV_11170" "ASV_13623" "ASV_17636" "ASV_20892" "ASV_8122"  "ASV_13375" "ASV_19109" "ASV_19962" "ASV_21000" "ASV_21009" "ASV_21011" "ASV_6704"  "ASV_13674" "ASV_27038" "ASV_15397" "ASV_13301"
+## [421] "ASV_16856" "ASV_5547"  "ASV_32339" "ASV_14352" "ASV_14797" "ASV_22190" "ASV_18882" "ASV_6749"  "ASV_19573" "ASV_20517" "ASV_10136" "ASV_15192" "ASV_25193" "ASV_25194" "ASV_11412" "ASV_14058" "ASV_3305"  "ASV_13612" "ASV_4563"  "ASV_13637"
+## [441] "ASV_15913" "ASV_17573" "ASV_19917" "ASV_3075"  "ASV_9765"  "ASV_9500"  "ASV_6586"  "ASV_20720" "ASV_16289" "ASV_20635" "ASV_8213"  "ASV_9249"  "ASV_12287" "ASV_16965" "ASV_16968" "ASV_12024" "ASV_11602" "ASV_13077" "ASV_13717" "ASV_15802"
+## [461] "ASV_12765" "ASV_16341" "ASV_17483" "ASV_13001" "ASV_16177" "ASV_15385" "ASV_12500" "ASV_26725" "ASV_12001" "ASV_12168" "ASV_20796" "ASV_12736" "ASV_14512" "ASV_17529" "ASV_18073" "ASV_465"   "ASV_11184" "ASV_12994" "ASV_20831" "ASV_13980"
+## [481] "ASV_15210" "ASV_9853"  "ASV_13591" "ASV_13613" "ASV_21643" "ASV_12507" "ASV_18272" "ASV_18999" "ASV_25157" "ASV_25165" "ASV_12519" "ASV_12706" "ASV_14967" "ASV_15618" "ASV_1945"  "ASV_21821" "ASV_22202" "ASV_22203" "ASV_22217" "ASV_23244"
+## [501] "ASV_23728" "ASV_11700" "ASV_29564" "ASV_14066" "ASV_19718" "ASV_7494"  "ASV_8468"  "ASV_17280" "ASV_36729" "ASV_29827" "ASV_10454" "ASV_12372" "ASV_13676" "ASV_13755" "ASV_14474" "ASV_13437" "ASV_376"   "ASV_22941" "ASV_13607" "ASV_22725"
+## [521] "ASV_22727" "ASV_24358" "ASV_24362" "ASV_26154" "ASV_26163" "ASV_16266" "ASV_10277" "ASV_25297" "ASV_23413" "ASV_25450" "ASV_19748" "ASV_23685" "ASV_25384" "ASV_13702" "ASV_18629" "ASV_20727" "ASV_23255" "ASV_11983" "ASV_17288" "ASV_17952"
+## [541] "ASV_22792" "ASV_21710" "ASV_21738" "ASV_21741" "ASV_23109" "ASV_23112" "ASV_24771" "ASV_7156"  "ASV_11349" "ASV_16416" "ASV_18949" "ASV_18720" "ASV_16206" "ASV_24992" "ASV_25048" "ASV_27049" "ASV_29587" "ASV_29597" "ASV_10606" "ASV_12027"
+## [561] "ASV_12732" "ASV_22994" "ASV_11994" "ASV_1674"  "ASV_27421" "ASV_357"   "ASV_7610"  "ASV_12434" "ASV_22966" "ASV_24596" "ASV_28856" "ASV_11486" "ASV_19481" "ASV_24394" "ASV_10909" "ASV_27205" "ASV_1367"  "ASV_14329" "ASV_17475" "ASV_21844"
+## [581] "ASV_27559" "ASV_30260" "ASV_30263" "ASV_37654" "ASV_37660" "ASV_37671" "ASV_38100" "ASV_15179" "ASV_38686" "ASV_119"   "ASV_34017" "ASV_4168"  "ASV_16664" "ASV_17159" "ASV_23157" "ASV_24799" "ASV_26708" "ASV_29853" "ASV_33473" "ASV_18054"
+## [601] "ASV_24568" "ASV_26415" "ASV_26419" "ASV_21768" "ASV_13296" "ASV_15124" "ASV_1711"  "ASV_28507" "ASV_31529" "ASV_17520" "ASV_38217" "ASV_20738" "ASV_20764" "ASV_27178" "ASV_12888" "ASV_1510"  "ASV_19569" "ASV_26371" "ASV_26383" "ASV_26394"
+## [621] "ASV_10257" "ASV_15202" "ASV_15936" "ASV_20254" "ASV_27376" "ASV_27377" "ASV_27379" "ASV_27383" "ASV_30048" "ASV_33695" "ASV_33714" "ASV_33719" "ASV_828"   "ASV_21722" "ASV_26623" "ASV_27077" "ASV_33070" "ASV_34118" "ASV_20585" "ASV_26853"
+## [641] "ASV_22027" "ASV_30220" "ASV_21758" "ASV_29322" "ASV_26238" "ASV_26241" "ASV_1600"  "ASV_26652" "ASV_25332" "ASV_25341" "ASV_27449" "ASV_24935" "ASV_26867" "ASV_22813" "ASV_24424" "ASV_36880" "ASV_8857"  "ASV_17321" "ASV_18001" "ASV_22244"
+## [661] "ASV_31410" "ASV_37573" "ASV_37603" "ASV_26173" "ASV_37713" "ASV_33766" "ASV_33778" "ASV_38716" "ASV_38725" "ASV_19439" "ASV_31961" "ASV_31995" "ASV_42666" "ASV_26199" "ASV_32002" "ASV_31604" "ASV_35800" "ASV_35818" "ASV_42102" "ASV_42147"
+## [681] "ASV_42151" "ASV_33345" "ASV_33352" "ASV_33358" "ASV_33361" "ASV_33385" "ASV_38114" "ASV_38148" "ASV_38172" "ASV_38179" "ASV_44900" "ASV_24956" "ASV_34029" "ASV_34046" "ASV_34087" "ASV_37120" "ASV_39119" "ASV_39164" "ASV_39181" "ASV_39194"
+## [701] "ASV_39209" "ASV_8274"  "ASV_44334" "ASV_29263" "ASV_37097" "ASV_43685" "ASV_33421" "ASV_8424"  "ASV_39089" "ASV_46020" "ASV_46052" "ASV_36855" "ASV_36857" "ASV_43368" "ASV_45078" "ASV_9672"  "ASV_31921" "ASV_31925" "ASV_31933" "ASV_31935"
+## [721] "ASV_35698" "ASV_35726" "ASV_42044" "ASV_33301" "ASV_33314" "ASV_18045" "ASV_22894" "ASV_36204" "ASV_20394" "ASV_35741" "ASV_42072" "ASV_38663" "ASV_45474" "ASV_45485" "ASV_24737" "ASV_24742" "ASV_32319" "ASV_32322" "ASV_36680" "ASV_46189"
+## [741] "ASV_32711" "ASV_32712" "ASV_37240" "ASV_43847" "ASV_43865" "ASV_45988" "ASV_37188" "ASV_43778" "ASV_35836" "ASV_23067" "ASV_36787" "ASV_38531" "ASV_38534" "ASV_30119" "ASV_38575" "ASV_38578" "ASV_19639" "ASV_29388" "ASV_29402" "ASV_37295"
+## [761] "ASV_37326" "ASV_43905" "ASV_21535" "ASV_31674" "ASV_31675" "ASV_42262" "ASV_32800" "ASV_32802" "ASV_43972"
 ```
 
 ``` r
 # filter out NA at order level
 sed_ch4_joined <- sed_ch4_joined %>% 
-  dplyr::filter(!is.na(Family)) # 25346
+  dplyr::filter(!is.na(Family)) # 23628
 
 # create dataframe for sipmlified distinct ASV to verify
 simplified_af <- sed_ch4_joined %>% 
@@ -1009,7 +1008,7 @@ sed_ch4_joined_clean_faprotax <- sed_ch4_joined %>%
                   "WLWN01", "UBA11358",  "UBA3015", "GAS474", "JAAUTS01","UBA6215", "LW23", "WYBW01", 
                   "Pedosphaera", "YA12-FULL-60-10", "UBA10450", "UBA3939", "PWTM01", "UBA95", "Lenti-01"),
     !Family %in% c("Pontiellaceae","J093", "UBA10450", "JAAZAB01", "UBA11358"),
-    !ASV %in% c("ASV_3646", "ASV_468", "ASV_24935", "ASV_3646", "ASV_468")) # total 14030
+    !ASV %in% c("ASV_3646", "ASV_468", "ASV_24935", "ASV_3646", "ASV_468")) # total 13200
 
 # notes for my exclusions:
 # 1. cannot find any information for derxia being methanotroph
@@ -1088,7 +1087,7 @@ sed_ch4_cyclers_complete_df <- dplyr::bind_rows(
 )
 
 # unique asv counts
-test<- sed_ch4_cyclers_complete_df$ASV %>% unique() # correclty 352
+test<- sed_ch4_cyclers_complete_df$ASV %>% unique() # correclty 347
 # list of all our CH4 cycler ASVs to filter phyloseq 
 ch4_asv_list <- sed_ch4_cyclers_complete_df$ASV
 
@@ -1116,15 +1115,15 @@ tax_tab$CH4_Cycler <- dplyr::case_when(
 
 tax_table(sed_ch4_cyclers_physeq) <- tax_table(as.matrix(tax_tab))
 
-sed_ch4_cyclers_physeq # 352 total ASVs
+sed_ch4_cyclers_physeq # 347 total ASVs, 44 samples
 ```
 
 ```
 ## phyloseq-class experiment-level object
-## otu_table()   OTU Table:          [ 352 taxa and 46 samples ]:
-## sample_data() Sample Data:        [ 46 samples by 47 sample variables ]:
-## tax_table()   Taxonomy Table:     [ 352 taxa by 10 taxonomic ranks ]:
-## phy_tree()    Phylogenetic Tree:  [ 352 tips and 351 internal nodes ]:
+## otu_table()   OTU Table:          [ 347 taxa and 44 samples ]:
+## sample_data() Sample Data:        [ 44 samples by 47 sample variables ]:
+## tax_table()   Taxonomy Table:     [ 347 taxa by 10 taxonomic ranks ]:
+## phy_tree()    Phylogenetic Tree:  [ 347 tips and 346 internal nodes ]:
 ## taxa are rows
 ```
 
@@ -1279,7 +1278,7 @@ sed_ch4_cyclers_df$solar_progress <- factor(
 # interaction grouping and relative abundance calc
 sed_ch4_cyclers_df <- sed_ch4_cyclers_df %>%
   mutate(group = interaction(CH4_Cycler, Depth_Class, sep = " ")) %>% 
-  group_by(Pond, solar_progress, Depth_Class, group, JDate, CH4_Cycler) %>%
+  group_by(Pond, solar_progress, group, JDate, CH4_Cycler) %>%
   summarise(
     rel_abundance = sum(Abundance, na.rm = TRUE), # total across all samples
     .groups = "drop"
@@ -1341,17 +1340,16 @@ sed_ch4_cyclers_df %>%
 ## # A tibble: 2 × 3
 ##   group                 shapiro_p     n
 ##   <fct>                     <dbl> <int>
-## 1 Methanogen Sediment    0.584       23
-## 2 Methanotroph Sediment  0.000317    23
+## 1 Methanogen Sediment      0.137     23
+## 2 Methanotroph Sediment    0.0184    23
 ```
 
 Based on our data with the qq plots and the density histograms, data does not seem to be clearly normally distributed. Shapiro-Wilk test to also test for a normal distribution if p > 0.05 the data is likely normal but if p < 0.05 then the data is not normal.
 
-# A tibble: 2 × 3
   group                 shapiro_p     n
   <fct>                     <dbl> <int>
-1 Methanogen Sediment    0.584       23
-2 Methanotroph Sediment  0.000317    23
+1 Methanogen Sediment      0.137     23
+2 Methanotroph Sediment    0.0184    23
 
 Methanotrophs are not normally distributed but but methanogens are which is interesting. but will still go with two-sample Wilcoxon tests
 
@@ -1359,825 +1357,1163 @@ Methanotrophs are not normally distributed but but methanogens are which is inte
 
 In this plot we will calculate the absolute abundance of methane cyclers in water column and the relative abundance in sediments to see methane cyclers overtime and with a box plot to show abundance as well.
 
-There is probably a better way to do this but I individually plotted surface, bottom, sediment depths for each methanogen and methanotroph for overtime and box plots.
-
-For the water column cell counts we will demonstrate this by thousand cells per ml
-
-## Fig 2- Abund over Time
-
-
 ``` r
-# water over time plot 
-
-# 1. lets plot surface water 
-# surface methanogens
-methanogen_surfwater24 <- water_ch4_cyclers_df %>%
-  dplyr::filter(Depth_Class == "Surface Water",
-                CH4_Cycler == "Methanogen") %>% 
-  group_by(JDate, Pond, solar_progress, total_abundance, CH4_Cycler) %>%
-  ggplot(aes(x = JDate, y = total_abundance/1e3, color = solar_progress))+
-  geom_line(aes(group = interaction(Pond, CH4_Cycler)), 
-            alpha = 0.2) +
-  geom_smooth(aes(group = solar_progress), se = FALSE) +
-  geom_point(aes(shape = Pond), size = 2) +
-  #ggh4x::facet_grid2(~Methanotroph_Methanogen, scales = "free_y") +
-  scale_color_manual(values = solar_colors) +
-  scale_shape_manual(values = pond_shapes) +
-  scale_x_continuous(
-    breaks = seq(180, 240, by = 20), # even ticks
-    limits = c(170, 260)) +
-  labs(
-    x = NULL,
-    y = "Surface Water\n(10³ cells/ml)"
-  ) +
-  theme_classic() +
-  theme(
-    axis.title.y = element_text(size = 8),
-    legend.position = "none"
-  ) +
-  guides(color = "none", shape = "none")
-methanogen_surfwater24
+# calculate total cell abundance mean and standard deviation 
+wc_total_abund <- water_ch4_cyclers_df %>% 
+  group_by(solar_progress, Depth_Class, CH4_Cycler) %>% 
+  dplyr::summarize(ch4_water_sd = sd(total_abundance),
+                   mean_ch4_water = mean(total_abundance),
+                   .groups = "drop")
+wc_total_abund
 ```
 
-![](Microbial_Analyses_files/figure-html/fig-2-Abund-over-Time-1.png)<!-- -->
+```
+## # A tibble: 8 × 5
+##   solar_progress Depth_Class   CH4_Cycler   ch4_water_sd mean_ch4_water
+##   <fct>          <fct>         <chr>               <dbl>          <dbl>
+## 1 FPV            Surface Water Methanogen          2254.          1425.
+## 2 FPV            Surface Water Methanotroph      365892.        440032.
+## 3 FPV            Bottom Water  Methanogen          8166.         10629 
+## 4 FPV            Bottom Water  Methanotroph      332914.        465437.
+## 5 Open           Surface Water Methanogen          1429.          1300.
+## 6 Open           Surface Water Methanotroph       96759.        121706.
+## 7 Open           Bottom Water  Methanogen         30058.         19524.
+## 8 Open           Bottom Water  Methanotroph      116271.        173996.
+```
 
 ``` r
-# surface methanotrophs
-methanotrophs_surfwater24 <- water_ch4_cyclers_df %>%
+##### surface methanogens #####
+# 1. calculate stats
+# 1a. calculate abundances
+methanogen_surface_sum <- water_ch4_cyclers_df %>%
+  dplyr::filter(Depth_Class == "Surface Water",
+                CH4_Cycler == "Methanogen") %>% 
+  group_by(solar_progress, JDate) %>% 
+  dplyr::summarize(sd_meth = sd(total_abundance),
+                   mean_meth = mean(total_abundance),
+                   .groups = "drop")
+methanogen_surface_sum
+```
+
+```
+## # A tibble: 8 × 4
+##   solar_progress JDate sd_meth mean_meth
+##   <fct>          <dbl>   <dbl>     <dbl>
+## 1 FPV              172    816.      471 
+## 2 FPV              193   4073.     3651.
+## 3 FPV              234    346.     1176.
+## 4 FPV              255    349.      403.
+## 5 Open             172    197.      551.
+## 6 Open             193    406.     1548.
+## 7 Open             234    793.      803 
+## 8 Open             255   2756.     2300.
+```
+
+``` r
+max(methanogen_surface_sum$mean_meth)
+```
+
+```
+## [1] 3650.667
+```
+
+``` r
+# 1b. linear mixed model
+methanogen_surface_data <- water_ch4_cyclers_df %>%
+  dplyr::filter(Depth_Class == "Surface Water",
+                CH4_Cycler == "Methanogen") 
+methanogen_surface_data$Pond <- as.factor(methanogen_surface_data$Pond)
+
+surface_methanogen_model <- lmerTest::lmer(total_abundance ~ solar_progress + JDate + (1|Pond), data = methanogen_surface_data)
+summary(surface_methanogen_model) #0.876
+```
+
+```
+## Linear mixed model fit by REML. t-tests use Satterthwaite's method ['lmerModLmerTest']
+## Formula: total_abundance ~ solar_progress + JDate + (1 | Pond)
+##    Data: methanogen_surface_data
+## 
+## REML criterion at convergence: 392.5
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -0.7472 -0.4816 -0.2644  0.0634  3.5357 
+## 
+## Random effects:
+##  Groups   Name        Variance Std.Dev.
+##  Pond     (Intercept)       0     0    
+##  Residual             3731396  1932    
+## Number of obs: 24, groups:  Pond, 6
+## 
+## Fixed effects:
+##                     Estimate Std. Error        df t value Pr(>|t|)
+## (Intercept)        1331.8819  2631.8216   21.0000   0.506    0.618
+## solar_progressOpen -124.7500   788.6059   21.0000  -0.158    0.876
+## JDate                 0.4369    12.0472   21.0000   0.036    0.971
+## 
+## Correlation of Fixed Effects:
+##             (Intr) slr_pO
+## slr_prgrssO -0.150       
+## JDate       -0.977  0.000
+## optimizer (nloptwrap) convergence code: 0 (OK)
+## boundary (singular) fit: see help('isSingular')
+```
+
+``` r
+emmeans::emmeans(surface_methanogen_model, pairwise ~ solar_progress) # 0.8820
+```
+
+```
+## $emmeans
+##  solar_progress emmean  SE df lower.CL upper.CL
+##  FPV              1425 558  4     -123     2973
+##  Open             1300 558  4     -248     2849
+## 
+## Degrees-of-freedom method: kenward-roger 
+## Confidence level used: 0.95 
+## 
+## $contrasts
+##  contrast   estimate  SE df t.ratio p.value
+##  FPV - Open      125 789  4   0.158  0.8820
+## 
+## Degrees-of-freedom method: kenward-roger
+```
+
+``` r
+# 2. plot surface water methanogens overtime
+methanogen_surface <- methanogen_surface_sum %>% 
+  ggplot(aes(x = JDate, y = mean_meth, fill = solar_progress, color = solar_progress)) +
+  geom_line()+
+  geom_point()+
+  theme_classic()+
+  geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_point(size = 3, shape = 16)+
+  geom_point(size = 3, shape = 1, color = "black")+
+  labs(y= "Surface Methanogen<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
+  scale_y_continuous(
+    limits = c(NA, 8250),
+    # breaks = c(0, 2500, 5000, 7500),
+    # limits = c(NA, 8e3),
+    # breaks = breaks_extended(n = 4),
+    breaks = c(0, 4000, 8000),
+    labels = label_number(scale_cut = cut_short_scale())) +
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  scale_fill_manual(values = solar_colors) +
+  scale_color_manual(values = solar_colors) +
+  theme(legend.position = "none")#+
+```
+
+```
+## Error in element_markdown(size = 8): could not find function "element_markdown"
+```
+
+``` r
+  #scale_x_continuous(limits = c(170,250))
+methanogen_surface
+```
+
+```
+## Error: object 'methanogen_surface' not found
+```
+
+``` r
+# 3. box plot
+methanogen_surface_box <- methanogen_surface_data %>% 
+  ggplot(aes(x = solar_progress, y = total_abundance, color = solar_progress)) +
+  geom_boxplot(outlier.shape = NA, color = "black") +
+  geom_jitter(aes(color = solar_progress, fill = solar_progress), width = 0.2, size = 2, shape = 21) +
+  scale_fill_manual(values = solar_colors)+
+  scale_color_manual(values = c("black", "black"))+
+  scale_y_continuous(
+    limits = c(NA, 8250),
+    #breaks = c(0, 2500, 5000, 7500),
+     breaks = c(0, 4000, 8000),
+    labels = label_number(scale_cut = cut_short_scale())) +
+  theme_classic()+
+  theme(axis.text.x = element_text(size = 8,colour = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+ annotate("text", x = 2, y = 8000, label = "p = 0.882", size = 2.822,  fontface = "italic") #.882
+methanogen_surface_box
+```
+
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-1.png)<!-- -->
+
+``` r
+##### surface methanotrophs #####
+# 1. calculate stats
+# 1a. calculate abundances
+methanotroph_surface_sum <- water_ch4_cyclers_df %>%
   dplyr::filter(Depth_Class == "Surface Water",
                 CH4_Cycler == "Methanotroph") %>% 
-  group_by(JDate, Pond, solar_progress, total_abundance, CH4_Cycler) %>%
-  ggplot(aes(x = JDate, y = total_abundance/1e3, color = solar_progress))+
-  geom_line(aes(group = interaction(Pond, CH4_Cycler)), 
-            alpha = 0.2) +
-  geom_smooth(aes(group = solar_progress), se = FALSE) +
-  geom_point(aes(shape = Pond), size = 2) +
-  #ggh4x::facet_grid2(~Methanotroph_Methanogen, scales = "free_y") +
-  scale_color_manual(values = solar_colors) +
-  scale_shape_manual(values = pond_shapes) +
-  scale_x_continuous(
-    breaks = seq(180, 240, by = 20), # even ticks
-    limits = c(170, 260)) +
-  labs(
-    x = NULL,
-    y = "Surface Water\n(10³ cells/ml)"
-  ) +
-  theme_classic() +
-  theme(
-    axis.title.y = element_text(size = 8),
-    legend.position = "none"
-  ) +
-  guides(color = "none", shape = "none")
-methanotrophs_surfwater24
+  group_by(solar_progress, JDate) %>%
+  dplyr::summarize(sd_meth = sd(total_abundance),
+                   mean_meth = mean(total_abundance),
+                   .groups = "drop")
+methanotroph_surface_sum
 ```
 
-![](Microbial_Analyses_files/figure-html/fig-2-Abund-over-Time-2.png)<!-- -->
-
-``` r
-# now bottom water methanogens
-methanogen_bot_water24 <- water_ch4_cyclers_df %>%
-  dplyr::filter(Depth_Class == "Bottom Water", 
-                CH4_Cycler == "Methanogen") %>% 
-  group_by(JDate, Pond, solar_progress, total_abundance, CH4_Cycler) %>%
-  ggplot(aes(x = JDate, y = total_abundance/1e3, color = solar_progress))+
-  geom_line(aes(group = interaction(Pond, CH4_Cycler)), 
-            alpha = 0.2) +
-  geom_smooth(aes(group = solar_progress), se = FALSE) +
-  geom_point(aes(shape = Pond), size = 2) +
-  #ggh4x::facet_grid2(~Methanotroph_Methanogen, scales = "free_y") +
-  scale_color_manual(values = solar_colors) +
-  scale_shape_manual(values = pond_shapes) +
-  scale_x_continuous(
-    breaks = seq(180, 240, by = 20), # even ticks
-    limits = c(170, 260)) +
-  labs(
-    x = NULL,
-    y = "Bottom Water\n(10³ cells/ml)"
-  ) +
-  theme_classic() +
-  theme(
-    axis.title.y = element_text(size = 8),
-    legend.position = "none"
-  ) +
-  guides(color = "none", shape = "none")
-methanogen_bot_water24
+```
+## # A tibble: 8 × 4
+##   solar_progress JDate sd_meth mean_meth
+##   <fct>          <dbl>   <dbl>     <dbl>
+## 1 FPV              172  28224.    89489.
+## 2 FPV              193 201570.   270093.
+## 3 FPV              234 189093.   508583 
+## 4 FPV              255 343644.   891961.
+## 5 Open             172   8769.    24869.
+## 6 Open             193  77017.   146454.
+## 7 Open             234  69930.   210918 
+## 8 Open             255 115026.   104584.
 ```
 
-![](Microbial_Analyses_files/figure-html/fig-2-Abund-over-Time-3.png)<!-- -->
+``` r
+max(methanotroph_surface_sum$mean_meth)
+```
+
+```
+## [1] 891960.7
+```
 
 ``` r
-# bottom methanotrophs
-methanotroph_bot_water24 <- water_ch4_cyclers_df %>%
+# calculate abundances between treatments 
+methanotroph_surface_sum_text <- water_ch4_cyclers_df %>%
+  dplyr::filter(Depth_Class == "Surface Water",
+                CH4_Cycler == "Methanotroph") %>% 
+  group_by(solar_progress) %>% 
+  dplyr::summarize(sd_meth = sd(total_abundance/1e5),
+                   mean_meth = mean(total_abundance/1e5),
+                   .groups = "drop")
+methanotroph_surface_sum_text
+```
+
+```
+## # A tibble: 2 × 3
+##   solar_progress sd_meth mean_meth
+##   <fct>            <dbl>     <dbl>
+## 1 FPV              3.66       4.40
+## 2 Open             0.968      1.22
+```
+
+``` r
+max(methanotroph_surface_sum_text$mean_meth)
+```
+
+```
+## [1] 4.400316
+```
+
+``` r
+# 1b. linear mixed model
+methanotroph_surface_data <- water_ch4_cyclers_df %>%
+  dplyr::filter(Depth_Class == "Surface Water",
+                CH4_Cycler == "Methanotroph") 
+methanotroph_surface_data$Pond <- as.factor(methanotroph_surface_data$Pond)
+
+max(methanotroph_surface_data$total_abundance)
+```
+
+```
+## [1] 1267346
+```
+
+``` r
+surface_methanotroph_model <- lmer(total_abundance ~ solar_progress + JDate + (1|Pond), data = methanotroph_surface_data)
+summary(surface_methanotroph_model) # 0.000217 ***
+```
+
+```
+## Linear mixed model fit by REML. t-tests use Satterthwaite's method ['lmerModLmerTest']
+## Formula: total_abundance ~ solar_progress + JDate + (1 | Pond)
+##    Data: methanotroph_surface_data
+## 
+## REML criterion at convergence: 589.6
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -1.4464 -0.5916 -0.2391  0.5196  2.9401 
+## 
+## Random effects:
+##  Groups   Name        Variance  Std.Dev.
+##  Pond     (Intercept) 0.000e+00      0  
+##  Residual             4.446e+10 210864  
+## Number of obs: 24, groups:  Pond, 6
+## 
+## Fixed effects:
+##                      Estimate Std. Error         df t value Pr(>|t|)    
+## (Intercept)        -6.268e+05  2.873e+05  1.348e+37  -2.182 0.029140 *  
+## solar_progressOpen -3.183e+05  8.608e+04  1.348e+37  -3.698 0.000217 ***
+## JDate               4.997e+03  1.315e+03  1.348e+37   3.800 0.000145 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Correlation of Fixed Effects:
+##             (Intr) slr_pO
+## slr_prgrssO -0.150       
+## JDate       -0.977  0.000
+## optimizer (nloptwrap) convergence code: 0 (OK)
+## boundary (singular) fit: see help('isSingular')
+```
+
+``` r
+emmeans::emmeans(surface_methanotroph_model, pairwise ~ solar_progress) # 0.0209
+```
+
+```
+## $emmeans
+##  solar_progress emmean    SE df lower.CL upper.CL
+##  FPV            440032 60900  4   271026   609037
+##  Open           121706 60900  4   -47300   290712
+## 
+## Degrees-of-freedom method: kenward-roger 
+## Confidence level used: 0.95 
+## 
+## $contrasts
+##  contrast   estimate    SE df t.ratio p.value
+##  FPV - Open   318325 86100  4   3.698  0.0209
+## 
+## Degrees-of-freedom method: kenward-roger
+```
+
+``` r
+# 2. plot surface water methanotrophs
+methanotroph_surface <- methanotroph_surface_sum %>% 
+  ggplot(aes(x = JDate, y = mean_meth, fill = solar_progress, color = solar_progress)) +
+  #geom_smooth(aes(group = solar_progress), se = FALSE) +
+  geom_line()+
+  geom_point()+
+  theme_classic()+
+  geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_point(size = 3, shape = 16)+
+  geom_point(size = 3, shape = 1, color = "black")+
+  labs(y= "Surface Methanotroph<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
+  scale_y_continuous(
+    limits = c(0, 1.27e6),
+    breaks = c(0, 6.25e5, 1.25e6),
+    labels = c("0", "625K", "1.25M"))+
+  # scale_y_continuous(
+  #    limits = c(0, NA),
+  #   # breaks = c(0, 7.5e5, 1.5e6),
+  #   # labels = c("0", "750K", "1.5M"))+
+  #   labels = label_number(scale_cut = cut_short_scale())) +
+  #   #labels = label_number(scale_cut = cut_short_scale(), accuracy = 0.01)) +
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  scale_fill_manual(values = solar_colors)+
+  scale_color_manual(values = solar_colors)+
+  theme(legend.position = "none")
+```
+
+```
+## Error in element_markdown(size = 8): could not find function "element_markdown"
+```
+
+``` r
+methanotroph_surface
+```
+
+```
+## Error: object 'methanotroph_surface' not found
+```
+
+``` r
+# 3. box plot
+methanotroph_surface_box <- methanotroph_surface_data %>% 
+  ggplot(aes(x = solar_progress, y = total_abundance, color = solar_progress)) +
+  geom_boxplot(outlier.shape = NA, color = "black") +
+  geom_jitter(aes(color = solar_progress, fill = solar_progress), width = 0.2, size = 2, shape = 21) +
+  scale_fill_manual(values = solar_colors)+
+  scale_color_manual(values = c("black", "black"))+
+  scale_y_continuous(
+    limits = c(0, 1.27e6),
+    breaks = c(0, 6.25e5, 1.25e6),
+    labels = c("0", "625K", "1.25M"))+
+  # scale_y_continuous(
+  #   limits = c(0, 1.27e6),
+  #   breaks = c(0, 2.5e5, 7.5e5, 1.25e6),
+  #   labels = c("0","250K", "750K", "1.25M"))+
+  #   # breaks = c(0, 5e5, 1e6, 1.5e6),
+  #   #labels = label_number(scale_cut = cut_short_scale())) +
+  theme_classic()+
+  theme(axis.text.x = element_text(size = 8,colour = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  # stat_compare_means(method = "wilcox.test",
+  #                    #comparisons = list(c("FPV", "Open")),
+  #                    label = "p.format",
+  #                    size = 3,
+  #                    label.y.npc = 0.9,
+  #                    fontface = "italic")
+  #label.y = c(8000, 100000, 500000, 400000, 400000), # get pvalue
+ annotate("text", x = 2, y = 1.25e6, label = "p = 0.021", size = 2.822,  fontface = "italic") # add p value
+methanotroph_surface_box
+```
+
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-2.png)<!-- -->
+
+``` r
+##### bottom methanogens #####
+# 1. statistics
+# 1a. abundance stats
+methanogen_bottom_sum <- water_ch4_cyclers_df %>%
   dplyr::filter(Depth_Class == "Bottom Water",
-                CH4_Cycler == "Methanotroph") %>% 
-  group_by(JDate, Pond, solar_progress, total_abundance, CH4_Cycler) %>%
-  ggplot(aes(x = JDate, y = total_abundance/1e3, color = solar_progress))+
-  geom_line(aes(group = interaction(Pond, CH4_Cycler)), 
-            alpha = 0.2) +
-  geom_smooth(aes(group = solar_progress), se = FALSE) +
-  geom_point(aes(shape = Pond), size = 2) +
-  #ggh4x::facet_grid2(~Methanotroph_Methanogen, scales = "free_y") +
-  scale_color_manual(values = solar_colors) +
-  scale_shape_manual(values = pond_shapes) +
-  scale_x_continuous(
-    breaks = seq(180, 240, by = 20), # even ticks
-    limits = c(170, 260)) +
-  labs(
-    x = NULL,
-    y = "Bottom Water\n(10³ cells/ml)"
-  ) +
-  theme_classic() +
-  theme(
-    axis.title.y = element_text(size = 8),
-    legend.position = "none"
-  ) +
-  guides(color = "none", shape = "none")
-methanotroph_bot_water24
-```
-
-![](Microbial_Analyses_files/figure-html/fig-2-Abund-over-Time-4.png)<!-- -->
-
-``` r
-# sediment methanogens 
-methano_sed_24 <- sed_ch4_cyclers_df %>%
-  filter(Depth_Class == "Sediment",
-         CH4_Cycler == "Methanogen") %>%
-  group_by(JDate, rel_abundance, Pond, solar_progress, CH4_Cycler) %>%
-  ggplot(aes(x = JDate, y = rel_abundance, color = solar_progress)) +
-  geom_line(aes(group = interaction(Pond, CH4_Cycler)), 
-            alpha = 0.2) +
-  geom_smooth(aes(group = solar_progress), se = FALSE) +
-  geom_point(aes(shape = Pond), size = 2) +
-  #ggh4x::facet_grid2(.~Methanotroph_Methanogen, scales = "free_y") +
-  scale_color_manual(values = solar_colors) +
-  scale_shape_manual(values = pond_shapes) +
-  scale_x_continuous(
-    breaks = seq(180, 240, by = 20), # even ticks
-    limits = c(170, 260)) +
-  labs(
-    x = "Day of Year",
-    y = "Sediment\nRelative Abundance (%)"
-  ) +
-  theme_classic() +
-  theme(
-    axis.title.y = element_text(size = 8),
-    legend.position = "none"
-  ) +
-  guides(color = "none", shape = "none")
-methano_sed_24
-```
-
-![](Microbial_Analyses_files/figure-html/fig-2-Abund-over-Time-5.png)<!-- -->
-
-``` r
-# sediment methanotroph 
-methanotroph_sed_24 <- sed_ch4_cyclers_df %>%
-  filter(Depth_Class == "Sediment", 
-         CH4_Cycler == "Methanotroph") %>%
-  group_by(JDate, rel_abundance, Pond, solar_progress, CH4_Cycler) %>%
-  ggplot(aes(x = JDate, y = rel_abundance, color = solar_progress)) +
-  geom_line(aes(group = interaction(Pond, CH4_Cycler)), 
-            alpha = 0.2) +
-  geom_smooth(aes(group = solar_progress), se = FALSE) +
-  geom_point(aes(shape = Pond), size = 2) +
-  #ggh4x::facet_grid2(.~Methanotroph_Methanogen, scales = "free_y") +
-  scale_color_manual(values = solar_colors) +
-  scale_shape_manual(values = pond_shapes) +
-  scale_x_continuous(
-  breaks = seq(180, 240, by = 20),
-  limits = c(170, 260)
-) +
-  labs(
-    x = "Day of Year",
-    y = "Sediment\nRelative Abundance (%)"
-  ) +
-  theme_classic() +
-  theme(
-    axis.title.y = element_text(size = 8),
-    legend.position = "none"
-  ) +
-  guides(color = "none", shape = "none")
-methanotroph_sed_24
-```
-
-![](Microbial_Analyses_files/figure-html/fig-2-Abund-over-Time-6.png)<!-- -->
-
-``` r
-# quick plot methanogens
-methanogen_surfwater24 / methanogen_bot_water24 / methano_sed_24
-```
-
-![](Microbial_Analyses_files/figure-html/fig-2-Abund-over-Time-7.png)<!-- -->
-
-``` r
-# quick plot methanotrophs
-methanotrophs_surfwater24 / methanotroph_bot_water24 / methanotroph_sed_24
-```
-
-![](Microbial_Analyses_files/figure-html/fig-2-Abund-over-Time-8.png)<!-- -->
-
-
-## Fig 2: Boxplots of Abundance
-
-
-``` r
-# box plots by depth and methane cycler
-
-# 1. calculate pvalue for water column all together
-stat.test <- water_ch4_cyclers_df %>% 
-  group_by(CH4_Cycler, Depth_Class) %>% 
-  wilcox_test(total_abundance ~ solar_progress, 
-              p.adjust.method = "fdr",
-              exact = FALSE) %>% 
-  add_significance() %>% 
-  mutate(
-    group = interaction(CH4_Cycler, Depth_Class, sep = " "),
-    y.position = 0.35,
-    p.label = signif(p, digits = 2))
-stat.test
-```
-
-```
-## # A tibble: 4 × 13
-##   Depth_Class   CH4_Cycler   .y.             group1 group2    n1    n2 statistic       p p.signif group                      y.position p.label
-##   <fct>         <chr>        <chr>           <chr>  <chr>  <int> <int>     <dbl>   <dbl> <chr>    <fct>                           <dbl>   <dbl>
-## 1 Surface Water Methanogen   total_abundance FPV    Open      12    12      66.5 0.772   ns       Methanogen Surface Water         0.35  0.77  
-## 2 Bottom Water  Methanogen   total_abundance FPV    Open      12    12      74   0.931   ns       Methanogen Bottom Water          0.35  0.93  
-## 3 Surface Water Methanotroph total_abundance FPV    Open      12    12     117   0.0102  *        Methanotroph Surface Water       0.35  0.01  
-## 4 Bottom Water  Methanotroph total_abundance FPV    Open      12    12     119   0.00726 **       Methanotroph Bottom Water        0.35  0.0073
-```
-
-``` r
-# A. filter for methanogen surface water
-stat_gen_surf <- stat.test %>%
-  filter(CH4_Cycler == "Methanogen",
-         Depth_Class == "Surface Water")
-
-# surface methanogen
-box_gen_surf <- water_ch4_cyclers_df %>% 
-  dplyr::filter(Depth_Class == "Surface Water",
                 CH4_Cycler == "Methanogen") %>% 
-  ggplot(aes(x = solar_progress, y = total_abundance/1e3, color = solar_progress)) +
-  geom_boxplot(outlier.shape = NA, alpha = 0.2, color = "black", position = position_dodge(0.6)) + 
-  geom_point(aes(shape = Pond),
-             alpha =2,
-             position = position_jitterdodge(jitter.width = .1, dodge.width = .3),
-             size = 3) +
-  # ggh4x::facet_nested(~ solar_progress,
-  #                     scales = "free") +
-  #scale_fill_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
-  scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
-  scale_shape_manual(values = pond_shapes) +
-  # stat_pvalue_manual( # p = 0.73
-  #   stat_gen_surf,
-  #   label = "p.label",
-  #   y.position = 9.5,
-  #   tip.length = 0,
-  #   bracket.size = 0,
-  #   size = 3
-  # ) +
-  theme_classic() +
-  theme(
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank(),
-    axis.line.y = element_blank(),
-    axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    legend.position = "none"
-  )
-box_gen_surf
-```
-
-![](Microbial_Analyses_files/figure-html/fig-2-abund-boxplots-1.png)<!-- -->
-
-``` r
-## What are some states of sediment methanotrophs abundance? 
-water_ch4_cyclers_df %>% 
-  dplyr::filter(CH4_Cycler == "Methanotroph") %>%
-  group_by(solar_progress, Depth_Class) %>%
-  summarize(avg_wat_methanotroph = mean(total_abundance), 
-            median_wat_methanotroph = median(total_abundance),
-            max_wat_methanotroph = max(total_abundance),
-            min_wat_methanotroph = min(total_abundance))
+  group_by(solar_progress, JDate) %>% 
+  dplyr::summarize(sd_meth = sd(total_abundance),
+                   mean_meth = mean(total_abundance))
+methanogen_bottom_sum
 ```
 
 ```
-## # A tibble: 4 × 6
+## # A tibble: 8 × 4
 ## # Groups:   solar_progress [2]
-##   solar_progress Depth_Class   avg_wat_methanotroph median_wat_methanotroph max_wat_methanotroph min_wat_methanotroph
-##   <fct>          <fct>                        <dbl>                   <dbl>                <dbl>                <dbl>
-## 1 FPV            Surface Water              440032.                 400522               1267346                59364
-## 2 FPV            Bottom Water               465437.                 329530.              1215710                82976
-## 3 Open           Surface Water              121706.                 102006                291664                19407
-## 4 Open           Bottom Water               173996.                 167627                476040                28937
+##   solar_progress JDate sd_meth mean_meth
+##   <fct>          <dbl>   <dbl>     <dbl>
+## 1 FPV              172   5250.    10675 
+## 2 FPV              193  10774.    19957.
+## 3 FPV              234   1688.     4191.
+## 4 FPV              255   3826.     7693 
+## 5 Open             172  21787.    14914.
+## 6 Open             193   5465.    20209.
+## 7 Open             234  57993.    40207.
+## 8 Open             255   2409.     2767.
 ```
 
 ``` r
-water_ch4_cyclers_df %>% 
-  dplyr::filter(CH4_Cycler == "Methanotroph") %>%
-  # Now just subset for the Sept timepoint 
-  dplyr::filter(JDate == 255) %>%
-  group_by(solar_progress, Depth_Class) %>%
-  summarize(avg_wat_methanotroph = mean(total_abundance), 
-            median_wat_methanotroph = median(total_abundance),
-            max_wat_methanotroph = max(total_abundance),
-            min_wat_methanotroph = min(total_abundance))
+max(methanogen_bottom_sum$mean_meth)
 ```
 
 ```
-## # A tibble: 4 × 6
+## [1] 40207.33
+```
+
+``` r
+# 1b. linear mixed model
+methanogen_bottom_data <- water_ch4_cyclers_df %>%
+  dplyr::filter(Depth_Class == "Bottom Water",
+                CH4_Cycler == "Methanogen") 
+methanogen_bottom_data$Pond <- as.factor(methanogen_bottom_data$Pond)
+
+bottom_methanogen_model <- lmer(total_abundance ~ solar_progress + JDate + (1|Pond), data = methanogen_bottom_data)
+summary(bottom_methanogen_model) # 0.514
+```
+
+```
+## Linear mixed model fit by REML. t-tests use Satterthwaite's method ['lmerModLmerTest']
+## Formula: total_abundance ~ solar_progress + JDate + (1 | Pond)
+##    Data: methanogen_bottom_data
+## 
+## REML criterion at convergence: 494.2
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -1.3395 -0.3363 -0.1738  0.1338  3.7360 
+## 
+## Random effects:
+##  Groups   Name        Variance  Std.Dev.
+##  Pond     (Intercept) 131347254 11461   
+##  Residual             403215864 20080   
+## Number of obs: 24, groups:  Pond, 6
+## 
+## Fixed effects:
+##                    Estimate Std. Error       df t value Pr(>|t|)
+## (Intercept)        24108.39   28147.13    19.89   0.857    0.402
+## solar_progressOpen  8895.25   12440.56     4.00   0.715    0.514
+## JDate                -63.13     125.23    17.00  -0.504    0.621
+## 
+## Correlation of Fixed Effects:
+##             (Intr) slr_pO
+## slr_prgrssO -0.221       
+## JDate       -0.950  0.000
+```
+
+``` r
+emmeans::emmeans(bottom_methanogen_model, pairwise ~ solar_progress) # 0.514
+```
+
+```
+## $emmeans
+##  solar_progress emmean   SE df lower.CL upper.CL
+##  FPV             10629 8800  4   -13795    35053
+##  Open            19524 8800  4    -4900    43948
+## 
+## Degrees-of-freedom method: kenward-roger 
+## Confidence level used: 0.95 
+## 
+## $contrasts
+##  contrast   estimate    SE df t.ratio p.value
+##  FPV - Open    -8895 12400  4  -0.715  0.5141
+## 
+## Degrees-of-freedom method: kenward-roger
+```
+
+``` r
+max(methanogen_bottom_data$total_abundance)
+```
+
+```
+## [1] 107153
+```
+
+``` r
+# 2. plot bottom water methanogens overtime 
+methanogen_bottom <- methanogen_bottom_sum %>% 
+  ggplot(aes(x = JDate, y = mean_meth, fill = solar_progress, color = solar_progress)) +
+  geom_line()+
+  geom_point()+
+  theme_classic()+
+  geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_point(size = 3, shape = 16)+
+  geom_point(size = 3, shape = 1, color = "black")+
+  labs(y= "Bottom Methanogen<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
+  scale_y_continuous(
+    limits = c(NA, 1.1e5),
+    breaks = c(0, 5e4, 1e5),
+    labels = label_number(scale_cut = cut_short_scale())) +
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  scale_fill_manual(values = solar_colors)+
+  scale_color_manual(values = solar_colors) +
+  theme(legend.position = "none")#+
+```
+
+```
+## Error in element_markdown(size = 8): could not find function "element_markdown"
+```
+
+``` r
+  #scale_y_continuous(limits = c(0,11), breaks = c(0, 5, 10))+
+  #scale_x_continuous(limits = c(170,250))
+methanogen_bottom
+```
+
+```
+## Error: object 'methanogen_bottom' not found
+```
+
+``` r
+# 3. box plot
+methanogen_bottom_box <- methanogen_bottom_data %>% 
+  ggplot(aes(x = solar_progress, y = total_abundance, color = solar_progress)) +
+  geom_boxplot(outlier.shape = NA, color = "black") +
+  geom_jitter(aes(color = solar_progress, fill = solar_progress), width = 0.2, size = 2, shape = 21) +
+  scale_fill_manual(values = solar_colors)+
+  scale_color_manual(values = c("black", "black"))+
+  scale_y_continuous(
+    limits = c(NA, 1.1e5),
+    breaks = c(0, 5e4, 1e5),
+    labels = label_number(scale_cut = cut_short_scale())) +
+  theme_classic()+
+  theme(axis.text.x = element_text(size = 8,colour = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  # stat_compare_means(method = "wilcox.test",
+  #                    #comparisons = list(c("FPV", "Open")),
+  #                    label = "p.format",
+  #                    size = 3,
+  #                    label.y.npc = 0.9,
+  #                    fontface = "italic")
+                     #label.y = c(8000, 100000, 500000, 400000, 400000), # get pvalue
+ annotate("text", x = 2, y = 1e5, label = "p = 0.514", size = 2.822,  fontface = "italic")
+methanogen_bottom_box
+```
+
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-3.png)<!-- -->
+
+``` r
+##### bottom water methanotrophs #####
+# 1. statistics
+# 1a. calculate abundance stats
+methanotroph_bottom_sum <- water_ch4_cyclers_df %>%
+  dplyr::filter(Depth_Class == "Bottom Water",
+                CH4_Cycler == "Methanotroph") %>% 
+  group_by(solar_progress, JDate) %>% 
+  dplyr::summarize(sd_meth = sd(total_abundance),
+                   mean_meth = mean(total_abundance))
+methanotroph_bottom_sum
+```
+
+```
+## # A tibble: 8 × 4
 ## # Groups:   solar_progress [2]
-##   solar_progress Depth_Class   avg_wat_methanotroph median_wat_methanotroph max_wat_methanotroph min_wat_methanotroph
-##   <fct>          <fct>                        <dbl>                   <dbl>                <dbl>                <dbl>
-## 1 FPV            Surface Water              891961.                  815647              1267346               592889
-## 2 FPV            Bottom Water               731272.                  683450              1215710               294655
-## 3 Open           Surface Water              104584.                   53366               236323                24064
-## 4 Open           Bottom Water                80469                    46917               165553                28937
+##   solar_progress JDate sd_meth mean_meth
+##   <fct>          <dbl>   <dbl>     <dbl>
+## 1 FPV              172  91714.   226583.
+## 2 FPV              193 306960.   370899.
+## 3 FPV              234 285142.   532995.
+## 4 FPV              255 462386.   731272.
+## 5 Open             172  84954.   187324.
+## 6 Open             193  39734.   149482.
+## 7 Open             234 171205.   278711 
+## 8 Open             255  74231.    80469
 ```
 
 ``` r
-# B. filter for methanotroph surface water
-stat_troph_surf <- stat.test %>%
-  filter(CH4_Cycler == "Methanotroph",
-         Depth_Class == "Surface Water")
-
-# surface methanotroph
-box_troph_surf <- water_ch4_cyclers_df %>% 
-  dplyr::filter(Depth_Class == "Surface Water",
-                CH4_Cycler == "Methanotroph") %>% 
-  ggplot(aes(x = solar_progress, y = total_abundance/1e3, color = solar_progress)) +
-  geom_boxplot(outlier.shape = NA, alpha = 0.2, color = "black", position = position_dodge(0.6)) +  
-  geom_point(aes(shape = Pond),
-             alpha = 2,
-             position = position_jitterdodge(jitter.width = .1, dodge.width = .3),
-             size = 3) +
-  # ggh4x::facet_nested(~ solar_progress,
-  #                     scales = "free") +
-  #scale_fill_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
-  scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
-  scale_shape_manual(values = pond_shapes) +
-  # stat_pvalue_manual( # p = 0.0073
-  #   stat_troph_surf,
-  #   label = "p.label",
-  #   y.position = 1.5,  # or set a fixed numeric if you prefer
-  #   tip.length = 0,
-  #   bracket.size = 0,
-  #   size = 2
-  # ) +
-  # guides(
-  #   fill = "none",
-  #   color = "none",
-  #   shape = guide_legend(
-  #     nrow = 2,
-  #     byrow = TRUE,
-  #     title.position = "left",
-  #     override.aes = list(size = 2.5))
-  # ) +
-  theme_classic() +
-  theme(
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank(),
-    axis.line.y = element_blank(),
-    axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    legend.position = "none"
-  )
-box_troph_surf
+max(methanotroph_bottom_sum$mean_meth)
 ```
 
-![](Microbial_Analyses_files/figure-html/fig-2-abund-boxplots-2.png)<!-- -->
-
-``` r
-# B. filter for methanogen bottom water
-stat_gen_bot <- stat.test %>%
-  filter(CH4_Cycler == "Methanogen",
-         Depth_Class == "Bottom Water")
-# bottom methanogen
-box_gen_bot <- water_ch4_cyclers_df %>% 
-  dplyr::filter(Depth_Class == "Bottom Water",
-                CH4_Cycler == "Methanogen") %>% 
-  ggplot(aes(x = solar_progress, y = total_abundance/1e3, color = solar_progress)) +
-  geom_boxplot(outlier.shape = NA, alpha = 0.2, color = "black", position = position_dodge(0.6)) + 
-  geom_point(aes(shape = Pond),
-             alpha = 2,
-             position = position_jitterdodge(jitter.width = .1, dodge.width = .3),
-             size = 3) +
-  # ggh4x::facet_nested(~ solar_progress,
-  #                     scales = "free") +
-  #scale_fill_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
-  scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
-  scale_shape_manual(values = pond_shapes) +
-  # stat_pvalue_manual( # p = 0.66
-  #   stat_gen_bot,
-  #   label = "p.label",
-  #   tip.length = 0,
-  #   y.position = .095,
-  #   size = 2,
-  #   bracket.size = 0,
-  #   inherit.aes = FALSE
-  # ) +
-  # guides(
-  #   fill = "none",
-  #   color = "none",
-  #   shape = guide_legend(
-  #     nrow = 2,
-  #     byrow = TRUE,
-  #     title.position = "left",
-  #     override.aes = list(size = 2.5))
-  # ) +
-  theme_classic() +
-  theme(
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank(),
-    axis.line.y = element_blank(),
-    axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    legend.position = "none"
-  )
-box_gen_bot
+```
+## [1] 731271.7
 ```
 
-![](Microbial_Analyses_files/figure-html/fig-2-abund-boxplots-3.png)<!-- -->
-
 ``` r
-# C. filter for methanotroph bottom water
-stat_troph_bot <- stat.test %>%
-  filter(CH4_Cycler == "Methanotroph",
-         Depth_Class == "Bottom Water")
-
-# bottom methanotrophs
-box_troph_bot <- water_ch4_cyclers_df %>% 
+# calculate abundances between treatments 
+methanotroph_bottom_sum_text <- water_ch4_cyclers_df %>%
   dplyr::filter(Depth_Class == "Bottom Water",
                 CH4_Cycler == "Methanotroph") %>% 
-  ggplot(aes(x = solar_progress, y = total_abundance/1e3, color = solar_progress)) +
-  geom_boxplot(outlier.shape = NA, alpha = 0.2, color = "black", position = position_dodge(0.6)) +  
-  geom_point(aes(shape = Pond),
-             alpha = 2,
-             position = position_jitterdodge(jitter.width = .1, dodge.width = .3),
-             size = 3) +
-  # ggh4x::facet_nested(~ solar_progress,
-  #                     scales = "free") +
-  #scale_fill_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
-  scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
-  scale_shape_manual(values = pond_shapes) +
-  # stat_pvalue_manual( # p = 0.012
-  #   stat_troph_bot,
-  #   label = "p.label",
-  #   y.position = 0.75,
-  #   tip.length = 0,
-  #   size = 2,
-  #   bracket.size = 0,
-  #   inherit.aes = FALSE
-  # ) +
-  # guides(
-  #   fill = "none",
-  #   color = "none",
-  #   shape = guide_legend(
-  #     nrow = 2,
-  #     byrow = TRUE,
-  #     title.position = "left",
-  #     override.aes = list(size = 2.5))
-  # ) +
-  theme_classic() +
-  theme(
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank(),
-    axis.line.y = element_blank(),
-    axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    legend.position = "none"
-  )
-box_troph_bot
-```
-
-![](Microbial_Analyses_files/figure-html/fig-2-abund-boxplots-4.png)<!-- -->
-
-``` r
-# 2. calculate pvalue for sediment
-stat.test <- sed_ch4_cyclers_df %>% 
-  group_by(CH4_Cycler, Depth_Class) %>% 
-  wilcox_test(rel_abundance ~ solar_progress, 
-              p.adjust.method = "fdr",
-              exact = FALSE) %>% 
-  add_significance() %>% 
-  mutate(
-    group = interaction(CH4_Cycler, Depth_Class, sep = " "),
-    y.position = 0.35,
-    p.label = signif(p, digits = 2))
-stat.test
+  group_by(solar_progress) %>% 
+  dplyr::summarize(sd_meth = sd(total_abundance/1e5),
+                   mean_meth = mean(total_abundance/1e5),
+                   .groups = "drop")
+methanotroph_bottom_sum_text
 ```
 
 ```
-## # A tibble: 2 × 13
-##   Depth_Class CH4_Cycler   .y.           group1 group2    n1    n2 statistic     p p.signif group                 y.position p.label
-##   <chr>       <chr>        <chr>         <chr>  <chr>  <int> <int>     <dbl> <dbl> <chr>    <fct>                      <dbl>   <dbl>
-## 1 Sediment    Methanogen   rel_abundance FPV    Open      11    12        55 0.518 ns       Methanogen Sediment         0.35    0.52
-## 2 Sediment    Methanotroph rel_abundance FPV    Open      11    12        58 0.644 ns       Methanotroph Sediment       0.35    0.64
+## # A tibble: 2 × 3
+##   solar_progress sd_meth mean_meth
+##   <fct>            <dbl>     <dbl>
+## 1 FPV               3.33      4.65
+## 2 Open              1.16      1.74
 ```
 
 ``` r
-# D. calculate stats for sediment methanogen
-stat_gen_sed <- stat.test %>%
-  filter(CH4_Cycler == "Methanogen",
-         Depth_Class == "Sediment")
-
-############# SEDIMENT METHANOGENS 
-## What are some states of sediment methanogen abundance? 
-sed_ch4_cyclers_df %>% 
-  dplyr::filter(CH4_Cycler == "Methanogen") %>%
-  group_by(solar_progress) %>%
-  summarize(avg_sed_methanogen = mean(rel_abundance), 
-            median_sed_methanogen = median(rel_abundance),
-            max_sed_methanogen = max(rel_abundance),
-            min_sed_methanogen = min(rel_abundance))
+max(methanogen_bottom_sum_text$mean_meth)
 ```
 
 ```
-## # A tibble: 2 × 5
-##   solar_progress avg_sed_methanogen median_sed_methanogen max_sed_methanogen min_sed_methanogen
-##   <fct>                       <dbl>                 <dbl>              <dbl>              <dbl>
-## 1 FPV                         0.201                 0.206              0.288              0.134
-## 2 Open                        0.214                 0.204              0.266              0.182
+## Error: object 'methanogen_bottom_sum_text' not found
 ```
 
 ``` r
-# BOXPLOTS: sediment methanogen
-box_gen_sed <- sed_ch4_cyclers_df %>% 
+# 1b. linear mixed model 
+methanotroph_bottom_data <- water_ch4_cyclers_df %>%
+  dplyr::filter(Depth_Class == "Bottom Water",
+                CH4_Cycler == "Methanotroph") 
+methanotroph_bottom_data$Pond <- as.factor(methanotroph_bottom_data$Pond)
+
+bottom_methanotroph_model <- lmerTest::lmer(total_abundance ~ solar_progress + JDate + (1|Pond), data = methanotroph_bottom_data)
+summary(bottom_methanotroph_model) # 0.00272 **
+```
+
+```
+## Linear mixed model fit by REML. t-tests use Satterthwaite's method ['lmerModLmerTest']
+## Formula: total_abundance ~ solar_progress + JDate + (1 | Pond)
+##    Data: methanotroph_bottom_data
+## 
+## REML criterion at convergence: 594.7
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -1.3802 -0.6653 -0.1485  0.4918  2.6934 
+## 
+## Random effects:
+##  Groups   Name        Variance  Std.Dev.
+##  Pond     (Intercept) 0.000e+00      0  
+##  Residual             5.671e+10 238139  
+## Number of obs: 24, groups:  Pond, 6
+## 
+## Fixed effects:
+##                      Estimate Std. Error         df t value Pr(>|t|)   
+## (Intercept)        -9.465e+04  3.245e+05  1.184e+32  -0.292  0.77049   
+## solar_progressOpen -2.914e+05  9.722e+04  1.184e+32  -2.998  0.00272 **
+## JDate               2.623e+03  1.485e+03  1.184e+32   1.766  0.07734 . 
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Correlation of Fixed Effects:
+##             (Intr) slr_pO
+## slr_prgrssO -0.150       
+## JDate       -0.977  0.000
+## optimizer (nloptwrap) convergence code: 0 (OK)
+## boundary (singular) fit: see help('isSingular')
+```
+
+``` r
+emmeans::emmeans(bottom_methanotroph_model, pairwise ~ solar_progress) # 0.0400
+```
+
+```
+## $emmeans
+##  solar_progress emmean    SE df lower.CL upper.CL
+##  FPV            465437 68700  4   274571   656304
+##  Open           173996 68700  4   -16870   364863
+## 
+## Degrees-of-freedom method: kenward-roger 
+## Confidence level used: 0.95 
+## 
+## $contrasts
+##  contrast   estimate    SE df t.ratio p.value
+##  FPV - Open   291441 97200  4   2.998  0.0400
+## 
+## Degrees-of-freedom method: kenward-roger
+```
+
+``` r
+# 2. plot bottom water methanotrophs
+methanotroph_bottom <- methanotroph_bottom_sum %>% 
+  ggplot(aes(x = JDate, y = mean_meth, fill = solar_progress, color = solar_progress)) +
+  geom_line()+
+  geom_point()+
+  theme_classic()+
+  geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_point(size = 3, shape = 16)+
+  geom_point(size = 3, shape = 1, color = "black")+
+  labs(y= "Bottom Methanotroph<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
+  scale_y_continuous(
+    breaks = c(0, 6.25e5, 1.25e6),
+    labels = c("0", "625K", "1.25M"))+
+  # scale_y_continuous(
+  #   breaks = c(0, 2.5e5, 7.5e5, 1.25e6),
+  #   labels = c("0", "250K", "750K", "1.25M"))+
+  # labels = label_number(scale_cut = cut_short_scale(), accuracy = 0.01)) +
+  # scale_y_continuous(
+  #   
+  #   limits = c(0, 1.25e6),
+  #   breaks = c(0, 5e5, 1e6, 1.25e6),
+  #   labels = label_number(scale_cut = cut_short_scale())) +
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  scale_fill_manual(values = solar_colors)+
+  scale_color_manual(values = solar_colors)+
+  theme(legend.position = "none")
+```
+
+```
+## Error in element_markdown(size = 8): could not find function "element_markdown"
+```
+
+``` r
+methanotroph_bottom
+```
+
+```
+## Error: object 'methanotroph_bottom' not found
+```
+
+``` r
+# 3. box plot
+methanotroph_bottom_box <- methanotroph_bottom_data %>% 
+  ggplot(aes(x = solar_progress, y = total_abundance, color = solar_progress)) +
+  geom_boxplot(outlier.shape = NA, color = "black") +
+  geom_jitter(aes(color = solar_progress, fill = solar_progress), width = 0.2, size = 2, shape = 21) +
+  scale_fill_manual(values = solar_colors) +
+  scale_color_manual(values = c("black", "black"))+
+  scale_y_continuous(
+    breaks = c(0, 6.25e5, 1.25e6),
+    labels = c("0", "625K", "1.25M"))+
+  # scale_y_continuous(
+  #   breaks = c(0, 2.5e5, 7.5e5, 1.25e6),
+  #   labels = c("0","250K", "750K", "1.25M"))+
+    #labels = label_number(scale_cut = cut_short_scale())) +
+  theme_classic()+
+  theme(axis.text.x = element_text(size = 8,colour = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +#+
+  # stat_compare_means(method = "wilcox.test",
+  #                    #comparisons = list(c("FPV", "Open")),
+  #                    label = "p.format",
+  #                    size = 3,
+  #                    label.y.npc = 0.9,
+  #                    fontface = "italic")
+  #                    #label.y = c(8000, 100000, 500000, 400000, 400000), # get pvalue
+ annotate("text", x = 2, y = 1.25e6, label = "p = 0.040", size = 2.822,  fontface = "italic") # add p value
+methanotroph_bottom_box
+```
+
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-4.png)<!-- -->
+
+``` r
+##### sediment methanogen #####
+# calculate stats
+# 1a. calcualte abundance
+methanogen_sed_sum <- sed_ch4_cyclers_df %>%
   dplyr::filter(CH4_Cycler == "Methanogen") %>% 
+ # group_by(solar_progress) %>% # when this is commented out then roughly 20% of community is methanogens
+ # group_by(solar_progress) %>%  # when this is run then fpv has 18.9% methanogens and controls have more with 20.5%
+  group_by(solar_progress, JDate) %>% 
+  dplyr::summarize(sd_meth = sd(rel_abundance),
+                   mean_meth = mean(rel_abundance))
+methanogen_sed_sum
+```
+
+```
+## # A tibble: 8 × 4
+## # Groups:   solar_progress [2]
+##   solar_progress JDate sd_meth mean_meth
+##   <fct>          <dbl>   <dbl>     <dbl>
+## 1 FPV              172  0.0388     0.201
+## 2 FPV              193  0.0451     0.237
+## 3 FPV              234  0.0307     0.185
+## 4 FPV              255  0.0460     0.134
+## 5 Open             172  0.0251     0.211
+## 6 Open             193  0.0168     0.213
+## 7 Open             234  0.0437     0.217
+## 8 Open             255  0.0848     0.178
+```
+
+``` r
+max(methanogen_sed_sum$mean_meth)
+```
+
+```
+## [1] 0.2365772
+```
+
+``` r
+# 1b. linear mixed model 
+methanogen_sed_data <- sed_ch4_cyclers_df %>%
+  dplyr::filter(CH4_Cycler == "Methanogen") 
+methanogen_sed_data$Pond <- as.factor(methanogen_sed_data$Pond)
+
+sed_methanogen_model <- lmer(rel_abundance ~ solar_progress + JDate + (1|Pond), data = methanogen_sed_data)
+summary(sed_methanogen_model) # 0.6678 
+```
+
+```
+## Linear mixed model fit by REML. t-tests use Satterthwaite's method ['lmerModLmerTest']
+## Formula: rel_abundance ~ solar_progress + JDate + (1 | Pond)
+##    Data: methanogen_sed_data
+## 
+## REML criterion at convergence: -54.6
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -1.9470 -0.4706 -0.1411  0.7823  1.5193 
+## 
+## Random effects:
+##  Groups   Name        Variance  Std.Dev.
+##  Pond     (Intercept) 0.0009758 0.03124 
+##  Residual             0.0013865 0.03724 
+## Number of obs: 23, groups:  Pond, 6
+## 
+## Fixed effects:
+##                      Estimate Std. Error         df t value Pr(>|t|)    
+## (Intercept)         0.3145977  0.0539666 19.7289652   5.829 1.11e-05 ***
+## solar_progressOpen  0.0138530  0.0298995  3.9028301   0.463   0.6678    
+## JDate              -0.0005788  0.0002347 15.9472385  -2.466   0.0254 *  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Correlation of Fixed Effects:
+##             (Intr) slr_pO
+## slr_prgrssO -0.265       
+## JDate       -0.919 -0.017
+```
+
+``` r
+emmeans::emmeans(sed_methanogen_model, pairwise ~ solar_progress) # 0.667
+```
+
+```
+## $emmeans
+##  solar_progress emmean     SE   df lower.CL upper.CL
+##  FPV             0.192 0.0213 4.10    0.133    0.250
+##  Open            0.205 0.0210 3.89    0.146    0.264
+## 
+## Degrees-of-freedom method: kenward-roger 
+## Confidence level used: 0.95 
+## 
+## $contrasts
+##  contrast   estimate     SE   df t.ratio p.value
+##  FPV - Open  -0.0139 0.0299 3.99  -0.463  0.6674
+## 
+## Degrees-of-freedom method: kenward-roger
+```
+
+``` r
+# plot sediment methanogens
+methanogen_sed <- methanogen_sed_sum %>% 
+  ggplot(aes(x = JDate, y = mean_meth, fill = solar_progress, color = solar_progress)) +
+  geom_line()+
+  geom_point()+
+  theme_classic()+
+  geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_point(size = 3, shape = 16)+
+  geom_point(size = 3, shape = 1, color = "black")+
+  scale_fill_manual(values = solar_colors)+
+  scale_color_manual(values = solar_colors)+
+  scale_y_continuous(
+    limits = c(.08, .3),
+    breaks = c(0.1, .2, .30),
+    labels = c("0.10", "0.20", "0.30"))+
+    #labels = label_number(scale_cut = cut_short_scale())) +
+  labs(y= "Sediment Methanogen<br> Abundance (%)", x = "Day of Year")+
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_text(size = 8,colour = "black"),
+        axis.title.y = element_markdown(size = 8))+
+  theme(legend.position = "none")
+```
+
+```
+## Error in element_markdown(size = 8): could not find function "element_markdown"
+```
+
+``` r
+methanogen_sed
+```
+
+```
+## Error: object 'methanogen_sed' not found
+```
+
+``` r
+# 3. box plot
+methanogen_sed_box <- methanogen_sed_data %>% 
   ggplot(aes(x = solar_progress, y = rel_abundance, color = solar_progress)) +
-  geom_boxplot(outlier.shape = NA, alpha = 0.2, color = "black", position = position_dodge(0.6)) +  
-  geom_point(aes(shape = Pond),
-             alpha = 2,
-             position = position_jitterdodge(jitter.width = .1, dodge.width = .3),
-             size = 3) +
-  scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
-  scale_shape_manual(values = pond_shapes) +
-  # stat_pvalue_manual( # p = 0.48
-  #   stat_gen_sed,
-  #   label = "p.label",
-  #   y.position = 0.3,
-  #   tip.length = 0,
-  #   bracket.size = 0,
-  #   size = 2
-  # ) +
-  # guides(
-  #   fill = "none",
-  #   color = "none",
-  #   shape = guide_legend(
-  #     nrow = 2,
-  #     byrow = TRUE,
-  #     title.position = "left",
-  #     override.aes = list(size = 2.5))
-  # ) +
-  theme_classic() +
-  theme(
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank(),
-    axis.line.y = element_blank(),
-    axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    legend.position = "none"
-  )
-box_gen_sed
+  geom_boxplot(outlier.shape = NA, color = "black") +
+  geom_jitter(aes(color = solar_progress, fill = solar_progress), width = 0.2, size = 2, shape = 21) +
+  scale_fill_manual(values = solar_colors)+
+  scale_color_manual(values = c("black", "black"))+
+  scale_y_continuous(
+    limits = c(.08, .3),
+    breaks = c(0.1, .2, .30),
+    labels = c("0.10", "0.20", "0.30"))+
+  # scale_y_continuous(
+  #   #limits = c(.13, .3),
+  #   breaks = breaks_extended(n = 4),
+  #   #breaks = c(.15, .2, .25, .30),
+  #   labels = label_number(scale_cut = cut_short_scale(), accuracy = 0.01)) +
+  theme_classic()+
+  theme(axis.text.x = element_text(size = 8,colour = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  # stat_compare_means(method = "wilcox.test",
+  #                    #comparisons = list(c("FPV", "Open")),
+  #                    label = "p.format",
+  #                    size = 3,
+  #                    label.y.npc = 0.9,
+  #                    fontface = "italic")
+  # label.y = c(8000, 100000, 500000, 400000, 400000) # get pvalue
+ annotate("text", x = 2, y = .3, label = "p = 0.667", size = 2.822,  fontface = "italic")
+methanogen_sed_box
 ```
 
-![](Microbial_Analyses_files/figure-html/fig-2-abund-boxplots-5.png)<!-- -->
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-5.png)<!-- -->
 
 ``` r
-# E. calculate stats for sediment methanotroph
-stat_troph_sed <- stat.test %>%
-  filter(CH4_Cycler == "Methanotroph",
-         Depth_Class == "Sediment")
-
-############# SEDIMENT METHANOTROPHS
-## What are some states of sediment methanotrophs abundance? 
-sed_ch4_cyclers_df %>% 
-  dplyr::filter(CH4_Cycler == "Methanotroph") %>%
-  group_by(solar_progress) %>%
-  summarize(avg_sed_methanotroph = mean(rel_abundance), 
-            median_sed_methanotroph = median(rel_abundance),
-            max_sed_methanotroph = max(rel_abundance),
-            min_sed_methanotroph = min(rel_abundance))
-```
-
-```
-## # A tibble: 2 × 5
-##   solar_progress avg_sed_methanotroph median_sed_methanotroph max_sed_methanotroph min_sed_methanotroph
-##   <fct>                         <dbl>                   <dbl>                <dbl>                <dbl>
-## 1 FPV                          0.0623                  0.0551                0.118               0.0423
-## 2 Open                         0.0681                  0.0598                0.117               0.0459
-```
-
-``` r
-# BOXPLOTS: sediment methanotrophs
-box_troph_sed <- sed_ch4_cyclers_df %>% 
+##### sediment methanotrophs #####
+#1. calculate stats
+#1a. calclate abundance
+methanotroph_sed_sum <- sed_ch4_cyclers_df %>%
   dplyr::filter(CH4_Cycler == "Methanotroph") %>% 
+  # group_by(solar_progress) %>% # when this is commented out then roughly 6% of community is methanotrophs
+  #group_by(solar_progress) %>%  # when this is run then fpv has 6% methanotrophs and controls have more with 7% methanotrophs
+#  group_by(solar_progress, JDate) %>% 
+  dplyr::summarize(sd_meth = sd(rel_abundance),
+                   mean_meth = mean(rel_abundance))
+methanotroph_sed_sum
+```
+
+```
+## # A tibble: 1 × 2
+##   sd_meth mean_meth
+##     <dbl>     <dbl>
+## 1  0.0244    0.0632
+```
+
+``` r
+max(methanotroph_sed_sum$mean_meth)
+```
+
+```
+## [1] 0.06317175
+```
+
+``` r
+#1b linear mixed model
+methanotroph_sed_data <- sed_ch4_cyclers_df %>%
+  dplyr::filter(CH4_Cycler == "Methanotroph") 
+methanotroph_sed_data$Pond <- as.factor(methanotroph_sed_data$Pond)
+
+sed_methanotroph_model <- lmerTest::lmer(rel_abundance ~ solar_progress + JDate + (1|Pond), data = methanotroph_sed_data)
+summary(sed_methanotroph_model) # 0.39913 
+```
+
+```
+## Linear mixed model fit by REML. t-tests use Satterthwaite's method ['lmerModLmerTest']
+## Formula: rel_abundance ~ solar_progress + JDate + (1 | Pond)
+##    Data: methanotroph_sed_data
+## 
+## REML criterion at convergence: -84.4
+## 
+## Scaled residuals: 
+##      Min       1Q   Median       3Q      Max 
+## -1.21367 -0.82879 -0.02729  0.65345  2.06768 
+## 
+## Random effects:
+##  Groups   Name        Variance  Std.Dev.
+##  Pond     (Intercept) 0.0000000 0.00000 
+##  Residual             0.0004054 0.02014 
+## Number of obs: 23, groups:  Pond, 6
+## 
+## Fixed effects:
+##                      Estimate Std. Error         df t value Pr(>|t|)    
+## (Intercept)         0.1514843  0.0274953 20.0000000   5.509 2.16e-05 ***
+## solar_progressOpen  0.0072444  0.0084083 20.0000000   0.862  0.39913    
+## JDate              -0.0004332  0.0001267 20.0000000  -3.418  0.00272 ** 
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Correlation of Fixed Effects:
+##             (Intr) slr_pO
+## slr_prgrssO -0.132       
+## JDate       -0.975 -0.028
+## optimizer (nloptwrap) convergence code: 0 (OK)
+## boundary (singular) fit: see help('isSingular')
+```
+
+``` r
+emmeans::emmeans(sed_methanotroph_model, pairwise ~ solar_progress) #0.4401
+```
+
+```
+## $emmeans
+##  solar_progress emmean      SE   df lower.CL upper.CL
+##  FPV            0.0594 0.00612 4.22   0.0427   0.0761
+##  Open           0.0666 0.00581 3.67   0.0499   0.0834
+## 
+## Degrees-of-freedom method: kenward-roger 
+## Confidence level used: 0.95 
+## 
+## $contrasts
+##  contrast   estimate      SE   df t.ratio p.value
+##  FPV - Open -0.00724 0.00845 3.94  -0.858  0.4401
+## 
+## Degrees-of-freedom method: kenward-roger
+```
+
+``` r
+# 2. plot sed methanotrophs overtime 
+methanotroph_sed<- methanotroph_sed_sum %>% 
+  ggplot(aes(x = JDate, y = mean_meth, fill = solar_progress, color = solar_progress)) +
+  geom_line()+
+  geom_point()+
+  theme_classic()+
+  geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_point(size = 3, shape = 16)+
+  geom_point(size = 3, shape = 1, color = "black")+
+  labs(y= "Sediment Methanotroph<br>Abundance (%)", x = "Day of Year")+
+  theme(axis.text.x =  element_text(size = 8,colour = "black"),
+         axis.text.y =  element_text(size = 8,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 8))+
+  scale_fill_manual(values = solar_colors)+
+  scale_color_manual(values = solar_colors)+
+  scale_y_continuous(
+    limits = c(0.02, .15),
+    breaks = c(0.05, 0.10, 0.15),
+    labels = label_number(scale_cut = cut_short_scale())) +
+  theme(legend.position = "none")
+```
+
+```
+## Error in element_markdown(size = 8): could not find function "element_markdown"
+```
+
+``` r
+methanotroph_sed
+```
+
+```
+## Error: object 'methanotroph_sed' not found
+```
+
+``` r
+# box plot
+methanotroph_sed_box <- methanotroph_sed_data %>% 
   ggplot(aes(x = solar_progress, y = rel_abundance, color = solar_progress)) +
-  geom_boxplot(outlier.shape = NA, alpha = 0.2, color = "black", position = position_dodge(0.6)) +  
-  geom_point(aes(shape = Pond),
-             alpha = 2,
-             position = position_jitterdodge(jitter.width = .1, dodge.width = .3),
-             size = 3) +
-  scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
-  scale_shape_manual(values = pond_shapes) +
-  # stat_pvalue_manual( # p = 0.74
-  #   stat_troph_sed,
-  #   label = "p.label",
-  #   y.position = .11,
-  #   tip.length = 0,
-  #   size = 2,
-  #   bracket.size = 0,
-  #   inherit.aes = FALSE
-  # ) +
-  # guides(
-  #   fill = "none",
-  #   color = "none",
-  #   shape = guide_legend(
-  #     nrow = 2,
-  #     byrow = TRUE,
-  #     title.position = "left",
-  #     override.aes = list(size = 2.5))
-  # ) +
-  theme_classic() +
+  geom_boxplot(outlier.shape = NA, color = "black") +
+  geom_jitter(aes(color = solar_progress, fill = solar_progress), width = 0.2, size = 2, shape = 21) +
+  scale_fill_manual(values = solar_colors)+
+  scale_color_manual(values = c("black", "black"))+
+  scale_y_continuous(
+    limits = c(0.02, .15),
+    breaks = c(0.05, 0.10, 0.15),
+    labels = label_number(scale_cut = cut_short_scale())) +
+  theme_classic()+
+  theme(axis.text.x = element_text(size = 8, colour = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +#+
+  # stat_compare_means(method = "wilcox.test",
+  #                    #comparisons = list(c("FPV", "Open")),
+  #                    label = "p.format",
+  #                    size = 3,
+  #                    label.y.npc = 0.9,
+  #                    fontface = "italic")
+  #                    #label.y = c(8000, 100000, 500000, 400000, 400000), # get pvalue
+ annotate("text", x = 2, y = .15, label = "p = 0.440", size = 2.822,  fontface = "italic") # add p value
+methanotroph_sed_box
+```
+
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-6.png)<!-- -->
+
+``` r
+## plot all together
+fig2 <- methanotroph_surface + methanotroph_surface_box + methanogen_surface + methanogen_surface_box +
+  methanotroph_bottom + methanotroph_bottom_box + methanogen_bottom + methanogen_bottom_box +
+  methanotroph_sed + methanotroph_sed_box + methanogen_sed + methanogen_sed_box +
+  plot_layout(nrow = 6, ncol = 2, 
+              widths = c(10, 4)) +
+  plot_annotation(tag_levels = "A", tag_suffix = '.')& 
   theme(
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank(),
-    axis.line.y = element_blank(),
-    axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    legend.position = "none"
-  )
-box_troph_sed
-```
-
-![](Microbial_Analyses_files/figure-html/fig-2-abund-boxplots-6.png)<!-- -->
-
-``` r
-# extract legend 
-legend_plot <- sed_ch4_cyclers_df %>% # dummy plot 
-  dplyr::filter(CH4_Cycler == "Methanotroph") %>% 
-  ggplot(aes(x = solar_progress, y = rel_abundance, color = solar_progress)) +
-  geom_boxplot(outlier.shape = NA, alpha = 0.2, position = position_dodge(0.6)) +  
-  geom_point(aes(shape = Pond),
-             alpha = 2,
-             position = position_jitterdodge(jitter.width = .1, dodge.width = .3),
-             size = 2) +
-  # ggh4x::facet_nested(~ solar_progress,
-  #                     scales = "free") +
-  #scale_fill_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
-  scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
-  scale_shape_manual(values = pond_shapes) +
-  # stat_pvalue_manual(
-  #   stat_troph_sed,
-  #   label = "p.label",
-  #   y.position = .11,
-  #   tip.length = 0,
-  #   size = 2,
-  #   bracket.size = 0,
-  #   inherit.aes = FALSE
-  # ) +
-  guides(
-    fill = "none",
-    color = "none",
-    shape = guide_legend(
-      nrow = 2,
-      byrow = TRUE,
-      title.position = "left",
-      override.aes = list(size = 2.5))
-  ) +
-  theme_classic() +
-  theme(
-    legend.position = "bottom",
-    legend.title = element_text(hjust = 0.5),
-    legend.box = "horizontal",
-    legend.justification = "center"
-  )
-legend_plot
-```
-
-![](Microbial_Analyses_files/figure-html/fig-2-abund-boxplots-7.png)<!-- -->
-
-``` r
-legend_only <- ggpubr::get_legend(legend_plot) # extract legend
-
-# now we will need to add it to sediments to plot legend only wont plot by itself
-sed_depths_leg <- ggarrange(methano_sed_24, box_gen_sed, methanotroph_sed_24, box_troph_sed,
-            ncol = 2,
-            nrow = 3,
-            legend_only,
-            align = "hv"
-)
-
-# Display
-sed_depths_leg
-```
-
-![](Microbial_Analyses_files/figure-html/fig-2-abund-boxplots-8.png)<!-- -->
-
-``` r
-# or lets try two (technically 4 columns) where on the left we have methanogens and right is methanotrophs. they will still be going from surface, bottom, sediments with box plot on the right but we will have a box around methanogens and methanotrophs
-
-
-# 1. plot final methanogens
-methanogen_final <- 
-  ggarrange(methanogen_surfwater24, box_gen_surf, 
-            methanogen_bot_water24, box_gen_bot,
-            methano_sed_24, box_gen_sed,
-  nrow = 3, 
-  ncol = 2,
-  align = "hv",
-  labels = c("A.", "B.", "C.", "D.", "E.", "F."),
-  font.label = list(size =10),
-  widths = c(1, .5))
-methanogen_final
-```
-
-![](Microbial_Analyses_files/figure-html/fig-2-abund-boxplots-9.png)<!-- -->
-
-``` r
-# want to add space for title in methanogen plot
-space <- nullGrob()
-
-# now plot with extra space
-methanogen_final <- ggarrange(
-  space, 
-  methanogen_final, 
-  ncol = 1,
-  heights = c(0.1, 1)  
-)
-
-# 2. draw box around methanogens
-png("figures/Fig_2/methanogens.png", width = 4000, height = 4000, res = 600)
-
-grid.newpage()
-grid.draw(methanogen_final)
-grid.rect(gp = gpar(col = "black", fill = NA, lwd = 2))  # draw border
-grid.text(label = "Methanogens", x = 0.5, y = 0.99, just = c("center", "top"),
-          gp = gpar(fontface = "bold", cex = .9))
-
-dev.off()
+    plot.tag = element_text(size = 8))
 ```
 
 ```
-## png 
-##   2
+## Error: object 'methanotroph_surface' not found
 ```
 
 ``` r
-# 1. plot final methanotrophs
-methanotroph_final <- 
-  ggarrange(methanotrophs_surfwater24, box_troph_surf, 
-            methanotroph_bot_water24, box_troph_bot,
-            methanotroph_sed_24, box_troph_sed,
-  nrow = 3, 
-  ncol = 2,
-  align = "hv",
-  labels = c("G.", "H.", "I.", "J.", "K.", "L."),
-  font.label = list(size =10),
-  widths = c(1, .5))
-methanotroph_final
-```
-
-![](Microbial_Analyses_files/figure-html/fig-2-abund-boxplots-10.png)<!-- -->
-
-``` r
-# want to add space for title in methanogen plot
-space <- nullGrob()
-
-# now plot with extra space
-methanotroph_final <- ggarrange(
-  space, 
-  methanotroph_final, 
-  ncol = 1,
-  heights = c(0.09, 1)  
-)
-methanotroph_final
-```
-
-![](Microbial_Analyses_files/figure-html/fig-2-abund-boxplots-11.png)<!-- -->
-
-``` r
-# 2. draw box around methanogens
-png("figures/Fig_2/methanotrophs.png", width = 4000, height = 4000, res = 600)
-
-grid.newpage()
-grid.draw(methanotroph_final)
-grid.rect(gp = gpar(col = "black", fill = NA, lwd = 2))  # draw border
-grid.text(label = "Methanotrophs", x = 0.5, y = 0.99, just = c("center", "top"),
-          gp = gpar(fontface = "bold", cex = .9))
-
-dev.off()
+fig2
 ```
 
 ```
-## png 
-##   2
+## Error: object 'fig2' not found
 ```
 
 ``` r
-# then i was planning on exporting these images and putting them together in Illustrator
+#export the figure
+ggsave(fig2, width = 6.5, height = 8.5, units = "in", filename = "figures/Fig_2/fig2.png") # could only save at height 8.5, orignally h = 8
 ```
-now we have created our main text figure. the only thing is that i dont have the p values in the figure because nick has his italicized and sized a certain way and i want to make sure our plot aesthetics match.
+
+```
+## Error: object 'fig2' not found
+```
+
 
 
 # Supplemental Figures
@@ -2358,9 +2694,9 @@ adonis2(sed_bray ~ solar_progress, data = sed_metadata, by = "terms")
 ## 
 ## adonis2(formula = sed_bray ~ solar_progress, data = sed_metadata, by = "terms")
 ##                Df SumOfSqs      R2      F Pr(>F)    
-## solar_progress  1  0.33255 0.11828 5.9027  0.001 ***
-## Residual       44  2.47888 0.88172                  
-## Total          45  2.81142 1.00000                  
+## solar_progress  1  0.36873 0.13547 6.5814  0.001 ***
+## Residual       42  2.35309 0.86453                  
+## Total          43  2.72182 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -2378,9 +2714,9 @@ adonis2(sed_bray ~ Pond, data = sed_metadata, by = "terms")
 ## 
 ## adonis2(formula = sed_bray ~ Pond, data = sed_metadata, by = "terms")
 ##          Df SumOfSqs     R2      F Pr(>F)    
-## Pond      5   1.0619 0.3777 4.8555  0.001 ***
-## Residual 40   1.7496 0.6223                  
-## Total    45   2.8114 1.0000                  
+## Pond      5   1.1451 0.4207 5.5194  0.001 ***
+## Residual 38   1.5767 0.5793                  
+## Total    43   2.7218 1.0000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -2397,10 +2733,10 @@ adonis2(sed_bray ~ JDate, data = sed_metadata, by = "terms")
 ## Number of permutations: 999
 ## 
 ## adonis2(formula = sed_bray ~ JDate, data = sed_metadata, by = "terms")
-##          Df SumOfSqs      R2     F Pr(>F)    
-## JDate     1  0.30443 0.10828 5.343  0.001 ***
-## Residual 44  2.50700 0.89172                 
-## Total    45  2.81142 1.00000                 
+##          Df SumOfSqs      R2      F Pr(>F)   
+## JDate     1  0.30828 0.11326 5.3646  0.003 **
+## Residual 42  2.41354 0.88674                 
+## Total    43  2.72182 1.00000                 
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -2419,13 +2755,13 @@ sediment_permanova <- adonis2(sed_bray ~ solar_progress * Pond * JDate, data = s
 ## 
 ## adonis2(formula = sed_bray ~ solar_progress * Pond * JDate, data = sed_metadata, by = "terms")
 ##                      Df SumOfSqs      R2       F Pr(>F)    
-## solar_progress        1  0.33255 0.11828 10.1115  0.001 ***
-## Pond                  4  0.72932 0.25941  5.5440  0.001 ***
-## JDate                 1  0.28606 0.10175  8.6982  0.001 ***
-## solar_progress:JDate  1  0.06908 0.02457  2.1005  0.037 *  
-## Pond:JDate            4  0.27622 0.09825  2.0997  0.006 ** 
-## Residual             34  1.11819 0.39773                   
-## Total                45  2.81142 1.00000                   
+## solar_progress        1  0.36873 0.13547 12.0145  0.001 ***
+## Pond                  4  0.77635 0.28523  6.3241  0.001 ***
+## JDate                 1  0.29080 0.10684  9.4751  0.001 ***
+## solar_progress:JDate  1  0.08192 0.03010  2.6694  0.018 *  
+## Pond:JDate            4  0.22193 0.08154  1.8078  0.011 *  
+## Residual             32  0.98209 0.36082                   
+## Total                43  2.72182 1.00000                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -2483,7 +2819,7 @@ permutest(betadispr_water_pond) # not significant p = 0.256
 ## 
 ## Response: Distances
 ##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.10942 0.021885 1.1958    999  0.305
+## Groups     5 0.10942 0.021885 1.1958    999  0.321
 ## Residuals 42 0.76864 0.018301
 ```
 
@@ -2517,7 +2853,7 @@ permutest(betadispr_water_depth) # not significant p = 0.417
 ## 
 ## Response: Distances
 ##           Df  Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     1 0.00863 0.0086305 0.6155    999  0.424
+## Groups     1 0.00863 0.0086305 0.6155    999  0.431
 ## Residuals 46 0.64501 0.0140220
 ```
 
@@ -2533,7 +2869,7 @@ permutest(betadispr_water_JDate) # significant p = 0.006 **
 ## 
 ## Response: Distances
 ##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)   
-## Groups     3 0.23049 0.076829 5.2557    999  0.005 **
+## Groups     3 0.23049 0.076829 5.2557    999  0.006 **
 ## Residuals 44 0.64320 0.014618                        
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
@@ -2552,7 +2888,7 @@ betadispr_sed_solar <- betadisper(sed_bray, sed_metadata$solar_progress)
 betadispr_sed_JDate <- betadisper(sed_bray, sed_metadata$JDate)
 
 # permutest() performs a non-parametric permutation test, which is robust and valid for the kind of data used in beta diversity analysis (e.g., dissimilarity matrices).
-permutest(betadispr_sed_pond) # not significant p = 0.835
+permutest(betadispr_sed_pond) # not significant p = 0.661
 ```
 
 ```
@@ -2562,9 +2898,9 @@ permutest(betadispr_sed_pond) # not significant p = 0.835
 ## Number of permutations: 999
 ## 
 ## Response: Distances
-##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.020568 0.0041136 0.5284    999  0.751
-## Residuals 40 0.311392 0.0077848
+##           Df   Sum Sq   Mean Sq    F N.Perm Pr(>F)
+## Groups     5 0.024577 0.0049153 0.66    999  0.673
+## Residuals 38 0.282986 0.0074470
 ```
 
 ``` r
@@ -2579,8 +2915,8 @@ permutest(betadispr_sed_solar) # not significant p = 0.673
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     1 0.006521 0.0065208 1.8364    999  0.174
-## Residuals 44 0.156241 0.0035509
+## Groups     1 0.005441 0.0054409 1.5015    999  0.218
+## Residuals 42 0.152191 0.0036236
 ```
 
 ``` r
@@ -2595,8 +2931,8 @@ permutest(betadispr_sed_JDate) # not significant p = 0.162
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     3 0.010681 0.0035603 1.6306    999  0.192
-## Residuals 42 0.091706 0.0021835
+## Groups     3 0.010688 0.0035626 1.7276    999  0.172
+## Residuals 40 0.082486 0.0020622
 ```
 With betadispr we find the PERMANOVA results are are valid as pond, treatment, and date are not significant but significant in the PERMANOVA. Thus our PERMANOVA result is reliable and the differences between groups are due to location/centroids of groups rather than differences in variation within groups 
 
@@ -2653,10 +2989,29 @@ fig3a_water_pcoa <-
        x = "Axis.1 [27.4%]",
        y = "Axis.2 [11.3%]",
        title = expression("Water CH"[4]*" Cyclers")) + 
+  guides(
+    color = guide_legend(
+      title.position = "top",
+      title.hjust = 0.5,
+      override.aes = list(size = 2.5)),
+    shape = guide_legend(
+      nrow = 2,
+      byrow = TRUE,
+      title.position = "top",
+      title.hjust = 0.5,
+      override.aes = list(size = 2.5))
+  ) +
   theme_classic() +
   theme(legend.position = "bottom",
-        legend.spacing = unit(0, "cm"),
-        legend.box.background = element_blank())
+        #legend.spacing = unit(0, "cm"),
+        legend.box.background = element_blank(),
+        legend.title = element_text(size = 8),
+        legend.text = element_text(size = 8),
+        plot.title = element_text(hjust = 0.5, size = 9, colour = "black"),
+        axis.text.x = element_text(size = 8, colour = "black"),
+        axis.text.y = element_text(size = 8, colour = "black"),
+        axis.title.x = element_text(size = 8, colour = "black"),
+        axis.title.y = element_text(size = 8, colour = "black"))
 
 # Show the plot
 fig3a_water_pcoa
@@ -2750,13 +3105,32 @@ fig3b_sed_pcoa <-
   scale_color_manual(values = solar_colors) +
   labs(color = "Treatment",
        shape = "Pond",
-       x = "Axis.1 [32%]",
-       y = "Axis.2 [15.6%]",
+       x = "Axis.1 [32.5%]",
+       y = "Axis.2 [15.8%]",
        title = expression("Sediment CH"[4]*" Cyclers")) + 
+  guides(
+    color = guide_legend(
+      title.position = "top",
+      title.hjust = 0.5,
+      override.aes = list(size = 2.5)),
+    shape = guide_legend(
+      nrow = 2,
+      byrow = TRUE,
+      title.position = "top",
+      title.hjust = 0.5,
+      override.aes = list(size = 2.5))
+  ) +
   theme_classic() +
   theme(legend.position = "bottom",
-        legend.spacing = unit(0, "cm"),
-        legend.box.background = element_blank())
+        #legend.spacing = unit(0, "cm"),
+        legend.box.background = element_blank(),
+        legend.title = element_text(size = 8),
+        legend.text = element_text(size = 8),
+        plot.title = element_text(hjust = 0.5, size = 9, colour = "black"),
+        axis.text.x = element_text(size = 8, colour = "black"),
+        axis.text.y = element_text(size = 8, colour = "black"),
+        axis.title.x = element_text(size = 8, colour = "black"),
+        axis.title.y = element_text(size = 8, colour = "black"))
 
 # Show the plot
 fig3b_sed_pcoa
@@ -2767,29 +3141,29 @@ fig3b_sed_pcoa
 ``` r
 # Sophia's plot 
 # PCoA of sediments color by treatment shaped by pond
-s1b_sed_pcoa <- 
+s1b_sed_pcoa <-
   plot_ordination(
   physeq = sed_ch4_cyclers_physeq,
   ordination = scaled_sed_BC_pcoa,
   color = "solar_progress",
   shape = "Pond",
   title = "Sediment Methane Cyclers") +
-  geom_point(size = 5, alpha = 0.5, 
-             aes(color = solar_progress, fill = solar_progress, shape = Pond)) + 
-  scale_color_manual(values = solar_colors) + 
-  scale_fill_manual(values = solar_colors) + 
+  geom_point(size = 5, alpha = 0.5,
+             aes(color = solar_progress, fill = solar_progress, shape = Pond)) +
+  scale_color_manual(values = solar_colors) +
+  scale_fill_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) +
   guides(color = "none",
          fill = "none",
          shape = "none") +
-  theme_classic() 
+  theme_classic()
   # theme(
   # legend.position = c(0.82, 0.01),  # inside bottom-left
   # legend.justification = c(0, 0),  # anchor the legend's top-left corner there
   # legend.spacing = unit(0.1, "cm"),
   # legend.background = element_rect(color = NA, fill = NA),
   # legend.box.background = element_rect(size = 0.1, linetype = "solid", color = "black"),
-  # legend.text = element_text(size = 6), 
+  # legend.text = element_text(size = 6),
   # legend.margin = margin(2, 2, 2, 2))
 s1b_sed_pcoa
 ```
@@ -2806,49 +3180,31 @@ Sediment samples are still distinct from other and separate along first axis
 Water + Sediments together
 
 ``` r
-fig_s1 <- 
-  ggarrange(s1a_water_pcoa, s1b_sed_pcoa,
-  nrow = 1, 
-  ncol = 2,
-  labels = c("A.", "B."),
-  font.label = list(size =12),
-  align = "hv") # aligns axis 
-```
+# fig_s1 <- 
+#   ggarrange(s1a_water_pcoa, s1b_sed_pcoa,
+#   nrow = 1, 
+#   ncol = 2,
+#   labels = c("A.", "B."),
+#   font.label = list(size =12),
+#   align = "hv") # aligns axis 
+# fig_s1
+# 
+# ggsave(fig_s1, width = 12.4, height = 6, dpi = 300,
+#         filename = "figures/Fig_3/fig_3_old.png")
 
-```
-## Error: object 's1a_water_pcoa' not found
-```
-
-``` r
-fig_s1
-```
-
-```
-## Error: object 'fig_s1' not found
-```
-
-``` r
-ggsave(fig_s1, width = 12.4, height = 6, dpi = 300,
-        filename = "figures/Fig_3/fig_3_old.png")
-```
-
-```
-## Error: object 'fig_s1' not found
-```
-
-``` r
 ### Final Plot for Submission 
 plot_fig3 <- 
   fig3a_water_pcoa + theme(plot.title = element_text(margin = margin(b = 0))) + 
   fig3b_sed_pcoa + theme(plot.title = element_text(margin = margin(b = 0))) +
-  plot_annotation(tag_levels = "A") + 
+  plot_annotation(tag_levels = "A", tag_suffix = ".") + 
     plot_layout(guides = "collect") &
   theme(
+    plot.tag = element_text(size = 8, colour = "black"),
     legend.position = "bottom",
-    legend.title = element_text(size = 9),
-    legend.text = element_text(size = 8),
+    # legend.title = element_text(size = 9),
+    # legend.text = element_text(size = 8),
     legend.key.size = unit(0.4, "cm"),
-    legend.spacing.x = unit(0.2, "cm"),
+    legend.spacing.x = unit(0.7, "cm"),
     legend.margin = margin(t = -5, unit = "pt")
   )
 
@@ -2859,7 +3215,7 @@ plot_fig3
 ![](Microbial_Analyses_files/figure-html/fig-3-1.png)<!-- -->
 
 ``` r
-ggsave(plot_fig3, width = 6.3, height = 3.5, dpi = 300,
+ggsave(plot_fig3, width = 6.5, height = 3.5, dpi = 300,
         filename = "figures/Fig_3/Fig_3.png")
 ```
 
@@ -2873,7 +3229,7 @@ We want to see who is structuring the community within the sediments. In water c
 ``` r
 # first lets filter our sed_ch4_cycler_physeq for methanogen or methanotroph
 sed_methanogens_physeq <- subset_taxa(sed_ch4_cyclers_physeq, CH4_Cycler == "Methanogen") %>% 
-  prune_taxa(taxa_sums(.) > 0, .) # 151 ASVs
+  prune_taxa(taxa_sums(.) > 0, .) # 150 ASVs
 
 
 # 1. methanogens
@@ -2915,13 +3271,32 @@ figS1A_sed_methanogens_pcoa <-
   scale_color_manual(values = solar_colors) +
   labs(color = "Treatment",
        shape = "Pond",
-       x = "Axis.1 [32.8%]",
-       y = "Axis.2 [17.8%]",
+       x = "Axis.1 [33.3%]",
+       y = "Axis.2 [17.7%]",
        title = "Sediment Methanogens") + 
-  theme_classic() + 
+  guides(
+    color = guide_legend(
+      title.position = "top",
+      title.hjust = 0.5,
+      override.aes = list(size = 2.5)),
+    shape = guide_legend(
+      nrow = 2,
+      byrow = TRUE,
+      title.position = "top",
+      title.hjust = 0.5,
+      override.aes = list(size = 2.5))
+  ) +
+  theme_classic() +
   theme(legend.position = "bottom",
-        legend.spacing = unit(0, "cm"),
-        legend.box.background = element_blank())
+        #legend.spacing = unit(0, "cm"),
+        legend.box.background = element_blank(),
+        legend.title = element_text(size = 8),
+        legend.text = element_text(size = 8),
+        plot.title = element_text(hjust = 0.5, size = 9, colour = "black"),
+        axis.text.x = element_text(size = 8, colour = "black"),
+        axis.text.y = element_text(size = 8, colour = "black"),
+        axis.title.x = element_text(size = 8, colour = "black"),
+        axis.title.y = element_text(size = 8, colour = "black"))
 
 # Show the plot
 figS1A_sed_methanogens_pcoa
@@ -3005,7 +3380,7 @@ figS1A_sed_methanogens_pcoaold
 ``` r
 # first lets filter our sed_ch4_cycler_physeq for methanogen or methanotroph
 sed_methanotrophs_physeq <- subset_taxa(sed_ch4_cyclers_physeq, CH4_Cycler == "Methanotroph") %>% 
-  prune_taxa(taxa_sums(.) > 0, .) # 201 ASVs
+  prune_taxa(taxa_sums(.) > 0, .) # 197 ASVs
 
 # 2. methanotrophs
 
@@ -3047,13 +3422,33 @@ figS1B_sed_methanotroph_pcoa <-
   scale_color_manual(values = solar_colors) +
   labs(color = "Treatment",
        shape = "Pond",
-       x = "Axis.1 [35.3%]",
-       y = "Axis.2 [15.7%]",
+       x = "Axis.1 [36.1%]",
+       y = "Axis.2 [15.4%]",
        title = "Sediment Methanotrophs") + 
-  theme_classic() + 
+  guides(
+    color = guide_legend(
+      title.position = "top",
+      title.hjust = 0.5,
+      override.aes = list(size = 2.5)),
+    shape = guide_legend(
+      nrow = 2,
+      byrow = TRUE,
+      title.position = "top",
+      title.hjust = 0.5,
+      override.aes = list(size = 2.5))
+  ) +
+  theme_classic() +
   theme(legend.position = "bottom",
-        legend.spacing = unit(0, "cm"),
-        legend.box.background = element_blank())
+        #legend.spacing = unit(0, "cm"),
+        legend.box.background = element_blank(),
+        legend.title = element_text(size = 8),
+        legend.text = element_text(size = 8),
+        plot.title = element_text(hjust = 0.5, size = 9, colour = "black"),
+        axis.text.x = element_text(size = 8, colour = "black"),
+        axis.text.y = element_text(size = 8, colour = "black"),
+        axis.title.x = element_text(size = 8, colour = "black"),
+        axis.title.y = element_text(size = 8, colour = "black"))
+
 
 # Show the plot
 figS1B_sed_methanotroph_pcoa
@@ -3068,10 +3463,10 @@ s2b_sed_troph <- plot_ordination(
   ordination = sed_methanotroph_BC_pcoa,
   color = "solar_progress",
   shape = "Pond",
-  title = "Sediment Methanotrophs") + 
-  geom_point(size = 5, alpha = 0.5, aes(color = solar_progress, fill = solar_progress, shape = Pond)) + 
-  scale_color_manual(values = solar_colors) + 
-  scale_fill_manual(values = solar_colors) + 
+  title = "Sediment Methanotrophs") +
+  geom_point(size = 5, alpha = 0.5, aes(color = solar_progress, fill = solar_progress, shape = Pond)) +
+  scale_color_manual(values = solar_colors) +
+  scale_fill_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) +
   guides(color = "none",
          fill = "none",
@@ -3084,6 +3479,7 @@ s2b_sed_troph
 
 
 ## Save Fig S1
+actually its figure s3 will change that!
 
 
 ``` r
@@ -3091,28 +3487,15 @@ s2b_sed_troph
 #         filename = "analysis/figures/Nick_Analysis_GHGs/sed_pond_solar_pcoa_trophs.png")
 
 # plot together 
-fig_s2 <- 
-  ggarrange(s2a_sed_gen, s2b_sed_troph,
-  nrow = 1, 
-  ncol = 2,
-  labels = c("A.", "B."),
-  font.label = list(size =12),
-  align = "hv") # aligns axis 
-```
+# fig_s2 <- 
+#   ggarrange(s2a_sed_gen, s2b_sed_troph,
+#   nrow = 1, 
+#   ncol = 2,
+#   labels = c("A.", "B."),
+#   font.label = list(size =12),
+#   align = "hv") # aligns axis 
+# fig_s2
 
-```
-## Error: object 's2a_sed_gen' not found
-```
-
-``` r
-fig_s2
-```
-
-```
-## Error: object 'fig_s2' not found
-```
-
-``` r
 # ggsave(fig_s2, width = 12.4, height = 6, dpi = 300,
 #         filename = "figures/s2/fig_s2.png")
 
@@ -3120,14 +3503,13 @@ fig_s2
 plot_figS1 <- 
   figS1A_sed_methanogens_pcoa + theme(plot.title = element_text(margin = margin(b = 0))) + 
   figS1B_sed_methanotroph_pcoa + theme(plot.title = element_text(margin = margin(b = 0))) +
-  plot_annotation(tag_levels = "A") + 
+  plot_annotation(tag_levels = "A", tag_suffix = ".") + 
     plot_layout(guides = "collect") &
   theme(
+    plot.tag = element_text(size = 8),
     legend.position = "bottom",
-    legend.title = element_text(size = 9),
-    legend.text = element_text(size = 8),
     legend.key.size = unit(0.4, "cm"),
-    legend.spacing.x = unit(0.2, "cm"),
+    legend.spacing.x = unit(0.7, "cm"),
     legend.margin = margin(t = -5, unit = "pt")
   )
 
@@ -3139,7 +3521,7 @@ plot_figS1
 
 ``` r
 # Now, actually save the plot   
-ggsave(plot_figS1, width = 6.3, height = 3.5, dpi = 300,
+ggsave(plot_figS1, width = 6.5, height = 3.5, dpi = 300,
         filename = "figures/Fig_S1/Fig_S1.png")
 ```
 
@@ -3181,9 +3563,9 @@ adonis2(sed_gen_bray ~ solar_progress,
 ## 
 ## adonis2(formula = sed_gen_bray ~ solar_progress, data = sed_methanogens_metadata, by = "terms")
 ##                Df SumOfSqs      R2      F Pr(>F)    
-## solar_progress  1  0.30524 0.11958 5.9761  0.001 ***
-## Residual       44  2.24740 0.88042                  
-## Total          45  2.55264 1.00000                  
+## solar_progress  1  0.33513 0.13516 6.5641  0.001 ***
+## Residual       42  2.14430 0.86484                  
+## Total          43  2.47943 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -3202,9 +3584,9 @@ adonis2(sed_gen_bray ~ Pond,
 ## 
 ## adonis2(formula = sed_gen_bray ~ Pond, data = sed_methanogens_metadata, by = "terms")
 ##          Df SumOfSqs      R2      F Pr(>F)    
-## Pond      5   1.0238 0.40108 5.3574  0.001 ***
-## Residual 40   1.5288 0.59892                  
-## Total    45   2.5526 1.00000                  
+## Pond      5   1.0921 0.44047 5.9828  0.001 ***
+## Residual 38   1.3873 0.55953                  
+## Total    43   2.4794 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -3223,9 +3605,9 @@ adonis2(sed_gen_bray ~ as.factor(JDate),
 ## 
 ## adonis2(formula = sed_gen_bray ~ as.factor(JDate), data = sed_methanogens_metadata, by = "terms")
 ##                  Df SumOfSqs      R2      F Pr(>F)    
-## as.factor(JDate)  3  0.53891 0.21112 3.7467  0.001 ***
-## Residual         42  2.01373 0.78888                  
-## Total            45  2.55264 1.00000                  
+## as.factor(JDate)  3  0.55555 0.22406 3.8502  0.001 ***
+## Residual         40  1.92389 0.77594                  
+## Total            43  2.47943 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -3249,13 +3631,13 @@ sed_methanogens_permanova
 ## 
 ## adonis2(formula = sed_gen_bray ~ solar_progress * Pond * JDate, data = sed_methanogens_metadata, by = "terms")
 ##                      Df SumOfSqs      R2       F Pr(>F)    
-## solar_progress        1  0.30524 0.11958 10.5749  0.001 ***
-## Pond                  4  0.71857 0.28150  6.2235  0.001 ***
-## JDate                 1  0.23048 0.09029  7.9848  0.001 ***
-## solar_progress:JDate  1  0.06407 0.02510  2.2195  0.050 *  
-## Pond:JDate            4  0.25287 0.09906  2.1901  0.003 ** 
-## Residual             34  0.98141 0.38447                   
-## Total                45  2.55264 1.00000                   
+## solar_progress        1  0.33513 0.13516 12.4010  0.001 ***
+## Pond                  4  0.75699 0.30531  7.0028  0.001 ***
+## JDate                 1  0.24335 0.09815  9.0049  0.001 ***
+## solar_progress:JDate  1  0.08262 0.03332  3.0574  0.007 ** 
+## Pond:JDate            4  0.19656 0.07928  1.8184  0.014 *  
+## Residual             32  0.86478 0.34878                   
+## Total                43  2.47943 1.00000                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -3292,9 +3674,9 @@ adonis2(sed_troph_bray ~ solar_progress,
 ## 
 ## adonis2(formula = sed_troph_bray ~ solar_progress, data = sed_methanotrophs_metadata, by = "terms")
 ##                Df SumOfSqs      R2      F Pr(>F)    
-## solar_progress  1   0.4064 0.10851 5.3556  0.001 ***
-## Residual       44   3.3389 0.89149                  
-## Total          45   3.7453 1.00000                  
+## solar_progress  1   0.4677 0.13085 6.3233  0.001 ***
+## Residual       42   3.1064 0.86915                  
+## Total          43   3.5741 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -3312,10 +3694,10 @@ adonis2(sed_troph_bray ~ Pond,
 ## Number of permutations: 999
 ## 
 ## adonis2(formula = sed_troph_bray ~ Pond, data = sed_methanotrophs_metadata, by = "terms")
-##          Df SumOfSqs     R2      F Pr(>F)    
-## Pond      5   1.1506 0.3072 3.5474  0.001 ***
-## Residual 40   2.5947 0.6928                  
-## Total    45   3.7453 1.0000                  
+##          Df SumOfSqs      R2      F Pr(>F)    
+## Pond      5   1.2923 0.36158 4.3044  0.001 ***
+## Residual 38   2.2818 0.63842                  
+## Total    43   3.5741 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -3333,10 +3715,10 @@ adonis2(sed_troph_bray ~ as.factor(JDate),
 ## Number of permutations: 999
 ## 
 ## adonis2(formula = sed_troph_bray ~ as.factor(JDate), data = sed_methanotrophs_metadata, by = "terms")
-##                  Df SumOfSqs      R2     F Pr(>F)    
-## as.factor(JDate)  3   0.9422 0.25158 4.706  0.001 ***
-## Residual         42   2.8031 0.74842                 
-## Total            45   3.7453 1.00000                 
+##                  Df SumOfSqs      R2      F Pr(>F)    
+## as.factor(JDate)  3   0.9148 0.25596 4.5868  0.001 ***
+## Residual         40   2.6593 0.74404                  
+## Total            43   3.5741 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -3360,13 +3742,13 @@ sed_methanotrophs_permanova
 ## 
 ## adonis2(formula = sed_troph_bray ~ solar_progress * Pond * JDate, data = sed_methanotrophs_metadata, by = "terms")
 ##                      Df SumOfSqs      R2       F Pr(>F)    
-## solar_progress        1   0.4064 0.10851  8.3635  0.001 ***
-## Pond                  4   0.7442 0.19869  3.8285  0.001 ***
-## JDate                 1   0.5049 0.13481 10.3903  0.001 ***
-## solar_progress:JDate  1   0.0819 0.02187  1.6859  0.117    
-## Pond:JDate            4   0.3558 0.09499  1.8304  0.008 ** 
-## Residual             34   1.6521 0.44113                   
-## Total                45   3.7453 1.00000                   
+## solar_progress        1   0.4677 0.13085 10.5132  0.001 ***
+## Pond                  4   0.8246 0.23072  4.6343  0.001 ***
+## JDate                 1   0.4746 0.13279 10.6688  0.001 ***
+## solar_progress:JDate  1   0.0707 0.01977  1.5884  0.139    
+## Pond:JDate            4   0.3130 0.08757  1.7589  0.027 *  
+## Residual             32   1.4235 0.39829                   
+## Total                43   3.5741 1.00000                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -3419,9 +3801,9 @@ permutest(betadispr_sed_methanogens_pond) # not significant p = 0.659
 ## Number of permutations: 999
 ## 
 ## Response: Distances
-##           Df  Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.02382 0.0047640 0.6395    999   0.68
-## Residuals 40 0.29798 0.0074495
+##           Df   Sum Sq   Mean Sq     F N.Perm Pr(>F)
+## Groups     5 0.029297 0.0058594 0.809    999  0.568
+## Residuals 38 0.275224 0.0072427
 ```
 
 ``` r
@@ -3435,9 +3817,9 @@ permutest(betadispr_sed_methanogens_solar) # not significant p = 0.067
 ## Number of permutations: 999
 ## 
 ## Response: Distances
-##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)  
-## Groups     1 0.011051 0.0110507 3.5235    999  0.069 .
-## Residuals 44 0.137997 0.0031363                       
+##           Df  Sum Sq   Mean Sq     F N.Perm Pr(>F)  
+## Groups     1 0.00951 0.0095101 2.917    999  0.091 .
+## Residuals 42 0.13693 0.0032602                      
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -3454,8 +3836,8 @@ permutest(betadispr_sed_methanogens_JDate) # not significant p = 0.44
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     3 0.006685 0.0022284 0.9404    999  0.435
-## Residuals 42 0.099522 0.0023696
+## Groups     3 0.006703 0.0022343 1.0343    999  0.368
+## Residuals 40 0.086412 0.0021603
 ```
 
 ### Methanotrophs
@@ -3487,8 +3869,8 @@ permutest(betadispr_sed_methanotrophs_pond) # not significant p = 0.515
 ## 
 ## Response: Distances
 ##           Df  Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.03111 0.0062218 0.6398    999  0.686
-## Residuals 40 0.38901 0.0097253
+## Groups     5 0.03100 0.0062006 0.7229    999  0.625
+## Residuals 38 0.32593 0.0085771
 ```
 
 ``` r
@@ -3503,12 +3885,12 @@ permutest(betadispr_sed_methanotrophs_solar) # not significant p = 0.682
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     1 0.000091 0.0000908 0.0137    999  0.921
-## Residuals 44 0.291120 0.0066164
+## Groups     1 0.000028 0.0000282 0.0043    999  0.954
+## Residuals 42 0.274034 0.0065246
 ```
 
 ``` r
-permutest(betadispr_sed_methanotrophs_JDate) # significant p = 0.007
+permutest(betadispr_sed_methanotrophs_JDate) # significant p = 0.011 *
 ```
 
 ```
@@ -3518,9 +3900,9 @@ permutest(betadispr_sed_methanotrophs_JDate) # significant p = 0.007
 ## Number of permutations: 999
 ## 
 ## Response: Distances
-##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)  
-## Groups     3 0.029854 0.0099513 4.0285    999  0.017 *
-## Residuals 42 0.103748 0.0024702                       
+##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)   
+## Groups     3 0.031681 0.0105604 4.1329    999   0.01 **
+## Residuals 40 0.102208 0.0025552                        
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -4039,11 +4421,12 @@ diff_abund_df <- water_ch4_asv_df_glom %>%
                 Genus = if_else(Genus == "Methanobacterium_B_963", 
                                 "Methanobacterium_B", Genus),
                 Genus = if_else(Genus == "Methylobacter_C_601751", 
-                                "Methylobacter_C", Genus))
+                                "Methylobacter_C", Genus),
+                facet_label = paste0("<i>", Genus, "</i><br>", ASV))
 
 # Combine labels
-diff_abund_df$combined_label <-
-  paste(diff_abund_df$Genus, diff_abund_df$ASV, sep = "\n")
+#diff_abund_df$italicized_label <-
+  #paste(diff_abund_df$italicized_label, diff_abund_df$ASV, sep = "\n")
 
 # italicize facet labels
 # diff_abund_df <- diff_abund_df %>%
@@ -4084,41 +4467,631 @@ diffAbund_boxplots <- diff_abund_df %>%
              size = 2, alpha = 0.8, stroke = 0.8,
              position = position_jitterdodge(jitter.width = .5, dodge.width = .3)) +
   geom_boxplot(outlier.shape = NA, alpha = 0, color = "black", position = position_dodge(0.6)) + 
-  labs(color = "Treatment",
-       y = "Water Column \n Absolute Abundance") +
-  facet_wrap(~combined_label, scales = "free_y", nrow = 2) + 
+  labs(color = "Treatment", y = "Water Column<br>Abundance (Cells mL<sup>-1</sup>)") +
+  facet_grid2(~ facet_label, scales = "free_y",
+              strip = strip_themed(text_x = element_markdown(size = 9, face = "plain")))+
+  # facet_wrap2(~ facet_label, scales = "free_y", nrow = 2,
+  #             strip = strip_themed(text_x = element_markdown(size = 10, face = "plain")))+
+  #facet_wrap2(~italicized_label, scales = "free_y", nrow = 2, labeller = label_parsed) + 
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) +
   scale_y_continuous(labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
   theme_classic() +
-  stat_compare_means(method = "wilcox.test", 
-                     #comparisons = list(c("FPV", "Open")),
-                     label = "p.format", 
-                     #group.by = "combined_label",
-                     size = 3,          
-                     label.y.npc = 0.9,
-                     fontface = "italic",
-                     #label.y = c(8000, 100000, 500000, 400000, 400000),
-                     label.x = c(1.75, 1.75, 1.75)) + 
+  # stat_compare_means(method = "wilcox.test", 
+  #                    #comparisons = list(c("FPV", "Open")),
+  #                    label = "p.format", 
+  #                    #group.by = "combined_label",
+  #                    size = 3,          
+  #                    label.y.npc = 0.9,
+  #                    fontface = "italic",
+  #                    #label.y = c(8000, 100000, 500000, 400000, 400000),
+  #                    label.x = c(1.75, 1.75, 1.75)) + 
   guides(
-    color = guide_legend(ncol = 2,override.aes = list(size = 3)),
-    shape = guide_legend(ncol = 2, override.aes = list(size = 3))) +
-  theme(legend.position = c(0.8, 0.2),
-        axis.title.x = element_blank(),
-        legend.title = element_text(size = 9),
-        legend.text = element_text(size = 8),
+    color = "none",
+    # color = guide_legend(
+    #   order = 1,
+    #   ncol= 2,
+    #   title.position = "top",
+    #   title.hjust = 0.5,
+    #   override.aes = list(size = 2.5)),
+    shape = guide_legend(
+      nrow= 2,
+      byrow = TRUE,
+      title.position = "top",
+      title.hjust = 0.5,
+      override.aes = list(size = 2.5))) +
+  theme_classic() +
+  theme(legend.position = "right",
+        legend.spacing = unit(0, "cm"),
+        plot.title = element_text(hjust = 0.5),
+        panel.background =  element_rect(color = 'black', size = 1),
+        panel.grid = element_blank(),
+        legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
+        legend.key = element_rect(fill = "transparent", color = NA),
+        #legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
+        legend.box.just = "center",
+        #strip.background = element_rect(colour = NA, fill = 'transparent'),
+        plot.background = element_rect(fill = "transparent", color="transparent"),
         legend.key.size = unit(0.4, "cm"),
         legend.spacing.x = unit(0.2, "cm"),
-        legend.margin = margin(t = -5, unit = "pt"),
-        strip.text = element_text(size = 10)); diffAbund_boxplots
+      # legend.margin = margin(t = -5, unit = "pt"),
+        strip.text = element_text(size = 8),
+       axis.title.y = element_markdown(size = 8, colour = "black"),
+       axis.title.x = element_blank(),
+       axis.text.y = element_text(size = 8, colour = "black"),
+       legend.title = element_text(size = 9, colour = "black"),
+      legend.text = element_text(size = 8, colour = "black")); diffAbund_boxplots
 ```
 
-![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-1.png)<!-- -->
+```
+## Error in element_markdown(size = 9, face = "plain"): could not find function "element_markdown"
+```
+
+``` r
+# get legend
+legend <- cowplot::get_plot_component(diffAbund_boxplots, "guide-box", return_all = TRUE)
+```
+
+```
+## Error: object 'diffAbund_boxplots' not found
+```
+
+``` r
+legend_full <- legend$grobs[[2]]
+```
+
+```
+## Error in legend$grobs: object of type 'closure' is not subsettable
+```
 
 ``` r
 # Save the plot   
-ggsave(diffAbund_boxplots, width = 6, height = 4, dpi = 300,
+# ggsave(diffAbund_boxplots, width = 6, height = 4, dpi = 300,
+#         filename = "figures/Fig_4/Fig_4.png")
+
+##### ASV_13 Methylococcales #####
+#1. Run stats
+# 1a. calculate abundances
+asv_13_sum <- diff_abund_df %>%
+  dplyr::filter(ASV == "ASV_13") %>% 
+  group_by(solar_progress, JDate) %>% # 
+  dplyr::summarize(sd_meth = sd(total_abundance),
+                   mean_meth = mean(total_abundance),
+                   .groups = "drop")
+asv_13_sum
+```
+
+```
+## # A tibble: 8 × 4
+##   solar_progress JDate sd_meth mean_meth
+##   <chr>          <dbl>   <dbl>     <dbl>
+## 1 FPV              172  43367.    37551.
+## 2 FPV              193  34196.    37932.
+## 3 FPV              234  50486.   158445.
+## 4 FPV              255 139832.   252638 
+## 5 Open             172  29269.    15858.
+## 6 Open             193   6470.     7814.
+## 7 Open             234  38584.    79229.
+## 8 Open             255  45124.    34335
+```
+
+``` r
+# 1b. linear mixed model
+asv_13_data <- diff_abund_df %>%
+  dplyr::filter(ASV == "ASV_13")  
+asv_13_data$Pond <- as.factor(asv_13_data$Pond)
+
+asv_13_data_model <- lmerTest::lmer(total_abundance ~ solar_progress + JDate + (1|Pond), data = asv_13_data) # omitting jdate as term
+summary(asv_13_data_model) #0.000119
+```
+
+```
+## Linear mixed model fit by REML. t-tests use Satterthwaite's method ['lmerModLmerTest']
+## Formula: total_abundance ~ solar_progress + JDate + (1 | Pond)
+##    Data: asv_13_data
+## 
+## REML criterion at convergence: 1151.2
+## 
+## Scaled residuals: 
+##      Min       1Q   Median       3Q      Max 
+## -1.92417 -0.59736  0.01618  0.45218  2.95610 
+## 
+## Random effects:
+##  Groups   Name        Variance  Std.Dev.
+##  Pond     (Intercept) 0.000e+00     0   
+##  Residual             5.151e+09 71768   
+## Number of obs: 48, groups:  Pond, 6
+## 
+## Fixed effects:
+##                     Estimate Std. Error        df t value Pr(>|t|)    
+## (Intercept)        -217852.3    69141.4      45.0  -3.151 0.002893 ** 
+## solar_progressOpen  -87332.6    20717.7      45.0  -4.215 0.000119 ***
+## JDate                 1590.1      316.5      45.0   5.024 8.49e-06 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Correlation of Fixed Effects:
+##             (Intr) slr_pO
+## slr_prgrssO -0.150       
+## JDate       -0.977  0.000
+## optimizer (nloptwrap) convergence code: 0 (OK)
+## boundary (singular) fit: see help('isSingular')
+```
+
+``` r
+emmeans::emmeans(asv_13_data_model, pairwise ~ solar_progress) #0.0135
+```
+
+```
+## $emmeans
+##  solar_progress emmean    SE df lower.CL upper.CL
+##  FPV            121642 14600  4    80968   162315
+##  Open            34309 14600  4    -6365    74983
+## 
+## Degrees-of-freedom method: kenward-roger 
+## Confidence level used: 0.95 
+## 
+## $contrasts
+##  contrast   estimate    SE df t.ratio p.value
+##  FPV - Open    87333 20700  4   4.215  0.0135
+## 
+## Degrees-of-freedom method: kenward-roger
+```
+
+``` r
+# Make individual boxplots of the ASVs
+ASV_13_methylococcales <- diff_abund_df %>%
+  dplyr::filter(ASV == "ASV_13") %>% 
+  ggplot(aes(x = solar_progress, y = total_abundance,
+             color = solar_progress)) + 
+  geom_point(aes(shape = Pond),
+             size = 2, alpha = 0.8, stroke = 0.8,
+             position = position_jitterdodge(jitter.width = .5, dodge.width = .3)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0, color = "black", position = position_dodge(0.6)) + 
+  labs(color = "Treatment", y = "Water Column<br>Abundance (Cells mL<sup>-1</sup>)") +
+  facet_grid2(~ facet_label, scales = "free_y",
+              strip = strip_themed(text_x = element_markdown(size = 9, face = "plain")))+
+  #facet_wrap2(~italicized_label, scales = "free_y", nrow = 2, labeller = label_parsed) + 
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  scale_y_continuous(
+    breaks = c(0, 2e5, 4e5),
+    labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
+  theme_classic() +
+  # stat_compare_means(method = "wilcox.test", 
+  #                    #comparisons = list(c("FPV", "Open")),
+  #                    label = "p.format", 
+  #                    #group.by = "combined_label",
+  #                    size = 3,          
+  #                    label.y.npc = 0.9,
+  #                    fontface = "italic",
+  #                    #label.y = c(8000, 100000, 500000, 400000, 400000),
+  #                    label.x = c(1.75, 1.75, 1.75)) + 
+  guides(
+    color = "none",
+    # color = guide_legend(
+    #   order = 1,
+    #   ncol= 2,
+    #   title.position = "top",
+    #   title.hjust = 0.5,
+    #   override.aes = list(size = 2.5)),
+    shape = guide_legend(
+      nrow= 2,
+      byrow = TRUE,
+      title.position = "top",
+      title.hjust = 0.5,
+      override.aes = list(size = 2.5))) +
+  theme_classic() +
+  theme(legend.position = "none",
+        legend.spacing = unit(0, "cm"),
+        plot.title = element_text(hjust = 0.5),
+        panel.background =  element_rect(color = 'black', size = 1),
+        panel.grid = element_blank(),
+        legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
+        legend.key = element_rect(fill = "transparent", color = NA),
+        legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
+        legend.box.just = "center",
+        #strip.background = element_rect(colour = NA, fill = 'transparent'),
+        plot.background = element_rect(fill = "transparent", color="transparent"),
+        legend.key.size = unit(0.4, "cm"),
+        legend.spacing.x = unit(0.2, "cm"),
+      # legend.margin = margin(t = -5, unit = "pt"),
+        strip.text = element_text(size = 8),
+       axis.title.y = element_markdown(size = 8, colour = "black"),
+       axis.title.x = element_blank(),
+       axis.text.y = element_text(size = 8, colour = "black"),
+       legend.title = element_text(size = 9, colour = "black"),
+      legend.text = element_text(size = 8, colour = "black"))+
+  annotate("text", x = 2, y = 3.9e5, label = "p = 0.014", size = 2.822,  fontface = "italic") 
+```
+
+```
+## Error in element_markdown(size = 9, face = "plain"): could not find function "element_markdown"
+```
+
+``` r
+ASV_13_methylococcales
+```
+
+```
+## Error: object 'ASV_13_methylococcales' not found
+```
+
+``` r
+##### ASV_32 Methylococcales #####
+#1. Run stats
+# 1a. calculate abundances
+asv_32_sum <- diff_abund_df %>%
+  dplyr::filter(ASV == "ASV_32") %>% 
+  group_by(solar_progress, JDate) %>% # 
+  dplyr::summarize(sd_meth = sd(total_abundance),
+                   mean_meth = mean(total_abundance),
+                   .groups = "drop")
+asv_32_sum
+```
+
+```
+## # A tibble: 8 × 4
+##   solar_progress JDate sd_meth mean_meth
+##   <chr>          <dbl>   <dbl>     <dbl>
+## 1 FPV              172  40085.    62903.
+## 2 FPV              193 104708.   138664.
+## 3 FPV              234 102865.   145374.
+## 4 FPV              255  97439.   154261.
+## 5 Open             172  22703.    15372.
+## 6 Open             193  10444.    15458.
+## 7 Open             234  49385.    47175 
+## 8 Open             255   4693.     5114
+```
+
+``` r
+# 1b. linear mixed model
+asv_32_data <- diff_abund_df %>%
+  dplyr::filter(ASV == "ASV_32")  
+asv_32_data$Pond <- as.factor(asv_32_data$Pond)
+
+asv_32_data_model <- lmerTest::lmer(total_abundance ~ solar_progress + JDate + (1|Pond), data = asv_32_data)
+summary(asv_32_data_model) #0.0334
+```
+
+```
+## Linear mixed model fit by REML. t-tests use Satterthwaite's method ['lmerModLmerTest']
+## Formula: total_abundance ~ solar_progress + JDate + (1 | Pond)
+##    Data: asv_32_data
+## 
+## REML criterion at convergence: 1141.6
+## 
+## Scaled residuals: 
+##      Min       1Q   Median       3Q      Max 
+## -1.69774 -0.64370 -0.08453  0.34131  2.41519 
+## 
+## Random effects:
+##  Groups   Name        Variance  Std.Dev.
+##  Pond     (Intercept) 1.150e+09 33911   
+##  Residual             3.726e+09 61040   
+## Number of obs: 48, groups:  Pond, 6
+## 
+## Fixed effects:
+##                      Estimate Std. Error         df t value Pr(>|t|)  
+## (Intercept)          21829.88   61978.96      43.58   0.352   0.7264  
+## solar_progressOpen -104520.38   32819.27       4.00  -3.185   0.0334 *
+## JDate                  484.64     269.18      41.00   1.800   0.0792 .
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Correlation of Fixed Effects:
+##             (Intr) slr_pO
+## slr_prgrssO -0.265       
+## JDate       -0.927  0.000
+```
+
+``` r
+emmeans::emmeans(asv_32_data_model, pairwise ~ solar_progress) #0.0334
+```
+
+```
+## $emmeans
+##  solar_progress emmean    SE df lower.CL upper.CL
+##  FPV            125300 23200  4    60868   189733
+##  Open            20780 23200  4   -43652    85212
+## 
+## Degrees-of-freedom method: kenward-roger 
+## Confidence level used: 0.95 
+## 
+## $contrasts
+##  contrast   estimate    SE df t.ratio p.value
+##  FPV - Open   104520 32800  4   3.185  0.0334
+## 
+## Degrees-of-freedom method: kenward-roger
+```
+
+``` r
+# Make individual boxplots of the ASVs
+ASV_32_methyloparacoccus <- diff_abund_df %>%
+  dplyr::filter(ASV == "ASV_32") %>% 
+  ggplot(aes(x = solar_progress, y = total_abundance,
+             color = solar_progress)) + 
+  geom_point(aes(shape = Pond),
+             size = 2, alpha = 0.8, stroke = 0.8,
+             position = position_jitterdodge(jitter.width = .5, dodge.width = .3)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0, color = "black", position = position_dodge(0.6)) + 
+  labs(color = "Treatment", y = "Water Column<br>Abundance (Cells mL<sup>-1</sup>)") +
+  facet_wrap2(~ facet_label, scales = "free_y", nrow = 2,
+              strip = strip_themed(text_x = element_markdown(size = 9, face = "plain")))+
+  #facet_wrap2(~italicized_label, scales = "free_y", nrow = 2, labeller = label_parsed) + 
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  scale_y_continuous(
+    breaks = c(0, 1.5e5, 3e5),
+    labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
+  theme_classic() +
+  # stat_compare_means(method = "wilcox.test", 
+  #                    #comparisons = list(c("FPV", "Open")),
+  #                    label = "p.format", 
+  #                    #group.by = "combined_label",
+  #                    size = 3,          
+  #                    label.y.npc = 0.9,
+  #                    fontface = "italic",
+  #                    #label.y = c(8000, 100000, 500000, 400000, 400000),
+  #                    label.x = c(1.75, 1.75, 1.75)) + 
+  guides(
+    color = "none",
+    # color = guide_legend(
+    #   order = 1,
+    #   ncol= 2,
+    #   title.position = "top",
+    #   title.hjust = 0.5,
+    #   override.aes = list(size = 2.5)),
+    shape = guide_legend(
+      nrow= 2,
+      byrow = TRUE,
+      title.position = "top",
+      title.hjust = 0.5,
+      override.aes = list(size = 2.5))) +
+  theme_classic() +
+  theme(legend.position = "none",
+        legend.spacing = unit(0, "cm"),
+        plot.title = element_text(hjust = 0.5),
+        panel.background =  element_rect(color = 'black', size = 1),
+        panel.grid = element_blank(),
+        legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
+        legend.key = element_rect(fill = "transparent", color = NA),
+        legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
+        legend.box.just = "center",
+        #strip.background = element_rect(colour = NA, fill = 'transparent'),
+        plot.background = element_rect(fill = "transparent", color="transparent"),
+        legend.key.size = unit(0.4, "cm"),
+        legend.spacing.x = unit(0.2, "cm"),
+      # legend.margin = margin(t = -5, unit = "pt"),
+        strip.text = element_text(size = 8),
+       #axis.title.y = element_markdown(size = 8, colour = "black"),
+       axis.title.x = element_blank(),
+       axis.title.y = element_blank(),
+       axis.text.y = element_text(size = 8, colour = "black"),
+       legend.title = element_text(size = 9, colour = "black"),
+      legend.text = element_text(size = 8, colour = "black"))+
+  annotate("text", x = 2, y = 3e5, label = "p = 0.033", size = 2.822,  fontface = "italic") 
+```
+
+```
+## Error in element_markdown(size = 9, face = "plain"): could not find function "element_markdown"
+```
+
+``` r
+ASV_32_methyloparacoccus
+```
+
+```
+## Error: object 'ASV_32_methyloparacoccus' not found
+```
+
+``` r
+##### ASV_141 Methylobacter_C #####
+#1. Run stats
+# 1a. calculate abundances
+asv_141_sum <- diff_abund_df %>%
+  dplyr::filter(ASV == "ASV_141") %>% 
+  group_by(solar_progress, JDate) %>% # 
+  dplyr::summarize(sd_meth = sd(total_abundance),
+                   mean_meth = mean(total_abundance),
+                   .groups = "drop")
+asv_141_sum
+```
+
+```
+## # A tibble: 8 × 4
+##   solar_progress JDate sd_meth mean_meth
+##   <chr>          <dbl>   <dbl>     <dbl>
+## 1 FPV              172   9552.     9620.
+## 2 FPV              193  60415.    40953.
+## 3 FPV              234  27834.    39058.
+## 4 FPV              255  28316.    33530.
+## 5 Open             172    903.      368.
+## 6 Open             193   9254.     4572.
+## 7 Open             234   3066.     2639.
+## 8 Open             255  14367.     7987.
+```
+
+``` r
+# 1b. linear mixed model
+asv_141_data <- diff_abund_df %>%
+  dplyr::filter(ASV == "ASV_141")  
+asv_141_data$Pond <- as.factor(asv_141_data$Pond)
+
+asv_141_data_model <- lmerTest::lmer(total_abundance ~ solar_progress + JDate + (1|Pond), data = asv_141_data)
+summary(asv_141_data_model) #0.000914 ***
+```
+
+```
+## Linear mixed model fit by REML. t-tests use Satterthwaite's method ['lmerModLmerTest']
+## Formula: total_abundance ~ solar_progress + JDate + (1 | Pond)
+##    Data: asv_141_data
+## 
+## REML criterion at convergence: 1060.7
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -1.2765 -0.5622 -0.1295  0.0787  3.9665 
+## 
+## Random effects:
+##  Groups   Name        Variance  Std.Dev.
+##  Pond     (Intercept)         0     0   
+##  Residual             688712781 26243   
+## Number of obs: 48, groups:  Pond, 6
+## 
+## Fixed effects:
+##                    Estimate Std. Error       df t value Pr(>|t|)    
+## (Intercept)           148.5    25282.8     45.0   0.006 0.995338    
+## solar_progressOpen -26898.2     7575.8     45.0  -3.551 0.000914 ***
+## JDate                 143.5      115.7     45.0   1.240 0.221365    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Correlation of Fixed Effects:
+##             (Intr) slr_pO
+## slr_prgrssO -0.150       
+## JDate       -0.977  0.000
+## optimizer (nloptwrap) convergence code: 0 (OK)
+## boundary (singular) fit: see help('isSingular')
+```
+
+``` r
+emmeans::emmeans(asv_141_data_model, pairwise ~ solar_progress) #0.0238
+```
+
+```
+## $emmeans
+##  solar_progress emmean   SE df lower.CL upper.CL
+##  FPV             30790 5360  4    15917    45663
+##  Open             3892 5360  4   -10981    18765
+## 
+## Degrees-of-freedom method: kenward-roger 
+## Confidence level used: 0.95 
+## 
+## $contrasts
+##  contrast   estimate   SE df t.ratio p.value
+##  FPV - Open    26898 7580  4   3.551  0.0238
+## 
+## Degrees-of-freedom method: kenward-roger
+```
+
+``` r
+# Make individual boxplots of the ASVs
+ASV_141_methylobacterc <- diff_abund_df %>%
+  dplyr::filter(ASV == "ASV_141") %>% 
+  ggplot(aes(x = solar_progress, y = total_abundance,
+             color = solar_progress)) + 
+  geom_point(aes(shape = Pond),
+             size = 2, alpha = 0.8, stroke = 0.8,
+             position = position_jitterdodge(jitter.width = .5, dodge.width = .3)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0, color = "black", position = position_dodge(0.6)) + 
+  labs(color = "Treatment", y = "Water Column<br>Abundance (Cells mL<sup>-1</sup>)") +
+  facet_wrap2(~ facet_label, scales = "free_y", nrow = 2,
+              strip = strip_themed(text_x = element_markdown(size = 9, face = "plain")))+
+  #facet_wrap2(~italicized_label, scales = "free_y", nrow = 2, labeller = label_parsed) + 
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  scale_y_continuous(
+    #breaks = c(0, 1.5e5, 3e5),
+    labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
+  theme_classic() +
+  # stat_compare_means(method = "wilcox.test", 
+  #                    #comparisons = list(c("FPV", "Open")),
+  #                    label = "p.format", 
+  #                    #group.by = "combined_label",
+  #                    size = 3,          
+  #                    label.y.npc = 0.9,
+  #                    fontface = "italic",
+  #                    #label.y = c(8000, 100000, 500000, 400000, 400000),
+  #                    label.x = c(1.75, 1.75, 1.75)) + 
+  guides(
+    #color = "none",
+    color = guide_legend(
+      order = 1,
+      ncol= 2,
+      title.position = "top",
+      title.hjust = 0.5,
+      override.aes = list(size = 2.5)),
+    shape = guide_legend(
+      nrow= 2,
+      byrow = TRUE,
+      title.position = "top",
+      title.hjust = 0.5,
+      override.aes = list(size = 2.5))) +
+  theme_classic() +
+  theme(legend.position = "right",
+        legend.spacing = unit(0, "cm"),
+        plot.title = element_text(hjust = 0.5),
+        panel.background =  element_rect(color = 'black', size = 1),
+        panel.grid = element_blank(),
+        legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
+        legend.key = element_rect(fill = "transparent", color = NA),
+        legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
+        legend.box.just = "center",
+        #strip.background = element_rect(colour = NA, fill = 'transparent'),
+        plot.background = element_rect(fill = "transparent", color="transparent"),
+        legend.key.size = unit(0.4, "cm"),
+        legend.spacing.x = unit(0.2, "cm"),
+      # legend.margin = margin(t = -5, unit = "pt"),
+        strip.text = element_text(size = 8),
+       axis.title.y = element_markdown(size = 8, colour = "black"),
+       axis.title.x = element_blank(),
+      # axis.title.y = element_blank(),
+       axis.text.y = element_text(size = 8, colour = "black"),
+       legend.title = element_text(size = 9, colour = "black"),
+      legend.text = element_text(size = 8, colour = "black"))+
+    annotate("text", x = 2, y = 1.3e5, label = "p = 0.024", size = 2.822,  fontface = "italic") 
+```
+
+```
+## Error in element_markdown(size = 9, face = "plain"): could not find function "element_markdown"
+```
+
+``` r
+ASV_141_methylobacterc
+```
+
+```
+## Error: object 'ASV_141_methylobacterc' not found
+```
+
+``` r
+# # extract legend
+# legend <- cowplot::get_plot_component(ASV_13_methylococcales, "guide-box", return_all = TRUE) # can also do right
+# legend_only <- legend[[3]]
+
+## plot all together
+fig4 <- ASV_13_methylococcales +
+  ASV_32_methyloparacoccus +
+  ASV_141_methylobacterc +
+  plot_spacer() +
+  plot_layout(ncol = 2, guides = "collect", widths = c(1,1)) &
+  theme(
+    legend.justification = c(-30,.2),
+    legend.box.just = "center",
+    legend.box.margin = margin(2, 2, 2, 2.5))
+```
+
+```
+## Error: object 'ASV_13_methylococcales' not found
+```
+
+``` r
+fig4
+```
+
+```
+## Error: object 'fig4' not found
+```
+
+``` r
+# Save the plot   
+ggsave(fig4, width = 6.5, height = 4.5, dpi = 300,
         filename = "figures/Fig_4/Fig_4.png")
+```
+
+```
+## Error: object 'fig4' not found
 ```
 
 
@@ -4299,74 +5272,78 @@ sed_difAbund_plot <- sed_ch4_asv_df_glom %>%
 reformat later
 
 ``` r
-# make function to create taxonomy table 
-make_taxonomic_summary <- function(physeq_obj) {
-  
-  tax_df <- phyloseq::tax_table(physeq_obj) %>%
-    as.data.frame() %>%
-    tibble::rownames_to_column("ASV")
-  
-  # Collapse genera within each higher rank
-  tax_summary <- tax_df %>%
-    group_by(Phylum, Class, Order, Family) %>%
-    summarise(
-      Genera = paste(sort(unique(Genus[!is.na(Genus)])), collapse = ", "),
-      n_ASVs = n(),   # optional: number of ASVs in this grouping
-      .groups = "drop"
-    ) %>%
-    arrange(Phylum, Class, Order, Family)
-  
-  return(tax_summary)
-}
-
-# water column tax table 
-my_tax_table <- make_taxonomic_summary(water_ch4_cyclers_physeq)
-```
-
-```
-## Error in `tibble::rownames_to_column()`:
-## ! Column name `ASV` must not be duplicated.
-## Caused by error in `repaired_names()`:
-## ! Names must be unique.
-## ✖ These names are duplicated:
-##   * "ASV" at locations 8 and 11.
-```
-
-``` r
-my_tax_table
-```
-
-```
-## Error: object 'my_tax_table' not found
-```
-
-``` r
-# water column aggregate table
-water_table_s6 <- tax_agg(water_ch4_cyclers_physeq, rank = "Family")
-
+# water
 taxonomy_table <- tax_table(water_ch4_cyclers_physeq) %>% 
   as.data.frame() %>%
   tibble::rownames_to_column("OTU")
 
 order_genus_summary <- taxonomy_table %>%
-  group_by(Kingdom, Phylum, Class, Order) %>%
+  group_by(Kingdom, Phylum, Class, Order, Family) %>%
   summarize(
     Genera = paste(sort(unique(Genus[!is.na(Genus)])), collapse = ", ")
   ) %>%
-  arrange(Phylum, Class, Order)
+  arrange(Phylum, Class, Order, Family)
+order_genus_summary
+```
 
-# water column aggregate table
+```
+## # A tibble: 15 × 6
+## # Groups:   Kingdom, Phylum, Class, Order [10]
+##    Kingdom  Phylum                   Class               Order                    Family                   Genera                                                                                                                             
+##    <chr>    <chr>                    <chr>               <chr>                    <chr>                    <chr>                                                                                                                              
+##  1 Archaea  Halobacteriota           Methanocellia       Methanocellales          Methanocellaceae         "Methanocella_A"                                                                                                                   
+##  2 Archaea  Halobacteriota           Methanomicrobia     Methanomicrobiales       Methanomicrobiaceae      ""                                                                                                                                 
+##  3 Archaea  Halobacteriota           Methanomicrobia     Methanomicrobiales       Methanospirillaceae_2121 "Methanolinea_A, Methanoregula, UBA467"                                                                                            
+##  4 Archaea  Halobacteriota           Methanomicrobia     Methanomicrobiales       Methanospirillaceae_2125 "Methanospirillum"                                                                                                                 
+##  5 Archaea  Halobacteriota           Methanosarcinia     Methanosarcinales_A_2632 Methanosarcinaceae       "Methanosarcina_2619"                                                                                                              
+##  6 Archaea  Halobacteriota           Methanosarcinia     Methanotrichales         Methanotrichaceae        "Methanothrix_B"                                                                                                                   
+##  7 Archaea  Methanobacteriota_A_1229 Methanobacteria     Methanobacteriales       Methanobacteriaceae      "Methanobacterium_A, Methanobacterium_B_963, Methanobacterium_D_1054, Methanobacterium_F_900, Methanobrevibacter_D, Methanosphaera"
+##  8 Archaea  Methanobacteriota_B      Thermococci         Methanofastidiosales     Methanofastidiosaceae    "Methanofastidiosum"                                                                                                               
+##  9 Bacteria Methylomirabilota        Methylomirabilia    Methylomirabilales       2-02-FULL-66-22          "2-02-FULL-66-22"                                                                                                                  
+## 10 Bacteria Pseudomonadota           Alphaproteobacteria Rhizobiales_505101       Beijerinckiaceae         "Methylocystis, Methylosinus"                                                                                                      
+## 11 Bacteria Pseudomonadota           Gammaproteobacteria Methylococcales          Methylococcaceae         "Methylococcus, Methylomagnum, Methyloparacoccus, Methyloterricola, Methylotetracoccus, UBA6136"                                   
+## 12 Bacteria Pseudomonadota           Gammaproteobacteria Methylococcales          Methylomonadaceae        "Crenothrix, Methylobacter_C_601048, Methylobacter_C_601751, Methyloglobulus, Methylomonas, Methylosoma, Methylovulum, UBA4132"    
+## 13 Archaea  Thermoplasmatota         Thermoplasmata_1773 Methanomassiliicoccales  Methanomassiliicoccaceae "Methanomassiliicoccus_A_1624"                                                                                                     
+## 14 Archaea  Thermoplasmatota         Thermoplasmata_1773 Methanomassiliicoccales  Methanomethylophilaceae  ""                                                                                                                                 
+## 15 Archaea  Thermoplasmatota         Thermoplasmata_1773 Methanomassiliicoccales  UBA472                   "FEN-33"
+```
 
-taxonomy_table <- tax_table(water_ch4_cyclers_physeq) %>% 
+``` r
+# sediment
+
+taxonomy_table_s <- tax_table(sed_ch4_cyclers_physeq) %>% 
   as.data.frame() %>%
   tibble::rownames_to_column("OTU")
 
-order_genus_summary <- taxonomy_table %>%
-  group_by(Kingdom, Phylum, Class, Order) %>%
+order_genus_summary_s <- taxonomy_table_s %>%
+  group_by(Kingdom, Phylum, Class, Order, Family) %>%
   summarize(
     Genera = paste(sort(unique(Genus[!is.na(Genus)])), collapse = ", ")
   ) %>%
-  arrange(Phylum, Class, Order)
+  arrange(Phylum, Class, Order, Family)
+order_genus_summary_s
+```
+
+```
+## # A tibble: 15 × 6
+## # Groups:   Kingdom, Phylum, Class, Order [10]
+##    Kingdom  Phylum                   Class               Order                    Family                   Genera                                                                                                                                         
+##    <chr>    <chr>                    <chr>               <chr>                    <chr>                    <chr>                                                                                                                                          
+##  1 Archaea  Halobacteriota           Methanocellia       Methanocellales          Methanocellaceae         "Methanocella_A"                                                                                                                               
+##  2 Archaea  Halobacteriota           Methanomicrobia     Methanomicrobiales       Methanomicrobiaceae      ""                                                                                                                                             
+##  3 Archaea  Halobacteriota           Methanomicrobia     Methanomicrobiales       Methanospirillaceae_2121 "Methanolinea_A, Methanolinea_B, Methanoregula, UBA288, UBA467"                                                                                
+##  4 Archaea  Halobacteriota           Methanomicrobia     Methanomicrobiales       Methanospirillaceae_2125 "Methanospirillum"                                                                                                                             
+##  5 Archaea  Halobacteriota           Methanosarcinia     Methanosarcinales_A_2632 Methanoperedenaceae      "Methanoperedens_A"                                                                                                                            
+##  6 Archaea  Halobacteriota           Methanosarcinia     Methanosarcinales_A_2632 Methanosarcinaceae       "Methanomethylovorans, Methanosarcina_2619"                                                                                                    
+##  7 Archaea  Halobacteriota           Methanosarcinia     Methanotrichales         Methanotrichaceae        "Methanothrix_B"                                                                                                                               
+##  8 Archaea  Methanobacteriota_A_1229 Methanobacteria     Methanobacteriales       Methanobacteriaceae      "Methanobacterium_A, Methanobacterium_B_963, Methanobacterium_C, Methanobacterium_D_1054, Methanobacterium_F_896, Methanobacterium_F_900, Meth…
+##  9 Bacteria Methylomirabilota        Methylomirabilia    Methylomirabilales       2-02-FULL-66-22          "2-02-FULL-66-22"                                                                                                                              
+## 10 Bacteria Pseudomonadota           Alphaproteobacteria Rhizobiales_505101       Beijerinckiaceae         "Methylocystis"                                                                                                                                
+## 11 Bacteria Pseudomonadota           Gammaproteobacteria Methylococcales          Methylococcaceae         "Methylocaldum, Methylococcus, Methylomagnum, Methyloparacoccus, Methyloterricola, Methylotetracoccus"                                         
+## 12 Bacteria Pseudomonadota           Gammaproteobacteria Methylococcales          Methylomonadaceae        "Crenothrix, Methylobacter_C_601048, Methylobacter_C_601751, Methyloglobulus, Methylomonas, Methylosoma, UBA4132"                              
+## 13 Archaea  Thermoplasmatota         Thermoplasmata_1773 Methanomassiliicoccales  Methanomassiliicoccaceae "Methanomassiliicoccus_A_1624"                                                                                                                 
+## 14 Archaea  Thermoplasmatota         Thermoplasmata_1773 Methanomassiliicoccales  UBA472                   "FEN-33"                                                                                                                                       
+## 15 Archaea  Thermoproteota           Methanomethylicia   Methanomethylicales      Methanomethylicaceae     "Methanomethylicus"
 ```
 
 
@@ -4960,7 +5937,7 @@ devtools::session_info()
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
 ##  tz       America/New_York
-##  date     2025-11-18
+##  date     2025-12-03
 ##  pandoc   3.1.1 @ /usr/lib/rstudio-server/bin/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -4996,6 +5973,7 @@ devtools::session_info()
 ##  class                      7.3-22     2023-05-03 [2] CRAN (R 4.3.3)
 ##  cli                        3.6.4      2025-02-13 [1] CRAN (R 4.3.3)
 ##  cluster                    2.1.6      2023-12-01 [2] CRAN (R 4.3.3)
+##  coda                       0.19-4.1   2024-01-31 [1] CRAN (R 4.3.2)
 ##  codetools                  0.2-19     2023-02-01 [2] CRAN (R 4.3.3)
 ##  colorspace                 2.1-1      2024-07-26 [1] CRAN (R 4.3.2)
 ##  cowplot                  * 1.1.3      2024-01-22 [2] CRAN (R 4.3.3)
@@ -5017,7 +5995,9 @@ devtools::session_info()
 ##  dplyr                    * 1.1.4      2023-11-17 [1] CRAN (R 4.3.2)
 ##  e1071                      1.7-16     2024-09-16 [1] CRAN (R 4.3.2)
 ##  ellipsis                   0.3.2      2021-04-29 [2] CRAN (R 4.3.3)
+##  emmeans                    1.11.2-8   2025-08-27 [1] CRAN (R 4.3.3)
 ##  energy                     1.7-12     2024-08-24 [1] CRAN (R 4.3.3)
+##  estimability               1.5.1      2024-05-12 [1] CRAN (R 4.3.3)
 ##  evaluate                   1.0.3      2025-01-10 [1] CRAN (R 4.3.2)
 ##  Exact                      3.3        2024-07-21 [1] CRAN (R 4.3.3)
 ##  expm                       1.0-0      2024-08-19 [1] CRAN (R 4.3.2)
@@ -5065,13 +6045,13 @@ devtools::session_info()
 ##  lattice                  * 0.22-5     2023-10-24 [2] CRAN (R 4.3.3)
 ##  lazyeval                   0.2.2      2019-03-15 [2] CRAN (R 4.3.3)
 ##  lifecycle                  1.0.4      2023-11-07 [1] CRAN (R 4.3.2)
-##  lme4                       1.1-37     2025-03-26 [1] CRAN (R 4.3.3)
-##  lmerTest                   3.1-3      2020-10-23 [1] CRAN (R 4.3.3)
+##  lme4                     * 1.1-37     2025-03-26 [1] CRAN (R 4.3.3)
+##  lmerTest                 * 3.1-3      2020-10-23 [1] CRAN (R 4.3.3)
 ##  lmom                       3.2        2024-09-30 [1] CRAN (R 4.3.3)
 ##  lubridate                * 1.9.4      2024-12-08 [1] CRAN (R 4.3.3)
 ##  magrittr                   2.0.4      2025-09-12 [1] CRAN (R 4.3.3)
 ##  MASS                       7.3-60.0.1 2024-01-13 [2] CRAN (R 4.3.3)
-##  Matrix                     1.6-5      2024-01-11 [2] CRAN (R 4.3.3)
+##  Matrix                   * 1.6-5      2024-01-11 [2] CRAN (R 4.3.3)
 ##  MatrixGenerics             1.14.0     2023-10-24 [2] Bioconductor
 ##  matrixStats                1.4.1      2024-09-08 [2] CRAN (R 4.3.3)
 ##  memoise                    2.0.1      2021-11-26 [2] CRAN (R 4.3.3)
@@ -5091,6 +6071,7 @@ devtools::session_info()
 ##  numDeriv                   2016.8-1.1 2019-06-06 [1] CRAN (R 4.3.2)
 ##  pacman                     0.5.1      2019-03-11 [1] CRAN (R 4.3.2)
 ##  patchwork                * 1.3.2      2025-08-25 [1] CRAN (R 4.3.3)
+##  pbkrtest                   0.5.3      2024-06-26 [1] CRAN (R 4.3.2)
 ##  permute                  * 0.9-7      2022-01-27 [1] CRAN (R 4.3.2)
 ##  phyloseq                 * 1.41.1     2025-09-26 [1] Github (joey711/phyloseq@c260561)
 ##  pillar                     1.10.2     2025-04-05 [1] CRAN (R 4.3.3)

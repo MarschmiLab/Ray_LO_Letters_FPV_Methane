@@ -47,7 +47,7 @@ knitr::opts_chunk$set(eval = TRUE,
 
 ```{r load-packages}
 # Efficiently load packages 
-pacman::p_load(phyloseq, ggpubr, tidyverse, patchwork, ggh4x, speedyseq, rstatix, dplyr, purrr, vegan, ANCOMBC, microViz,  cowplot, grid, scales, Biostrings, stringr, lmerTest, install = FALSE)
+pacman::p_load(phyloseq, ggpubr, tidyverse, patchwork, ggh4x, speedyseq, rstatix, dplyr, purrr, vegan, ANCOMBC, microViz,  cowplot, grid, scales, Biostrings, stringr, lmerTest, ggtext, install = FALSE)
 
 source("code/functions.R") # contains scale_reads
 source("code/colors_and_shapes.R")
@@ -791,7 +791,7 @@ water_ch4_cyclers_df$Depth_Class <- factor(
 # now add interaction column to our df
 water_ch4_cyclers_df <- water_ch4_cyclers_df %>%
   mutate(group = interaction(CH4_Cycler, Depth_Class, sep = " ")) %>% 
-  group_by(Pond, solar_progress, Depth_Class, group, JDate, CH4_Cycler) %>%
+  group_by(Pond, solar_progress, Depth_Class, group, JDate, CH4_Cycler, DNA_ID) %>%
   summarise(
     total_abundance = sum(Abundance, na.rm = TRUE), # total across all samples
     .groups = "drop"
@@ -946,6 +946,7 @@ methanogen_surface_sum <- water_ch4_cyclers_df %>%
 methanogen_surface_sum
 max(methanogen_surface_sum$mean_meth)
 
+
 # 1b. linear mixed model
 methanogen_surface_data <- water_ch4_cyclers_df %>%
   dplyr::filter(Depth_Class == "Surface Water",
@@ -1018,6 +1019,17 @@ methanotroph_surface_sum <- water_ch4_cyclers_df %>%
                    .groups = "drop")
 methanotroph_surface_sum
 max(methanotroph_surface_sum$mean_meth)
+
+# calculate abundances between treatments 
+methanotroph_surface_sum_text <- water_ch4_cyclers_df %>%
+  dplyr::filter(Depth_Class == "Surface Water",
+                CH4_Cycler == "Methanotroph") %>% 
+  group_by(solar_progress) %>% 
+  dplyr::summarize(sd_meth = sd(total_abundance/1e5),
+                   mean_meth = mean(total_abundance/1e5),
+                   .groups = "drop")
+methanotroph_surface_sum_text
+max(methanotroph_surface_sum_text$mean_meth)
 
 
 # 1b. linear mixed model
@@ -1110,6 +1122,7 @@ methanogen_bottom_sum <- water_ch4_cyclers_df %>%
                    mean_meth = mean(total_abundance))
 methanogen_bottom_sum
 max(methanogen_bottom_sum$mean_meth)
+
   
 # 1b. linear mixed model
 methanogen_bottom_data <- water_ch4_cyclers_df %>%
@@ -1189,6 +1202,17 @@ methanotroph_bottom_sum <- water_ch4_cyclers_df %>%
                    mean_meth = mean(total_abundance))
 methanotroph_bottom_sum
 max(methanotroph_bottom_sum$mean_meth)
+
+# calculate abundances between treatments 
+methanotroph_bottom_sum_text <- water_ch4_cyclers_df %>%
+  dplyr::filter(Depth_Class == "Bottom Water",
+                CH4_Cycler == "Methanotroph") %>% 
+  group_by(solar_progress) %>% 
+  dplyr::summarize(sd_meth = sd(total_abundance/1e5),
+                   mean_meth = mean(total_abundance/1e5),
+                   .groups = "drop")
+methanotroph_bottom_sum_text
+max(methanogen_bottom_sum_text$mean_meth)
 
 # 1b. linear mixed model 
 methanotroph_bottom_data <- water_ch4_cyclers_df %>%
@@ -1271,6 +1295,8 @@ methanotroph_bottom_box
 # 1a. calcualte abundance
 methanogen_sed_sum <- sed_ch4_cyclers_df %>%
   dplyr::filter(CH4_Cycler == "Methanogen") %>% 
+ # group_by(solar_progress) %>% # when this is commented out then roughly 20% of community is methanogens
+ # group_by(solar_progress) %>%  # when this is run then fpv has 18.9% methanogens and controls have more with 20.5%
   group_by(solar_progress, JDate) %>% 
   dplyr::summarize(sd_meth = sd(rel_abundance),
                    mean_meth = mean(rel_abundance))
@@ -1351,7 +1377,9 @@ methanogen_sed_box
 #1a. calclate abundance
 methanotroph_sed_sum <- sed_ch4_cyclers_df %>%
   dplyr::filter(CH4_Cycler == "Methanotroph") %>% 
-  group_by(solar_progress, JDate) %>% 
+  # group_by(solar_progress) %>% # when this is commented out then roughly 6% of community is methanotrophs
+  #group_by(solar_progress) %>%  # when this is run then fpv has 6% methanotrophs and controls have more with 7% methanotrophs
+#  group_by(solar_progress, JDate) %>% 
   dplyr::summarize(sd_meth = sd(rel_abundance),
                    mean_meth = mean(rel_abundance))
 methanotroph_sed_sum
@@ -1439,6 +1467,46 @@ ggsave(fig2, width = 6.5, height = 8.5, units = "in", filename = "figures/Fig_2/
 
 ```
 
+### Plot DO vs Abundance overtime
+```{r do-abundance-ot}
+load("data/00_load_data/chem_metadata_23_24.RData")
+
+# join with chem metadata with abundance data
+
+do_abundance <- left_join(water_ch4_cyclers_df, chem_metadata_23_24, by = "DNA_ID")
+
+# plot DO mg/L overtime
+do_mgl <- do_abundance %>% 
+  group_by(JDate.x, Pond.x, solar_progress.x, Depth_Class.x) %>% 
+  summarise(avg_do = mean(HDO_mg.l, na.rm = TRUE), .groups = "drop") %>% 
+  ggplot(aes(x = JDate.x,
+             y = avg_do,
+             color = solar_progress.x,
+             fill = solar_progress.x)) +
+  geom_line() +
+  geom_point() +
+  #geom_smooth(aes(group = solar_progress.x), se = FALSE, linewidth = 1.4) +
+  ggh4x::facet_wrap2(~Depth_Class.x)
+do_mgl
+
+# plot DO vs abundance
+abundvs_do_mgl <- do_abundance %>% 
+  dplyr::filter(CH4_Cycler == "Methanotroph") %>% 
+  group_by(JDate.x, Pond.x, solar_progress.x, Depth_Class.x, HDO_mg.l) %>% 
+  summarise(
+    total_abundance = sum(Abundance, na.rm = TRUE), # total across all samples
+    .groups = "drop") %>% 
+ # summarise(avg_do = mean(HDO_mg.l, na.rm = TRUE), .groups = "drop") %>% 
+  ggplot(aes(x = HDO_mg.l,
+             y = total_abundance,
+             color = solar_progress.x,
+             fill = solar_progress.x)) +
+  geom_line() +
+  geom_point() +
+  #geom_smooth(aes(group = solar_progress.x), se = FALSE, linewidth = 1.4) +
+  ggh4x::facet_wrap2(~Depth_Class.x)
+abundvs_do_mgl
+```
 
 
 # Supplemental Figures
@@ -2393,12 +2461,12 @@ Now we will calculate the differential abundance between our water and sediment 
 Note as of this step the results do change in that methanobacteriales is not differentially abundant anymore and we have a reduction in asv_1479 and 976. but all asvs belong to methylococcales order
 ```{r diff-abund-water}
 # filter out for ASVs with zero variances 
-water_ch4_phy_bc <- water_ch4_cyclers_physeq %>% 
-  subset_samples(Year == "2024") %>% 
-  filter_taxa(., function(x) {
-    group_var <- sample_data(.)$solar_progress
-    all(tapply(x, group_var, var, na.rm = TRUE) > 0)
-  }, prune = TRUE)
+# water_ch4_phy_bc <- water_ch4_cyclers_physeq %>% 
+#   subset_samples(Year == "2024") %>% 
+#   filter_taxa(., function(x) {
+#     group_var <- sample_data(.)$solar_progress
+#     all(tapply(x, group_var, var, na.rm = TRUE) > 0)
+#   }, prune = TRUE)
 
 
 # relevel solar_progress
