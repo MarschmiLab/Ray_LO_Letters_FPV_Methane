@@ -2727,7 +2727,7 @@ plot_fig3
 ![](Microbial_Analyses_files/figure-html/fig-3-1.png)<!-- -->
 
 ``` r
-ggsave(plot_fig3, width = 6.5, height = 3.5, dpi = 300,
+ggsave(plot_fig3, width = 6.5, height = 4.5, dpi = 300,
         filename = "figures/Fig_3/Fig_3.png")
 ```
 
@@ -4818,88 +4818,66 @@ s2b_sed_troph
 
 
 ``` r
-# ggsave(sed_pond_solar_pcoa_trophs, width = 8, height = 7, units = "in",
-#         filename = "analysis/figures/Nick_Analysis_GHGs/sed_pond_solar_pcoa_trophs.png")
+# extract legend 
+leg <- cowplot::get_legend(
+  figS3_sed_methanogens_pcoa +
+    scale_color_manual(values = solar_colors, breaks = c("FPV", "Open")) +
+    guides(
+      color = guide_legend(title.hjust = 0.5, nrow = 1, byrow = TRUE,override.aes = list(size = 2.5)),  # horizontal Treatment
+      shape = guide_legend(title.hjust = 0.5, nrow = 2, byrow = TRUE, override.aes = list(size = 2.5))   # optional
+    ) +
+    theme(#legend.key.size = unit(0.4, "cm"), 
+          #legend.spacing.x = unit(0.7, "cm"),
+          #legend.margin = margin(t = -5, unit = "pt"),
+          legend.position = "right", 
+          legend.box = "vertical",
+          legend.box.just = "center"))
 
-# plot together 
-# fig_s2 <- 
-#   ggarrange(s2a_sed_gen, s2b_sed_troph,
-#   nrow = 1, 
-#   ncol = 2,
-#   labels = c("A.", "B."),
-#   font.label = list(size =12),
-#   align = "hv") # aligns axis 
-# fig_s2
-
-# ggsave(fig_s2, width = 12.4, height = 6, dpi = 300,
-#         filename = "figures/s2/fig_s2.png")
-
-legend_grob <- cowplot::get_legend(
-   figS3_sed_methanogens_pcoa +
-    theme(legend.position = "bottom",
-          legend.box.just = "center"))# or "bottom" if that looks better
-
-legend_plot <- patchwork::wrap_elements(legend_grob)
+leg_plot <- wrap_elements(leg) 
 
 
-### New plot 
-plot_figS3 <- 
-  figS3B_water_methanotroph_pcoa + theme(
-    legend.position = "none",
-    plot.title = element_text(margin = margin(b = 0)))+
-  plot_spacer() +
-  figS3_sed_methanotroph_pcoa + theme(legend.position = "none",
-                                     plot.title = element_text(margin = margin(b = 0)))+
-  figS3_sed_methanogens_pcoa+ theme(plot.title = element_text(margin = margin(b = 0))) + 
-  # plot_layout(
-  #   design = "
-  #   AB
-  #   CD
-  #   ",
-  #   guides = "collect",
-  #   widths = c(1, 0.35)   # make right column narrower so it's legend-friendly
-  # ) +
-  plot_layout(ncol = 2, guides = "collect", widths = c(1,1)) &
+# edit individual figures
+pA <- figS3B_water_methanotroph_pcoa +
+  labs(tag = "A.") +
+  theme(legend.position = "none",
+        plot.title = element_text(margin = margin(b = 0)))
+
+pC <- figS3_sed_methanotroph_pcoa +
+  labs(tag = "B.") +
+  theme(legend.position = "none",
+        plot.title = element_text(margin = margin(b = 0)))
+
+pD <- figS3_sed_methanogens_pcoa +
+  labs(tag = "C.") +
+  theme(legend.position = "none",
+        plot.title = element_text(margin = margin(b = 0)))
+
+# plot together
+plot_figS3 <-
+  (pA + leg_plot) / (pC + pD) +
+  plot_layout(widths = c(1, 1)) &
   theme(
-    #legend.justification = c(1,0),
-    legend.position = c(-20,1),
-    #legend.key.size = unit(0, "cm"),
-    #legend.spacing.x = unit(0.7, "cm"),
-    
-    legend.box.margin = margin(0, 0, 0, 0))
-   # legend.margin = margin(t = -5, unit = "pt"))
-# Show the plot
+    plot.tag = element_text(size = 8, colour = "black"))
 plot_figS3
 ```
 
 ![](Microbial_Analyses_files/figure-html/plot-FigS3-1.png)<!-- -->
 
 ``` r
-# 
-#    plot_layout(guides = "collect") &
-#   plot_annotation(tag_levels = "A", tag_suffix = ".") + 
-#   theme(
-#     plot.tag = element_text(size = 8),
-#     
-#     #legend.position = "none",
-#     
-#     
-#   )
-
-
-
 # Now, actually save the plot   
-ggsave(plot_figS3, width = 6.5, height = 3.5, dpi = 300,
+ggsave(plot_figS3, width = 6.5, height = 4.5, dpi = 300,
         filename = "figures/Fig_S3/Fig_S3.png")
 ```
 
 Sediment samples are still distinct from other and separate along first axis
 
-## Fig S1: PERMANOVA 
+## Fig S3: PERMANOVA 
 
 PERMANOVA (Permutational Multivariate Analysis of Variance) is a non-parametric, permutation-based test used to compare groups of objects based on a distance matrix. The goal is to test the null hypothesis that the centroids and dispersion of groups are equivalent in the space defined by the dissimilarity measure. 
 
-### Methanogens
+### Water Methanotrophs
+
+### Sediment Methanogens
 
 Here we are performing a PERMANOVA on the sediment methanogen and methanotrophs
 
@@ -5011,7 +4989,7 @@ sed_methanogens_permanova
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
 
-### Methanotrophs
+### Sediment Methanotrophs
 
 
 ``` r
@@ -5121,8 +5099,9 @@ sed_methanotrophs_permanova
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
+**Water Methanotrophs**
 
-**Methanogens**
+**Sed Methanogens**
 With our PERMANOVA we find that treatment (solar_progress), day of year sampled (JDate - Julian date), and Pond is significant 
 
 Treatment explains 11.8% of the variance and has the largest effect size (F = 10.5) but pond explains the most variation, 28.2%, and contributes to the community but weaker than treatment (F = 6.22). JDate explains 9.0% of variation but is the second most important term for its weight contributing to structuring thet community. 
@@ -5131,7 +5110,7 @@ Solar progress and time explains 2.5% of the variation but is not a strong contr
 
 Together this explains 62% of the variation.
 
-**Methanotrophs**
+**Sed Methanotrophs**
 
 With our PERMANOVA we see that Pond explains the most variance (20.4%) but does not have a strong effect on community structure (F = 3.9). There is a temporal effect along the first axis due to time that explains 13.1% of data and is a strong factor for shaping the community (F = 10.0). Treatment is important for explaining 10.1% of variance and is teh second most important factor for shaping the community which we kinda see along the second axis (F = 7.7)
 
@@ -5141,9 +5120,11 @@ The interaction of solar treatment and pond is > 0.05 (p = 0.095) indicating tha
 
 Together these variables explain 56% of the data
 
-## Fig S1: Betadisper
+## Fig S3: Betadisper
 
-### Methanogens 
+### Water Methanotrophs
+
+### Sediment Methanogens 
 
 ``` r
 # 1. methanogens 
@@ -5207,7 +5188,7 @@ permutest(betadispr_sed_methanogens_JDate) # not significant p = 0.44
 ## Residuals 40 0.086412 0.0021603
 ```
 
-### Methanotrophs
+### Sediment Methanotrophs
 
 ``` r
 # 2. methanotrophs 
@@ -5273,10 +5254,10 @@ permutest(betadispr_sed_methanotrophs_JDate) # significant p = 0.011 *
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
-**Methanogens**
+**Sediment Methanogens**
 With betadispr we find the PERMANOVA results are are valid as pond, treatment, and date are not significant but significant in the PERMANOVA. Thus our PERMANOVA result is reliable and the differences between groups are due to location/centroids of groups rather than differences in variation within groups 
 
-**Methanotrophs**
+**Sediment Methanotrophs**
 With betadispr we find the PERMANOVA results are are valid as pond and treatment are not significant but significant in the PERMANOVA. Thus our PERMANOVA result is reliable and the differences between groups are due to location/centroids of groups rather than differences in variation within groups 
 
 However, date is statistically significant in PERMANOVA and in the betadispr indicating that theres variability in within the sampling dates so there are likely differences in community composition and probably heterogeneity over time. 
@@ -5810,575 +5791,6 @@ ggsave(top21_sed_methanogen_ASVS_plot,
        filename = "figures/bonus/sed_methogen_ASV_time.png")
 ```
 
-
-### 1: relative abundances
-This is code that I previously ran but I am having a hard time deleting it will not be evaluated
-
-``` r
-# calculate pvalue
-stat.test <- methano_water_sed_711 %>% # methano_water_sed_711 no longer exists
-  dplyr::filter(str_detect(Depth_Class, "Water")) %>% 
-  group_by(CH4_Cycler, Depth_Class) %>% 
-  wilcox_test(rel_abundance ~ solar_progress, 
-              p.adjust.method = "fdr",
-              exact = FALSE) %>% 
-  add_significance() %>% 
-  mutate(
-    group = interaction(CH4_Cycler, Depth_Class, sep = " "),
-    y.position = 0.35,
-    p.label = signif(p, digits = 2))
-stat.test
-
-# water column absolute abundance
-p7 <- methano_water_sed_711 %>% 
-  dplyr::filter(str_detect(Depth_Class, "Water")) %>% 
-  ggplot(aes(x = solar_progress, y = rel_abundance, fill = solar_progress, color = solar_progress)) +
-  geom_boxplot(outlier.shape = NA, alpha = 0.2) +  
-  geom_point(aes(shape = Pond),
-             alpha = 2,
-             position = position_jitterdodge(jitter.width = .9, dodge.width = .65),
-             size = 2) +
-  ggh4x::facet_nested(~ CH4_Cycler + Depth_Class,
-                      scales = "free") +
-  scale_fill_manual(values = c("Open" = "#B3C493", "FPV" = "#005373")) +
-  scale_color_manual(values = c("Open" = "#B3C493", "FPV" = "#005373")) +
-  scale_shape_manual(values = pond_shapes) +
-  labs(y = "Relative Abundance (%)") +
-  stat_pvalue_manual(
-    stat.test,
-    label = "p.label",
-    group = "group",
-    y.position = .08,
-    tip.length = 0,
-    size = 3,
-    bracket.size = 0,
-    inherit.aes = FALSE
-  ) +
-  guides(
-    fill = "none",
-    color = "none",
-    shape = guide_legend(
-      nrow = 2,
-      byrow = TRUE,
-      title.position = "left",
-      override.aes = list(size = 2.5))
-  ) +
-  theme_bw() +
-  theme(
-    axis.title.x = element_blank(),
-    axis.text.x = element_text(angle = 60, hjust = 1),
-    legend.position = "bottom"
-  )
-p7
-
-
-# sediment relative abundance
-stat.test <- methano_water_sed_711 %>% 
-  dplyr::filter(str_detect(Depth_Class, "Sediment")) %>% 
-  group_by(CH4_Cycler, Depth_Class) %>% 
-  wilcox_test(rel_abundance ~ solar_progress, 
-              p.adjust.method = "fdr",
-              exact = FALSE) %>% 
-  add_significance() %>% 
-  mutate(
-    group = interaction(CH4_Cycler, Depth_Class, sep = " "),
-    y.position = 0.35,
-    p.label = signif(p, digits = 2))
-stat.test
-
-sed_ch4 <- methano_water_sed_711 %>% 
-  dplyr::filter(str_detect(Depth_Class, "Sediment")) %>% 
-  ggplot(aes(x = solar_progress, y = rel_abundance, fill = solar_progress, color = solar_progress)) +
-  geom_boxplot(outlier.shape = NA, alpha = 0.2) +  
-  geom_point(aes(shape = Pond),
-             alpha = 2,
-             position = position_jitterdodge(jitter.width = .9, dodge.width = .65),
-             size = 2) +
-  ggh4x::facet_nested(~ CH4_Cycler,
-                      scales = "free") +
-  scale_fill_manual(values = c("Open" = "#B3C493", "FPV" = "#005373")) +
-  scale_color_manual(values = c("Open" = "#B3C493", "FPV" = "#005373")) +
-  scale_shape_manual(values = pond_shapes) +
-  labs(y = "Methanogen and Methanotroph Relative Abundance") +
-  stat_pvalue_manual(
-    stat.test,
-    label = "p.label",
-    group = "group",
-    y.position = .35,
-    tip.length = 0,
-    size = 3,
-    bracket.size = 0,
-    inherit.aes = FALSE
-  ) +
-  guides(
-    fill = "none",
-    color = "none",
-    shape = guide_legend(
-      nrow = 2,
-      byrow = TRUE,
-      title.position = "left",
-      override.aes = list(size = 2.5))
-  ) +
-  theme_bw() +
-  theme(
-    axis.title.x = element_blank(),
-    axis.text.x = element_text(angle = 60, hjust = 1),
-    legend.position = "bottom"
-  )
-sed_ch4
-
-p7 + sed_ch4
-
-
-# alternative plots to match nicks vision
-### methanogen water
-pmethanogen_water <- methano_water_sed_711 %>% 
-  dplyr::filter(str_detect(Depth_Class, "Water")) %>% 
-  dplyr::filter(str_detect(CH4_Cycler, "Methanogen"))
-p7 <- methano_water_sed_711 %>% 
-  dplyr::filter(str_detect(Depth_Class, "Water")) %>% 
-  ggplot(aes(x = solar_progress, y = rel_abundance, fill = solar_progress, color = solar_progress)) +
-  geom_boxplot(outlier.shape = NA, alpha = 0.2) +  
-  geom_point(aes(shape = Pond),
-             position = position_jitterdodge(jitter.width = .9, dodge.width = .65),
-             size = 2) +
-  ggh4x::facet_nested(~ CH4_Cycler + Depth_Class,
-                      scales = "free") +
-  scale_fill_manual(values = c("Open" = "#B3C493", "FPV" = "#005373")) +
-  scale_color_manual(values = c("Open" = "#B3C493", "FPV" = "#005373")) +
-  scale_shape_manual(values = pond_shapes) +
-  labs(y = "Relative Abundance (%)") +
-  stat_pvalue_manual(
-    stat.test,
-    label = "p.label",
-    group = "group",
-    y.position = .08,
-    tip.length = 0,
-    size = 3,
-    bracket.size = 0,
-    inherit.aes = FALSE
-  ) +
-  guides(
-    fill = "none",
-    color = "none",
-    shape = guide_legend(
-      nrow = 2,
-      byrow = TRUE,
-      title.position = "left",
-      override.aes = list(size = 2.5))
-  ) +
-  theme_bw() +
-  theme(
-    axis.title.x = element_blank(),
-    axis.text.x = element_text(angle = 60, hjust = 1),
-    legend.position = "bottom"
-  )
-p7
-```
-
-
-### 2. 4 box plots 
-this just had the 4 boxplots made with a function but not evaluated
-
-
-### Sediment - Relative Abundance
-
-``` r
-# factor levels before we plot so FPV is on left and Open is on the right
-methano_water_sed_711$solar_progress <- factor(methano_water_sed_711$solar_progress, 
-                                               levels = c("FPV", "Open"))
-
-# lets make function to plot methanos
-make_boxplot_methano <- function(data, depth_class, methano) {
-  data %>%
-    filter(
-      Depth_Class == depth_class,
-      CH4_Cycler == methano
-    ) %>%
-    ggplot(aes(
-      x = solar_progress,
-      y = rel_abundance
-    )) +
-    geom_boxplot(outlier.shape = NA, alpha = 0.2) +
-    geom_point(
-      aes(shape = Pond, color = solar_progress),
-      position = position_jitterdodge(jitter.width = 0.84, dodge.width = 0.65),
-      size = 3
-    ) +
-    scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
-    scale_y_continuous(
-      limits = c(0, 0.37),  # set y-axis range
-      breaks = seq(0, 0.3, by = 0.15)  # Consistent tick marks
-    ) +
-    labs(
-      title = paste(depth_class),
-      y = "Methanogen\nRelative Abundance (%)",  # Label for every y-axis
-      x = NULL
-    ) +
-    theme_classic() +
-    theme(
-      legend.position = "none",
-      axis.title.y = element_text(size = 8),
-      plot.title = element_text(size = 10, hjust = 0.5)
-    )
-}
-
-# now lets do the same but for methanotrophs
-make_boxplot_trophs <- function(data, depth_class, methano) {
-  data %>%
-    filter(
-      Depth_Class == depth_class,
-      CH4_Cycler == methano
-    ) %>%
-    ggplot(aes(
-      x = solar_progress,
-      y = rel_abundance
-      # fill = solar_progress,
-    )) +
-    geom_boxplot(outlier.shape = NA, alpha = 0.2, color = "black") +
-    geom_point(
-      aes(shape = Pond, color = solar_progress),
-      position = position_jitterdodge(jitter.width = 0.84, dodge.width = 0.65),
-      size = 3 
-    ) +
-    scale_color_manual(values = c("FPV" = "#C07A5B", "Open" = "#76A7CB")) +
-    scale_y_continuous(
-      limits = c(0, 0.37),  # Fixed y-axis range
-      breaks = seq(0, 0.3, by = 0.15)  # tick marks
-    ) +
-    labs(
-      title = paste(depth_class),
-      y = "Methanotroph\nRelative Abundance (%)", 
-      x = NULL
-    ) +
-    theme_classic() +
-    theme(
-      legend.position = "none",
-      axis.title.y = element_text(size = 8),
-      plot.title = element_text(size = 10, hjust = 0.5)
-    )
-}
-
-# make all the plots 
-p1 <- make_boxplot_methano(methano_water_sed_711, "Sediment", "Methanogen")
-p2 <- make_boxplot_trophs(methano_water_sed_711, "Sediment", "Methanotroph")
-
-
-# plot the final plot
-final_sed <- ggarrange(
-  p1, p2,
-  nrow = 2, ncol = 2,
-  align = "hv") # aligns axis 
-final_sed
-
-# ok lies not final plot BUT we are getting there we just need to add our legend
-
-# extract only the legend
-legend <- make_boxplot_methano(methano_water_sed_711, "Sediment", "Methanogen") +
-  theme(
-    legend.position = "bottom",
-    legend.title = element_text(hjust = 0.5),  # 0.5 centers title
-    legend.box = "horizontal",  # proper alignment
-    legend.justification = "center"  # entire legend is centered
-  ) +
-  guides(
-    color = "none", # we dont want color to be in legend
-    shape = guide_legend(
-      title.position = "top",  # make sure pond is above symbolx
-      nrow = 2,
-      byrow = TRUE, # want FPV in first row
-      override.aes = list(size = 2.5)
-    )
-  )
-legend
-
-# only get legend
-shared_legend <- ggpubr::get_legend(legend)
-
-# make plots without legends
-p1 <- make_boxplot_methano(methano_water_sed_711, "Sediment", "Methanogen")
-p2 <- make_boxplot_trophs(methano_water_sed_711, "Sediment", "Methanotroph")
-
-# now lets arrange plots 
-final_sed <- ggarrange(
-  ggarrange(p1, p2, 
-            ncol = 2, 
-            labels = c("E.", "F."),
-            font.label = list(size =10)),
-  nrow = 2,
-  shared_legend,
-  heights = c(2, 1)  # Adjust legend height (10:1 ratio)
-)
-
-# Display
-final_sed
-
-# paper worthy plot
-final_plot <- final_water / final_sed
-
-final_plot
-```
-
-## S3 - Community Composition
-I am plotting water and sediment community compositions together in this chunk
-
-``` r
-# pull out metadata 
-metadata <- water_ch4_cyclers_physeq %>%
-  sample_data() %>%
-  data.frame() %>% 
-  select(-CH4_Cycler)
-
-# sediment + water methane cyclers 11 total 
-methanogens <- c("Methanosarcinales_A_2632", "Methanomicrobiales", "Methanobacteriales", "Methanomassiliicoccales", "Methanofastidiosales", "Methanotrichales", "Methanocellales", "Methanomethylicales")
-methanotrophs <- c("Methylococcales", "Methylacidiphilales", "Methylomirabilales")
-
-
-# create df for plotting
-water_ch4_order_df <- water_ch4_physeq %>% 
-  tax_glom(taxrank = "ASV") %>% 
-  psmelt() %>% 
-  mutate(
-    CH4_Cycler = case_when(
-      Order %in% methanogens ~ "Methanogen",
-      Order %in% methanotrophs ~ "Methanotroph",
-      TRUE ~ NA_character_
-    )
-  ) %>% 
-  select(DNA_ID, Abundance, Kingdom, Phylum, Class, Order, Family, Genus, Species, ASV, CH4_Cycler) %>% 
-  left_join(metadata, by = "DNA_ID") %>% 
-  mutate(
-    Depth_Class = case_when(
-    Depth_Class == "S"  ~ "Surface Water",
-    Depth_Class == "B"  ~ "Bottom Water"),
-    Depth_Class = factor(Depth_Class, levels = c("Surface Water", "Bottom Water")),
-    solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open")) %>% 
-  dplyr::filter(Date_Collected.x == "2024-07-11") %>% 
-  group_by(Order, JDate, Pond, Depth_Class, solar_progress, CH4_Cycler, DNA_ID) %>% 
-  summarize(Abundance = sum(Abundance)) 
-  
-
-# community composition - water absolute abundances
-
-
-# order for legend 
-ch4_legend_ord <- c("Methanobacteriales",
-                  "Methanocellales", 
-                  "Methanofastidiosales",
-                  "Methanomassiliicoccales",
-                  "Methanomicrobiales",
-                  "Methanosarcinales_A_2632",
-                  "Methanomethylicales",
-                  "Methanotrichales",
-                  "Methylococcales",
-                  "Methylomirabilales",
-                  "Methylacidiphilales"
-                  )
-
-# create absolute abundance community comp plot
-waterch4_ord_cc_fpv <- water_ch4_order_df %>% 
-  ggplot(aes(x = Pond, y = Abundance/1e3, fill = Order)) + 
-  geom_col(width = .99) +
-  facet_grid(rows = vars(Depth_Class), cols = vars(solar_progress), scales = "free_x") +
-  #ggh4x::facet_nested(~solar_progress+Depth_Class,space = "free", scales = "free_x") +
-  scale_fill_manual(values = ch4_colors) +
- # scale_x_continuous(expand = expansion(mult = 0),
- # labels = scales::label_comma()) +
-  labs(y = "Absolute Abundance (10³ cells/ml)") + 
-  scale_x_discrete(expand = c(0, 0)) +
-  # theme(axis.line.x = element_blank(),
-  #       axis.text.x = element_blank(),
-  #       axis.ticks.y = element_blank(),
-  #       axis.title.y = element_blank(),
-  #       plot.margin = unit(c(0,0,0,0), "null"),
-  #       axis.text.x = element_text(size = 10),
-  #       axis.title.x = element_text(size = 12),
-  #       legend.text = element_text(size = 8),
-  #       legend.title = element_text(size = 12),
-  #       legend.box.background = element_rect(linetype = "solid", color = "black")) + 
-  theme_classic() +
-  theme(strip.background = element_blank(),
-        # axis.text.x = element_text(angle=90, vjust=0.5),
-        strip.text.x.top = element_text(size = 11, face = "bold"),
-        strip.text.y.right = element_text(size = 10, face = "bold"),
-        axis.text.x = element_blank(),
-        axis.title.y = element_text(size = 9),
-        axis.title.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        axis.line = element_blank(),
-        legend.key.width=unit(0.3,"cm"),
-        legend.key.height=unit(0.3,"cm"), 
-        legend.position = "none", 
-        legend.title=element_text(size=10),
-        legend.text=element_text(size=9),
-        panel.border = element_rect(color = "black", 
-                            fill = NA, size = 1))+
-  guides(fill = guide_legend(title.position = "left",
-                             nrow=5, ncol= 3)) 
-waterch4_ord_cc_fpv
-
-
-
-# relative sediment abundance
-
-# calculate relative abundance and identify methane cyclers
-methano_sed_phy <- scaled_sed_physeq_24 %>%
-  speedyseq::tax_glom(taxrank = "ASV") %>% 
-  # Calculate the relative abundance
-  speedyseq::transform_sample_counts(function(x) {x/sum(x)}) %>%
-  psmelt() %>%
-  filter(Order %in% c(methanogens, methanotrophs)) %>%
-  mutate(
-    CH4_Cycler = case_when(
-      Order %in% methanogens ~ "Methanogen",
-      Order %in% methanotrophs ~ "Methanotroph"
-    ),
-    solar_progress = recode(solar_progress, "Solar" = "FPV", "No Solar" = "Open"),
-    Depth_Class = "Sediment")  %>% 
-  group_by(Order, Date_Collected, Pond, Depth_Class, solar_progress, CH4_Cycler, DNA_ID) %>% 
-  summarize(Abundance = sum(Abundance)) 
-
-
-# relative community plot 
-sedch4_order_cc <-  methano_sed_phy %>% 
-  dplyr::filter(Date_Collected == "2024-07-11") %>% 
-  ggplot(aes(x = Pond, y = Abundance, fill = Order)) + 
-  geom_col(width = .99) +
-  facet_grid(rows = vars(Depth_Class), cols = vars(solar_progress), scales = "free_x") +
-  scale_fill_manual(values = ch4_colors) +
-  scale_x_discrete(expand = c(0, 0)) + 
-  labs(
-    y = "Relative Abundance (%)",
-    x = "Pond"
-  ) +
-  theme_classic() +
-  theme(strip.background = element_blank(),
-        strip.text.x.top = element_blank(),
-        strip.text.y.right = element_text(size = 10, face = "bold"),
-        axis.text.x = element_text(angle=90, vjust=0.5),
-        axis.title.y = element_text(size = 9),
-        axis.line = element_blank(),
-        legend.key.width=unit(0.3,"cm"),
-        legend.key.height=unit(0.3,"cm"), 
-        legend.position = "none", 
-        legend.title=element_text(size=10),
-        legend.text=element_text(size=9),
-        panel.border = element_rect(color = "black", 
-                            fill = NA, size = 1))+
-  guides(fill = guide_legend(title.position = "left",
-                             nrow=7, ncol= 3))
-    
-sedch4_order_cc
-
-# plot community plots together
-community <- ggarrange(waterch4_ord_cc_fpv, sedch4_order_cc,
-            ncol = 1,
-            nrow = 2,
-            labels = c("A.", "B."),
-            align = "v")
-community
-
-# combine water and sediment df for legend to export
-leg_water <- water_ch4_order_df %>% 
-  select(Abundance, Order, CH4_Cycler)
-leg_sed <- methano_sed_phy %>% 
-  select(Abundance, Order, CH4_Cycler)
-
-illegal_bind <- rbind(leg_water, leg_sed)
-
-
-
-# plot illegally bound df to get legend of all 11 methane cycler species
-legend_ch4 <- illegal_bind %>% 
-  mutate(Order = factor(Order, levels = ch4_legend_ord)) %>%
-  ggplot(aes(x = Order, y = Abundance, fill = Order)) +
-  geom_col(width = .99) +
-  scale_fill_manual(values = ch4_colors) +
-  guides(
-    fill = guide_legend(
-      title = "Order",
-      ncol = 3,
-      byrow = FALSE
-    )
-  ) +
-  theme(legend.key.width=unit(0.3,"cm"),
-        legend.key.height=unit(0.3,"cm"),
-        legend.position = "bottom",
-        legend.title=element_text(size=10),
-        legend.text = element_text(size = 9)) 
-legend_ch4
-
-
-# get legends
-legend_only <- cowplot::get_legend(legend_ch4)
-
-# theres randomly 5 grob objects and only the 3rd one has something?
-legend_list <- cowplot::get_plot_component(legend_ch4, "guide-box", return_all = TRUE)
-
-# extract legend grob
-legend_only <- legend_list[[3]]
-
-# Side by side
-combined_legends <- plot_grid(
-  waterch4_ord_cc_fpv,
-  sedch4_order_cc,
-  legend_only, 
-  ncol = 1,
-  align = "v",
-  axis = "l",
-  labels = c("A.", "B."),
-  rel_heights = c(1, 1, .5)
-)
-combined_legends
-
-# now lets begin to save our image
-png("figures/s3/s3_community_comp.png", width = 3900, height = 4000, res = 600)
-
-grid.newpage()
-grid.draw(combined_legends)
-grid.text(label = "Methanogens", x = 0.4, y = 0.17, just = c("center", "bottom"),
-          gp = gpar(fontface = "bold", cex = .9))
-grid.text(label = "Methanotrophs", x = 0.81, y = 0.17, just = c("center", "bottom"),
-          gp = gpar(fontface = "bold", cex = .9))
-
-dev.off()
-```
-
-# Papers of Note
-1. in situ manipulation of methane on microbial communities. the references are also good for looking more into synthropy and resilience!
- - https://www.nature.com/articles/s43247-024-01656-5
- 
-2. thesis of verrucomicrobiota methanotrophy. sulfur rich and methane environments is where they can thrive which is interesting!
-  - https://repository.ubn.ru.nl/bitstream/handle/2066/195209/195209.pdf?sequence=5
-  
-3. i forgot what this is about but 
- - https://www.nature.com/articles/s41396-023-01363-7
-
-### Analysis Notes
-
-**Water Samples** When we filter for our methanotrophs and methanogens
-at the **Order level** (we still have Phylum and Class level
-information) we see that we have:
-
-
-When identifying methanotrophs it is important to remember that all
-methanotrophs are methylotrophs (consume methanole, methylamine, or
-formate as energy source but **not methane**) but not all methylotophs
-are methanotrophs. Methanotrophs are a subset of methylotrophs but
-consume methane as their sole carbon and energy source. Methanotrophs
-typically start with "Methyl" in their order name but verified through
-literature review and public databases.
-
-Putative methanogens and methanotrophs were identified based on
-taxonomic classification and verified through literature review and
-publically available databases (NCBI).
-
-**Sediment Samples** Just like our water samples, we will filter for
-methanogens and methanotrophs at the **Order level**
-
-Putative methanogens and methanotrophs were identified based on
-taxonomic classification and verified through literature review and
-publically available databases (NCBI).
 
 # Reproducibility
 
