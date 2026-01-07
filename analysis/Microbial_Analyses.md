@@ -1,7 +1,7 @@
 ---
 title: "Water Column and Sediment Methanogens & Methanotrophs in FPV Ponds"
 author: "Sophia Aredas & Mar Schmidt"
-date: "30 December, 2025"
+date: "07 January, 2026"
 output:
   html_document:
     code_folding: show
@@ -2369,12 +2369,12 @@ summary(sed_methanotroph_model) # 0.39913
 ```
 
 ``` r
-emmeans::emmeans(sed_methanotroph_model, pairwise ~ solar_progress) #0.4401
+emmeans::lsmeans(sed_methanotroph_model, pairwise ~ solar_progress) #0.4401
 ```
 
 ```
-## $emmeans
-##  solar_progress emmean      SE   df lower.CL upper.CL
+## $lsmeans
+##  solar_progress lsmean      SE   df lower.CL upper.CL
 ##  FPV            0.0594 0.00612 4.22   0.0427   0.0761
 ##  Open           0.0666 0.00581 3.67   0.0499   0.0834
 ## 
@@ -3567,14 +3567,15 @@ ASV_13_methylococcales <- diff_abund_df %>%
   labs(color = "Treatment", y = "Water Column<br>Abundance (Cells mL<sup>-1</sup>)") +
   # facet_grid2(~ facet_label, scales = "free_y",
   #             strip = strip_themed(text_x = element_markdown(size = 9, face = "plain")))+
-  ggh4x::facet_wrap2(~ facet_label, scales = "free_y", nrow = 2) +
+  # ggh4x::facet_wrap2(~ facet_label, scales = "free_y", nrow = 2,
+  #                    strip = strip_vanilla(clip = "on")) +
+  ggh4x::facet_grid2(. ~ facet_label) +
   #facet_wrap2(~italicized_label, scales = "free_y", nrow = 2, labeller = label_parsed) + 
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) +
   scale_y_continuous(
     breaks = c(0, 2e5, 4e5),
     labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
-  theme_classic() +
   # stat_compare_means(method = "wilcox.test", 
   #                    #comparisons = list(c("FPV", "Open")),
   #                    label = "p.format", 
@@ -3585,13 +3586,13 @@ ASV_13_methylococcales <- diff_abund_df %>%
   #                    #label.y = c(8000, 100000, 500000, 400000, 400000),
   #                    label.x = c(1.75, 1.75, 1.75)) + 
   guides(
-    color = "none",
-    # color = guide_legend(
-    #   order = 1,
-    #   ncol= 2,
-    #   title.position = "top",
-    #   title.hjust = 0.5,
-    #   override.aes = list(size = 2.5)),
+    # color = "none",
+    color = guide_legend(
+      #order = 1,
+      ncol= 2,
+      title.position = "top",
+      title.hjust = 0.5,
+      override.aes = list(size = 2.5)),
     shape = guide_legend(
       nrow= 2,
       byrow = TRUE,
@@ -3607,12 +3608,12 @@ ASV_13_methylococcales <- diff_abund_df %>%
         legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
         legend.key = element_rect(fill = "transparent", color = NA),
         legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
-        legend.box.just = "center",
+        #legend.box.just = "center",
         #strip.background = element_rect(colour = NA, fill = 'transparent'),
         plot.background = element_rect(fill = "transparent", color="transparent"),
         legend.key.size = unit(0.4, "cm"),
-        legend.spacing.x = unit(0.2, "cm"),
-      # legend.margin = margin(t = -5, unit = "pt"),
+        legend.spacing.x = unit(0.7, "cm"),
+       legend.margin = margin(t = -5, unit = "pt"),
       strip.text = element_markdown(size = 8),
        axis.title.y = element_markdown(size = 8, colour = "black"),
        axis.title.x = element_blank(),
@@ -3726,8 +3727,9 @@ ASV_32_methyloparacoccus <- diff_abund_df %>%
   labs(color = "Treatment", y = "Water Column<br>Abundance (Cells mL<sup>-1</sup>)") +
   # facet_wrap2(~ facet_label, scales = "free_y", nrow = 2,
   #             strip = strip_themed(text_x = element_markdown(size = 9, face = "plain")))+
-  ggh4x::facet_wrap2(~ facet_label, scales = "free_y", nrow = 2, 
-                     strip = strip_vanilla(clip = "on")) +
+  # ggh4x::facet_wrap2(~ facet_label, scales = "free_y", nrow = 2, 
+  #                    strip = strip_vanilla(clip = "on")) +
+  ggh4x::facet_grid2(. ~ facet_label) +
   #facet_wrap2(~italicized_label, scales = "free_y", nrow = 2, labeller = label_parsed) + 
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) +
@@ -3745,20 +3747,19 @@ ASV_32_methyloparacoccus <- diff_abund_df %>%
   #                    #label.y = c(8000, 100000, 500000, 400000, 400000),
   #                    label.x = c(1.75, 1.75, 1.75)) + 
   guides(
-    color = "none",
-    # color = guide_legend(
-    #   order = 1,
-    #   ncol= 2,
-    #   title.position = "top",
-    #   title.hjust = 0.5,
-    #   override.aes = list(size = 2.5)),
+    #color = "none",
+    color = guide_legend(
+      #order = 1,
+      ncol= 2,
+      title.position = "top",
+      title.hjust = 0.5,
+      override.aes = list(size = 2.5)),
     shape = guide_legend(
       nrow= 2,
       byrow = TRUE,
       title.position = "top",
       title.hjust = 0.5,
       override.aes = list(size = 2.5))) +
-  theme_classic() +
   theme(legend.position = "none",
         legend.spacing = unit(0, "cm"),
         plot.title = element_text(hjust = 0.5),
@@ -3767,12 +3768,12 @@ ASV_32_methyloparacoccus <- diff_abund_df %>%
         legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
         legend.key = element_rect(fill = "transparent", color = NA),
         legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
-        legend.box.just = "center",
+        #legend.box.just = "center",
         #strip.background = element_rect(colour = NA, fill = 'transparent'),
         plot.background = element_rect(fill = "transparent", color="transparent"),
         legend.key.size = unit(0.4, "cm"),
-        legend.spacing.x = unit(0.2, "cm"),
-      # legend.margin = margin(t = -5, unit = "pt"),
+        legend.spacing.x = unit(0.7, "cm"),
+        legend.margin = margin(t = -5, unit = "pt"),
         strip.text = element_markdown(size = 8),
        #axis.title.y = element_markdown(size = 8, colour = "black"),
        axis.title.x = element_blank(),
@@ -3907,12 +3908,12 @@ ASV_44_methylomonas <- diff_abund_df %>%
   #                    label.x = c(1.75, 1.75, 1.75)) + 
   guides(
     color = "none",
-    # color = guide_legend(
-    #   order = 1,
-    #   ncol= 2,
-    #   title.position = "top",
-    #   title.hjust = 0.5,
-    #   override.aes = list(size = 2.5)),
+    color = guide_legend(
+      order = 1,
+      ncol= 2,
+      title.position = "top",
+      title.hjust = 0.5,
+      override.aes = list(size = 2.5)),
     shape = guide_legend(
       nrow= 2,
       byrow = TRUE,
@@ -4048,11 +4049,12 @@ ASV_141_methylobacterc <- diff_abund_df %>%
              position = position_jitterdodge(jitter.width = .5, dodge.width = .3)) +
   geom_boxplot(outlier.shape = NA, alpha = 0, color = "black", position = position_dodge(0.6)) + 
   labs(color = "Treatment", y = "Water Column<br>Abundance (Cells mL<sup>-1</sup>)") +
-  ggh4x::facet_wrap2(~ facet_label, scales = "free_y", nrow = 2, 
-                     strip = strip_vanilla(clip = "on")) +
+  # ggh4x::facet_grid2(~ facet_label, scales = "free_y", nrow = 2, 
+  #                    strip = strip_vanilla(clip = "on")) +
   # facet_wrap2(~ facet_label, scales = "free_y", nrow = 2,
   #             strip = strip_themed(text_x = element_markdown(size = 9, face = "plain")))+
   #facet_wrap2(~italicized_label, scales = "free_y", nrow = 2, labeller = label_parsed) + 
+  ggh4x::facet_grid2(. ~ facet_label) +
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) +
   scale_y_continuous(
@@ -4071,7 +4073,7 @@ ASV_141_methylobacterc <- diff_abund_df %>%
   guides(
     #color = "none",
     color = guide_legend(
-      order = 1,
+      #order = 1,
       ncol= 2,
       title.position = "top",
       title.hjust = 0.5,
@@ -4083,7 +4085,7 @@ ASV_141_methylobacterc <- diff_abund_df %>%
       title.hjust = 0.5,
       override.aes = list(size = 2.5))) +
   theme_classic() +
-  theme(legend.position = "right",
+  theme(legend.position = "none",
         legend.spacing = unit(0, "cm"),
         plot.title = element_text(hjust = 0.5),
         panel.background =  element_rect(color = 'black', size = 1),
@@ -4091,16 +4093,16 @@ ASV_141_methylobacterc <- diff_abund_df %>%
         legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
         legend.key = element_rect(fill = "transparent", color = NA),
         legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
-        legend.box.just = "center",
+        #legend.box.just = "center",
         #strip.background = element_rect(colour = NA, fill = 'transparent'),
         plot.background = element_rect(fill = "transparent", color="transparent"),
         legend.key.size = unit(0.4, "cm"),
-        legend.spacing.x = unit(0.2, "cm"),
-      # legend.margin = margin(t = -5, unit = "pt"),
+        legend.spacing.x = unit(0.7, "cm"),
+       legend.margin = margin(t = -5, unit = "pt"),
         strip.text = element_markdown(size = 8),
-       axis.title.y = element_markdown(size = 8, colour = "black"),
+       #axis.title.y = element_markdown(size = 8, colour = "black"),
        axis.title.x = element_blank(),
-      # axis.title.y = element_blank(),
+      axis.title.y = element_blank(),
        axis.text.y = element_text(size = 8, colour = "black"),
        legend.title = element_text(size = 9, colour = "black"),
       legend.text = element_text(size = 8, colour = "black"))+
@@ -4115,16 +4117,16 @@ ASV_141_methylobacterc
 # legend <- cowplot::get_plot_component(ASV_13_methylococcales, "guide-box", return_all = TRUE) # can also do right
 # legend_only <- legend[[3]]
 
-## plot all together
-fig4 <- ASV_13_methylococcales +
+
+fig4 <-  ASV_13_methylococcales +
   ASV_32_methyloparacoccus +
   ASV_141_methylobacterc +
-  plot_spacer() +
-  plot_layout(ncol = 2, guides = "collect", widths = c(1,1)) &
+  #plot_spacer() +
+  plot_layout(ncol = 3, guides = "collect", widths = c(1,1,1)) & 
   theme(
-    legend.justification = c(-30,.2),
-    legend.box.just = "center",
-    legend.box.margin = margin(2, 2, 2, 2.5))
+    legend.position = "bottom")
+    #legend.justification = c(0,.2))
+    #legend.box.margin = margin(2, 2, 2, 2.5))
 
 fig4
 ```
@@ -4132,10 +4134,157 @@ fig4
 ![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-6.png)<!-- -->
 
 ``` r
+p13  <- ASV_13_methylococcales + theme(legend.position = "bottom")
+p32  <- ASV_32_methyloparacoccus + theme(legend.position = "bottom")
+p141 <- ASV_141_methylobacterc + theme(legend.position = "bottom")
+
+fig4 <- (p13 + p32 + p141) +
+  plot_layout(ncol = 3, guides = "collect") &
+  theme(
+    legend.position = "bottom",
+    legend.box = "horizontal",
+    legend.box.just = "center",
+    legend.direction = "horizontal",
+    legend.title.position = "top",
+    legend.title.align = 0.5,
+    legend.title = element_text(margin = margin(b = 0, unit = "pt")))
+
+  # theme(legend.position = "bottom", legend.box.just = "center", legend.box = "horizontal")
+fig4
+```
+
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-7.png)<!-- -->
+
+``` r
+fig4 <- fig4 &
+  theme(
+    legend.key.height = unit(0.35, "cm"),
+    legend.key.width  = unit(0.35, "cm"),
+    legend.spacing.x  = unit(0.4, "cm")
+  )
+fig4 
+```
+
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-8.png)<!-- -->
+
+``` r
+## plot all together
+fig4 <- ASV_13_methylococcales +
+  ASV_32_methyloparacoccus +
+  ASV_141_methylobacterc +
+  #plot_spacer() +
+  plot_layout(ncol = 3, guides = "collect", widths = c(1,1,1)) &
+  theme(
+    legend.position = "bottom",
+    legend.spacing.x = unit(1, "cm"),
+    legend.margin = margin(t = 8, unit = "pt"),
+   # legend.justification = c(-30,.2),
+   # legend.box.just = "center",
+    legend.box.margin = margin(0, 0, 0, 0))
+
+fig4
+```
+
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-9.png)<!-- -->
+
+``` r
 # Save the plot   
 ggsave(fig4, width = 6.5, height = 4.5, dpi = 300,
         filename = "figures/Fig_4/Fig_4.png")
+
+
+#or
+library(ggplot2)
+library(patchwork)
+
+p13  <- ASV_13_methylococcales + guides(color = guide_none(), shape = guide_none())
+p32  <- ASV_32_methyloparacoccus + guides(color = guide_none(), shape = guide_none())
+p141 <- ASV_141_methylobacterc + guides(color = guide_none(), shape = guide_none())
+
+fig4 <- (p13 + p32 + p141) +
+  plot_layout(ncol = 3, guides = "collect") &
+  theme(
+    legend.position = "bottom",
+    legend.box = "horizontal",
+    #legend.box.just = "center",
+    legend.box.margin = margin(2, 2, 2, 2),
+
+    # make both guide boxes have identical sizing behavior
+    legend.title.position = "top",
+    legend.title.align = 0.5,
+    legend.key.height = unit(0.35, "cm"),
+    legend.key.width  = unit(0.35, "cm"),
+    legend.spacing.y  = unit(0, "cm")
+  ) &
+  guides(
+    color = guide_legend(title = "Treatment", nrow = 1, byrow = TRUE, title.position = "top", title.hjust = 0.5),
+    shape = guide_legend(title = "Pond",      nrow = 2, byrow = TRUE, title.position = "top", title.hjust = 0.5)
+  )
+
+fig4
 ```
+
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-10.png)<!-- -->
+
+``` r
+library(cowplot)
+library(patchwork)
+
+# 1) Make one plot that DEFINITELY contains BOTH legends (color + shape),
+#    and format it how you want the legend to look.
+leg_plot <- ASV_141_methylobacterc +
+  theme(legend.position = "right",
+        legend.spacing = unit(.4, "cm"),
+        #legend.key.size = unit(0.4, "cm"),
+        legend.box.just = "center",
+        legend.spacing.x = unit(1, "cm"));leg_plot 
+```
+
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-11.png)<!-- -->
+
+``` r
+       #legend.margin = margin(t = -5, unit = "pt"))
+#+
+  # guides(
+  #   color = guide_legend(title = "Treatment", nrow = 2, byrow = TRUE, title.position = "top", title.hjust = 0.5),
+  #   shape = guide_legend(title = "Pond",      nrow = 2, byrow = TRUE, title.position = "top", title.hjust = 0.5)
+
+
+leg <- cowplot::get_legend(leg_plot)
+
+# 2) Remove legends from the plots that go into the 2x2 grid
+p13  <- ASV_13_methylococcales     + theme(legend.position = "none")
+p32  <- ASV_32_methyloparacoccus   + theme(legend.position = "none")
+p141 <- ASV_141_methylobacterc     + theme(legend.position = "none")
+
+# 3) Put the legend in the empty cell (bottom-right)
+fig4 <- (p13 + p32) +
+        (p141 + cowplot::ggdraw(leg)) +
+  plot_layout(widths = c(1,0.5));fig4
+```
+
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-12.png)<!-- -->
+
+``` r
+library(patchwork)
+
+p13  <- ASV_13_methylococcales     + theme(legend.position = "bottom")
+p32  <- ASV_32_methyloparacoccus   + theme(legend.position = "bottom")
+p141 <- ASV_141_methylobacterc     + theme(legend.position = "bottom")
+
+fig4 <- (p13 + p32) /
+        (p141 + guide_area()) +
+  plot_layout(guides = "collect") &
+  theme(
+    legend.position = "right",        # collected legend will be drawn in guide_area
+    legend.box.just = "center",
+    plot.margin = margin(0, 0, 0, 0)
+  )
+
+fig4
+```
+
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-13.png)<!-- -->
 
 
 
@@ -5152,7 +5301,7 @@ permutest(betadispr_sed_methanogens_pond) # not significant p = 0.659
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq     F N.Perm Pr(>F)
-## Groups     5 0.029297 0.0058594 0.809    999  0.557
+## Groups     5 0.029297 0.0058594 0.809    999  0.556
 ## Residuals 38 0.275224 0.0072427
 ```
 
@@ -5184,7 +5333,7 @@ permutest(betadispr_sed_methanogens_JDate) # not significant p = 0.44
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     3 0.006703 0.0022343 1.0343    999  0.411
+## Groups     3 0.006703 0.0022343 1.0343    999  0.413
 ## Residuals 40 0.086412 0.0021603
 ```
 
@@ -5217,7 +5366,7 @@ permutest(betadispr_sed_methanotrophs_pond) # not significant p = 0.515
 ## 
 ## Response: Distances
 ##           Df  Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.03100 0.0062006 0.7229    999  0.604
+## Groups     5 0.03100 0.0062006 0.7229    999  0.603
 ## Residuals 38 0.32593 0.0085771
 ```
 
@@ -5233,7 +5382,7 @@ permutest(betadispr_sed_methanotrophs_solar) # not significant p = 0.682
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     1 0.000028 0.0000282 0.0043    999  0.937
+## Groups     1 0.000028 0.0000282 0.0043    999  0.936
 ## Residuals 42 0.274034 0.0065246
 ```
 
@@ -5422,8 +5571,11 @@ do_mgl_simple <- do_abundance %>%
   #scale_shape_manual(values = pond_shapes)+
   ggh4x::facet_wrap2(~Depth_Class.x) +
   labs(
-    y = "Dissolved Oxygen [mg/L]",
+    y = "Dissolved Oxygen (mg/L)",
     x = "Day of Year") +
+  guides(
+    color = guide_legend(title = "Treatment"),
+    fill = "none") +
   theme_classic2()
 do_mgl_simple
 ```
@@ -5456,8 +5608,8 @@ methanotroph_abundance
 ``` r
 # 2 simple; still plot all methanotrophs, just make it simpler and not shape by pond
 methanotroph_all_abund_simple <- do_abundance %>% 
-  #dplyr::filter(CH4_Cycler == "Methanotroph") %>% 
-  group_by(JDate.x, Pond.x, solar_progress.x, Depth_Class.x, ASV) %>% 
+  dplyr::filter(CH4_Cycler == "Methanotroph") %>% 
+  group_by(JDate.x, Pond.x, solar_progress.x, Depth_Class.x) %>% 
   summarise(
     total_abundance = sum(Abundance, na.rm = TRUE), # total across all samples
     .groups = "drop") %>% 
@@ -5470,9 +5622,12 @@ methanotroph_all_abund_simple <- do_abundance %>%
   #geom_line() +
   geom_smooth(aes(group = solar_progress.x), se = FALSE, linewidth = 1.4) +
   geom_point(alpha = 0.3) +
-  labs(title = "All Methanotroph Abundances",
+  labs(#title = "All Methanotroph Abundances",
        y = "Absolute Abundance (cells per ml)",
        x = "Day of Year") +
+  guides(
+    color = guide_legend(title = "Treatment"),
+    fill = "none") +
   scale_y_continuous(labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
   ggh4x::facet_wrap2(~Depth_Class.x) +
   theme_classic2()
@@ -5714,6 +5869,20 @@ ggplot(abund_do_mean, aes(x = JDate.x)) +
 
 ``` r
 # dont really love this plot but it is cool to see!
+
+
+# put together for revision response
+do_meth_abund <- do_mgl_simple + methanotroph_all_abund_simple +
+  plot_layout(nrow = 2, ncol = 1,
+              guides = "collect") 
+do_meth_abund
+```
+
+![](Microbial_Analyses_files/figure-html/do-abundance-ot-13.png)<!-- -->
+
+``` r
+ggsave(do_meth_abund, width = 6.5, height = 6.5, dpi = 300,
+        filename = "figures/bonus/do_meth_abund.png")
 ```
 From our rough plots we see that gammaproteobacterial methanotrophs dominate ponds, this makes sense from our figure 2. 
 
@@ -5810,7 +5979,7 @@ devtools::session_info()
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
 ##  tz       America/New_York
-##  date     2025-12-30
+##  date     2026-01-07
 ##  pandoc   3.1.1 @ /usr/lib/rstudio-server/bin/quarto/bin/tools/ (via rmarkdown)
 ##  quarto   1.3.450 @ /usr/lib/rstudio-server/bin/quarto/bin/quarto
 ## 
