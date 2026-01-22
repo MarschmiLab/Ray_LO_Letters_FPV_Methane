@@ -1517,20 +1517,11 @@ methanogen_surface <- methanogen_surface_sum %>%
   scale_fill_manual(values = solar_colors) +
   scale_color_manual(values = solar_colors) +
   theme(legend.position = "none")#+
-```
-
-```
-## Error in element_markdown(size = 8): could not find function "element_markdown"
-```
-
-``` r
   #scale_x_continuous(limits = c(170,250))
 methanogen_surface
 ```
 
-```
-## Error: object 'methanogen_surface' not found
-```
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-1.png)<!-- -->
 
 ``` r
 # 3. box plot
@@ -1557,7 +1548,7 @@ methanogen_surface_box <- methanogen_surface_data %>%
 methanogen_surface_box
 ```
 
-![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-1.png)<!-- -->
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-2.png)<!-- -->
 
 ``` r
 ##### surface methanotrophs #####
@@ -1724,19 +1715,10 @@ methanotroph_surface <- methanotroph_surface_sum %>%
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = solar_colors)+
   theme(legend.position = "none")
-```
-
-```
-## Error in element_markdown(size = 8): could not find function "element_markdown"
-```
-
-``` r
 methanotroph_surface
 ```
 
-```
-## Error: object 'methanotroph_surface' not found
-```
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-3.png)<!-- -->
 
 ``` r
 # 3. box plot
@@ -1775,7 +1757,7 @@ methanotroph_surface_box <- methanotroph_surface_data %>%
 methanotroph_surface_box
 ```
 
-![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-2.png)<!-- -->
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-4.png)<!-- -->
 
 ``` r
 ##### bottom methanogens #####
@@ -1903,21 +1885,12 @@ methanogen_bottom <- methanogen_bottom_sum %>%
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = solar_colors) +
   theme(legend.position = "none")#+
-```
-
-```
-## Error in element_markdown(size = 8): could not find function "element_markdown"
-```
-
-``` r
   #scale_y_continuous(limits = c(0,11), breaks = c(0, 5, 10))+
   #scale_x_continuous(limits = c(170,250))
 methanogen_bottom
 ```
 
-```
-## Error: object 'methanogen_bottom' not found
-```
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-5.png)<!-- -->
 
 ``` r
 # 3. box plot
@@ -1950,7 +1923,7 @@ methanogen_bottom_box <- methanogen_bottom_data %>%
 methanogen_bottom_box
 ```
 
-![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-3.png)<!-- -->
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-6.png)<!-- -->
 
 ``` r
 ##### bottom water methanotrophs #####
@@ -2110,19 +2083,10 @@ methanotroph_bottom <- methanotroph_bottom_sum %>%
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = solar_colors)+
   theme(legend.position = "none")
-```
-
-```
-## Error in element_markdown(size = 8): could not find function "element_markdown"
-```
-
-``` r
 methanotroph_bottom
 ```
 
-```
-## Error: object 'methanotroph_bottom' not found
-```
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-7.png)<!-- -->
 
 ``` r
 # 3. box plot
@@ -2158,7 +2122,7 @@ methanotroph_bottom_box <- methanotroph_bottom_data %>%
 methanotroph_bottom_box
 ```
 
-![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-4.png)<!-- -->
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-8.png)<!-- -->
 
 ``` r
 ##### sediment methanogen #####
@@ -2281,19 +2245,10 @@ methanogen_sed <- methanogen_sed_sum %>%
          axis.title.x = element_text(size = 8,colour = "black"),
         axis.title.y = element_markdown(size = 8))+
   theme(legend.position = "none")
-```
-
-```
-## Error in element_markdown(size = 8): could not find function "element_markdown"
-```
-
-``` r
 methanogen_sed
 ```
 
-```
-## Error: object 'methanogen_sed' not found
-```
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-9.png)<!-- -->
 
 ``` r
 # 3. box plot
@@ -2331,7 +2286,7 @@ methanogen_sed_box <- methanogen_sed_data %>%
 methanogen_sed_box
 ```
 
-![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-5.png)<!-- -->
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-10.png)<!-- -->
 
 ``` r
 ##### sediment methanotrophs #####
@@ -2455,19 +2410,10 @@ methanotroph_sed<- methanotroph_sed_sum %>%
     breaks = c(0.05, 0.10, 0.15),
     labels = label_number(scale_cut = cut_short_scale())) +
   theme(legend.position = "none")
-```
-
-```
-## Error in element_markdown(size = 8): could not find function "element_markdown"
-```
-
-``` r
 methanotroph_sed
 ```
 
-```
-## Error: object 'methanotroph_sed' not found
-```
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-11.png)<!-- -->
 
 ``` r
 # box plot
@@ -2500,7 +2446,7 @@ methanotroph_sed_box <- methanotroph_sed_data %>%
 methanotroph_sed_box
 ```
 
-![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-6.png)<!-- -->
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-12.png)<!-- -->
 
 ``` r
 ## plot all together
@@ -2512,27 +2458,14 @@ fig2 <- methanotroph_surface + methanotroph_surface_box + methanogen_surface + m
   plot_annotation(tag_levels = "A", tag_suffix = '.') +
   theme(
     plot.tag = element_text(size = 8))
-```
-
-```
-## Error: object 'methanotroph_surface' not found
-```
-
-``` r
 fig2
 ```
 
-```
-## Error: object 'fig2' not found
-```
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-13.png)<!-- -->
 
 ``` r
 #export the figure
 ggsave(fig2, width = 6.5, height = 8.5, units = "in", filename = "figures/Fig_2/fig2.png") # could only save at height 8.5, orignally h = 8
-```
-
-```
-## Error: object 'fig2' not found
 ```
 We have created main text `fig2` which shows the abundance of water column (absolute abundance) and sediment (relative abundance) methanotrophs and methanogens over time between FPV and Open ponds. 
 
@@ -2590,7 +2523,7 @@ fig3a_water_pcoa <-
        shape = "Pond",
        x = "Axis.1 [27.4%]",
        y = "Axis.2 [11.3%]",
-       title = expression("Water CH"[4]*" Cyclers")) + 
+       title = expression("Water")) +  # CH"[4]*" Cyclers
   guides(
     color = guide_legend(
       title.position = "top",
@@ -2705,7 +2638,7 @@ fig3b_sed_pcoa <-
        shape = "Pond",
        x = "Axis.1 [32.5%]",
        y = "Axis.2 [15.8%]",
-       title = expression("Sediment CH"[4]*" Cyclers")) + 
+       title = expression("Sediment")) + #  CH"[4]*" Cyclers
   guides(
     color = guide_legend(
       title.position = "top",
@@ -2773,6 +2706,8 @@ Sediment samples are still distinct from other and separate along first axis
 ### Save Figure 3
 
 ``` r
+library(patchwork)
+
 ### Final Plot for Submission 
 plot_fig3 <- 
   fig3a_water_pcoa + theme(plot.title = element_text(margin = margin(b = 0))) + 
@@ -2884,7 +2819,7 @@ adonis2(water_bray ~ Depth_Class, data = water_metadata, by = "terms")
 ## 
 ## adonis2(formula = water_bray ~ Depth_Class, data = water_metadata, by = "terms")
 ##             Df SumOfSqs      R2      F Pr(>F)
-## Depth_Class  1   0.3635 0.02736 1.2939  0.184
+## Depth_Class  1   0.3635 0.02736 1.2939  0.185
 ## Residual    46  12.9247 0.97264              
 ## Total       47  13.2883 1.00000
 ```
@@ -3112,7 +3047,7 @@ permutest(betadispr_water_pond) # not significant p = 0.256
 ## 
 ## Response: Distances
 ##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.10942 0.021885 1.1958    999  0.321
+## Groups     5 0.10942 0.021885 1.1958    999  0.323
 ## Residuals 42 0.76864 0.018301
 ```
 
@@ -3146,7 +3081,7 @@ permutest(betadispr_water_depth) # not significant p = 0.417
 ## 
 ## Response: Distances
 ##           Df  Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     1 0.00863 0.0086305 0.6155    999  0.431
+## Groups     1 0.00863 0.0086305 0.6155    999  0.432
 ## Residuals 46 0.64501 0.0140220
 ```
 
@@ -3192,7 +3127,7 @@ permutest(betadispr_sed_pond) # not significant p = 0.661
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq    F N.Perm Pr(>F)
-## Groups     5 0.024577 0.0049153 0.66    999  0.673
+## Groups     5 0.024577 0.0049153 0.66    999   0.68
 ## Residuals 38 0.282986 0.0074470
 ```
 
@@ -3208,7 +3143,7 @@ permutest(betadispr_sed_solar) # not significant p = 0.673
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     1 0.005441 0.0054409 1.5015    999  0.218
+## Groups     1 0.005441 0.0054409 1.5015    999  0.216
 ## Residuals 42 0.152191 0.0036236
 ```
 
@@ -3235,8 +3170,11 @@ With betadispr we find the PERMANOVA results are are valid as pond, treatment, a
 
 Now we will calculate the differential abundance between our water and sediment samples. First I will try to do the original methane cyclers in water and sediments. but i may also further break it down into sediment methane cycler type.
 
-### Water
+
+### Fig 4: ASVs more Abundant in FPV
+#### Water
 Note as of this step the results do change in that methanobacteriales is not differentially abundant anymore and we have a reduction in asv_1479 and 976. but all asvs belong to methylococcales order
+
 
 ``` r
 # filter out for ASVs with zero variances; recommended to remove them as they are sparse and lowly abundant 
@@ -3564,9 +3502,7 @@ diffAbund_boxplots <- diff_abund_df %>%
       legend.text = element_text(size = 8, colour = "black")); diffAbund_boxplots
 ```
 
-```
-## Error in element_markdown(size = 8, colour = "black"): could not find function "element_markdown"
-```
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-1.png)<!-- -->
 
 ``` r
 # # get legend
@@ -3575,15 +3511,9 @@ diffAbund_boxplots <- diff_abund_df %>%
 
   
 # Save the plot   
-ggsave(diffAbund_boxplots, width = 6.5, height = 4.5, dpi = 300,
+ggsave(diffAbund_boxplots, width = 4.5, height = 4.5, dpi = 300,
         filename = "figures/Fig_4/Fig_4.png")
-```
 
-```
-## Error: object 'diffAbund_boxplots' not found
-```
-
-``` r
 ##### ASV_13 Methylococcales #####
 #1. Run stats
 # 1a. calculate abundances
@@ -3740,19 +3670,10 @@ ASV_13_methylococcales <- diff_abund_df %>%
        legend.title = element_text(size = 9, colour = "black"),
       legend.text = element_text(size = 8, colour = "black"))+
   annotate("text", x = 2, y = 3.9e5, label = "p = 0.014", size = 2.822,  fontface = "italic") 
-```
-
-```
-## Error in element_markdown(size = 8, colour = "black"): could not find function "element_markdown"
-```
-
-``` r
 ASV_13_methylococcales
 ```
 
-```
-## Error: object 'ASV_13_methylococcales' not found
-```
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-2.png)<!-- -->
 
 ``` r
 ##### ASV_32 Methylococcales #####
@@ -3910,19 +3831,10 @@ ASV_32_methyloparacoccus <- diff_abund_df %>%
        legend.title = element_text(size = 9, colour = "black"),
       legend.text = element_text(size = 8, colour = "black"))+
   annotate("text", x = 2, y = 3e5, label = "p = 0.033", size = 2.822,  fontface = "italic") 
-```
-
-```
-## Error in element_markdown(size = 8): could not find function "element_markdown"
-```
-
-``` r
 ASV_32_methyloparacoccus
 ```
 
-```
-## Error: object 'ASV_32_methyloparacoccus' not found
-```
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-3.png)<!-- -->
 
 ``` r
 ##### ASV_44 Methylomonas #####
@@ -4080,19 +3992,10 @@ ASV_44_methylomonas <- diff_abund_df %>%
        legend.title = element_text(size = 9, colour = "black"),
       legend.text = element_text(size = 8, colour = "black"))+
   annotate("text", x = 2, y = 4.5e5, label = "p = 0.17", size = 2.822,  fontface = "italic") 
-```
-
-```
-## Error in element_markdown(size = 8): could not find function "element_markdown"
-```
-
-``` r
 ASV_44_methylomonas
 ```
 
-```
-## Error: object 'ASV_44_methylomonas' not found
-```
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-4.png)<!-- -->
 
 ``` r
 ##### ASV_141 Methylobacter_C #####
@@ -4253,19 +4156,10 @@ ASV_141_methylobacterc <- diff_abund_df %>%
        legend.title = element_text(size = 9, colour = "black"),
       legend.text = element_text(size = 8, colour = "black"))+
     annotate("text", x = 2, y = 1.3e5, label = "p = 0.024", size = 2.822,  fontface = "italic") 
-```
-
-```
-## Error in element_markdown(size = 8): could not find function "element_markdown"
-```
-
-``` r
 ASV_141_methylobacterc
 ```
 
-```
-## Error: object 'ASV_141_methylobacterc' not found
-```
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-5.png)<!-- -->
 
 ``` r
 # # extract legend
@@ -4283,7 +4177,9 @@ fig4 <-  ASV_13_methylococcales +
 ```
 
 ```
-## Error: object 'ASV_13_methylococcales' not found
+## Error: Can't find method for generic `&(e1, e2)`:
+## - e1: <patchwork>
+## - e2: <theme>
 ```
 
 ``` r
@@ -4299,29 +4195,9 @@ fig4
 
 ``` r
 p13  <- ASV_13_methylococcales + theme(legend.position = "bottom")
-```
-
-```
-## Error: object 'ASV_13_methylococcales' not found
-```
-
-``` r
 p32  <- ASV_32_methyloparacoccus + theme(legend.position = "bottom")
-```
-
-```
-## Error: object 'ASV_32_methyloparacoccus' not found
-```
-
-``` r
 p141 <- ASV_141_methylobacterc + theme(legend.position = "bottom")
-```
 
-```
-## Error: object 'ASV_141_methylobacterc' not found
-```
-
-``` r
 fig4 <- (p13 + p32 + p141) +
   plot_layout(ncol = 3, guides = "collect") &
   theme(
@@ -4335,7 +4211,9 @@ fig4 <- (p13 + p32 + p141) +
 ```
 
 ```
-## Error: object 'p13' not found
+## Error: Can't find method for generic `&(e1, e2)`:
+## - e1: <patchwork>
+## - e2: <theme>
 ```
 
 ``` r
@@ -4385,7 +4263,9 @@ fig4 <- ASV_13_methylococcales +
 ```
 
 ```
-## Error: object 'ASV_13_methylococcales' not found
+## Error: Can't find method for generic `&(e1, e2)`:
+## - e1: <patchwork>
+## - e2: <theme>
 ```
 
 ``` r
@@ -4412,29 +4292,9 @@ library(ggplot2)
 library(patchwork)
 
 p13  <- ASV_13_methylococcales + guides(color = guide_none(), shape = guide_none())
-```
-
-```
-## Error: object 'ASV_13_methylococcales' not found
-```
-
-``` r
 p32  <- ASV_32_methyloparacoccus + guides(color = guide_none(), shape = guide_none())
-```
-
-```
-## Error: object 'ASV_32_methyloparacoccus' not found
-```
-
-``` r
 p141 <- ASV_141_methylobacterc + guides(color = guide_none(), shape = guide_none())
-```
 
-```
-## Error: object 'ASV_141_methylobacterc' not found
-```
-
-``` r
 fig4 <- (p13 + p32 + p141) +
   plot_layout(ncol = 3, guides = "collect") &
   theme(
@@ -4457,7 +4317,9 @@ fig4 <- (p13 + p32 + p141) +
 ```
 
 ```
-## Error: object 'p13' not found
+## Error: Can't find method for generic `&(e1, e2)`:
+## - e1: <patchwork>
+## - e2: <theme>
 ```
 
 ``` r
@@ -4482,9 +4344,7 @@ leg_plot <- ASV_141_methylobacterc +
         legend.spacing.x = unit(1, "cm"));leg_plot 
 ```
 
-```
-## Error: object 'ASV_141_methylobacterc' not found
-```
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-6.png)<!-- -->
 
 ``` r
        #legend.margin = margin(t = -5, unit = "pt"))
@@ -4495,75 +4355,27 @@ leg_plot <- ASV_141_methylobacterc +
 
 
 leg <- cowplot::get_legend(leg_plot)
-```
 
-```
-## Error: object 'leg_plot' not found
-```
-
-``` r
 # 2) Remove legends from the plots that go into the 2x2 grid
 p13  <- ASV_13_methylococcales     + theme(legend.position = "none")
-```
-
-```
-## Error: object 'ASV_13_methylococcales' not found
-```
-
-``` r
 p32  <- ASV_32_methyloparacoccus   + theme(legend.position = "none")
-```
-
-```
-## Error: object 'ASV_32_methyloparacoccus' not found
-```
-
-``` r
 p141 <- ASV_141_methylobacterc     + theme(legend.position = "none")
-```
 
-```
-## Error: object 'ASV_141_methylobacterc' not found
-```
-
-``` r
 # 3) Put the legend in the empty cell (bottom-right)
 fig4 <- (p13 + p32) +
         (p141 + cowplot::ggdraw(leg)) +
   plot_layout(widths = c(1,0.5));fig4
 ```
 
-```
-## Error: object 'p13' not found
-```
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-7.png)<!-- -->
 
 ``` r
 library(patchwork)
 
 p13  <- ASV_13_methylococcales     + theme(legend.position = "bottom")
-```
-
-```
-## Error: object 'ASV_13_methylococcales' not found
-```
-
-``` r
 p32  <- ASV_32_methyloparacoccus   + theme(legend.position = "bottom")
-```
-
-```
-## Error: object 'ASV_32_methyloparacoccus' not found
-```
-
-``` r
 p141 <- ASV_141_methylobacterc     + theme(legend.position = "bottom")
-```
 
-```
-## Error: object 'ASV_141_methylobacterc' not found
-```
-
-``` r
 fig4 <- (p13 + p32) /
         (p141 + guide_area()) +
   plot_layout(guides = "collect") &
@@ -4575,16 +4387,91 @@ fig4 <- (p13 + p32) /
 ```
 
 ```
-## Error: object 'p13' not found
+## Error: Can't find method for generic `&(e1, e2)`:
+## - e1: <patchwork>
+## - e2: <theme>
 ```
 
 ``` r
 fig4
 ```
 
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-8.png)<!-- -->
+
+
+### Figure S4: ASVs Less abundant in FPVs
+
+
+``` r
+asvs_lower_FPV_water <- 
+  water_ch4_asv_df_glom %>% 
+  dplyr::filter(ASV %in% c("ASV_1479", "ASV_976", "ASV_1367", "ASV_828")) %>% 
+  dplyr::group_by(
+    JDate, Pond, Depth_Class, solar_progress,
+    CH4_Cycler, Phylum, Class, Order, Family, Genus, ASV) %>%
+  dplyr::summarise(
+    total_abundance = sum(Abundance, na.rm = TRUE),
+    .groups = "drop") %>%  
+  # as.data.frame() %>%
+  dplyr::mutate(Genus = ifelse(ASV== "ASV_828", Order, Genus),
+                facet_label = paste0("<i>", Genus, "</i><br>", ASV))
+
+### Plot it 
+# Make Boxplots of the ASVs!
+diffAbund_ASVsLowerFPV_boxplots <- 
+  asvs_lower_FPV_water%>%
+  ggplot(aes(x = solar_progress, y = total_abundance,
+             color = solar_progress)) + 
+  geom_point(aes(shape = Pond),
+             size = 2, alpha = 0.8, stroke = 0.8,
+             position = position_jitterdodge(jitter.width = .5, dodge.width = .3)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0, color = "black", position = position_dodge(0.6)) + 
+  labs(color = "Treatment", y = "Water Column<br>Abundance (Cells mL<sup>-1</sup>)") +
+  ggh4x::facet_wrap2(~ facet_label, scales = "free_y", nrow = 2) +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  scale_y_continuous(labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
+  theme_classic() +
+  guides(
+    color = "none",
+    shape = guide_legend(
+      nrow= 2,
+      byrow = TRUE,
+      title.position = "top",
+      title.hjust = 0.5,
+      override.aes = list(size = 2.5))) +
+  theme_classic() +
+  theme( #legend.position = c(0.75, 0.7),
+    legend.position = "bottom",
+        legend.spacing = unit(0, "cm"),
+        plot.title = element_text(hjust = 0.5),
+        panel.background =  element_rect(color = 'black', size = 1),
+        panel.grid = element_blank(),
+        legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
+        legend.key = element_rect(fill = "transparent", color = NA),
+        legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
+        legend.box.just = "center",
+        #strip.background = element_rect(colour = NA, fill = 'transparent'),
+        plot.background = element_rect(fill = "transparent", color="transparent"),
+        legend.key.size = unit(0.2, "cm"),
+        legend.spacing.x = unit(0.2, "cm"),
+       legend.margin = margin(t = -5, unit = "pt"),
+        strip.text = element_markdown(size = 8),
+       axis.title.y = element_markdown(size = 8, colour = "black"),
+       axis.title.x = element_blank(),
+       axis.text.y = element_text(size = 8, colour = "black"),
+       legend.title = element_text(size = 9, colour = "black"),
+      legend.text = element_text(size = 8, colour = "black")); diffAbund_ASVsLowerFPV_boxplots
 ```
-## Error: object 'fig4' not found
+
+![](Microbial_Analyses_files/figure-html/FigS4-asvs-lower-in-FPV-1.png)<!-- -->
+
+``` r
+# Save the plot   
+ggsave(diffAbund_ASVsLowerFPV_boxplots, width = 4.5, height = 4.5, dpi = 300,
+        filename = "figures/Fig_S4/Fig_S4.png")
 ```
+
 
 
 
@@ -5733,7 +5620,7 @@ permutest(betadispr_sed_methanogens_pond) # not significant p = 0.659
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq     F N.Perm Pr(>F)
-## Groups     5 0.029297 0.0058594 0.809    999  0.554
+## Groups     5 0.029297 0.0058594 0.809    999  0.556
 ## Residuals 38 0.275224 0.0072427
 ```
 
@@ -5765,7 +5652,7 @@ permutest(betadispr_sed_methanogens_JDate) # not significant p = 0.44
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     3 0.006703 0.0022343 1.0343    999  0.413
+## Groups     3 0.006703 0.0022343 1.0343    999  0.414
 ## Residuals 40 0.086412 0.0021603
 ```
 
@@ -5798,7 +5685,7 @@ permutest(betadispr_sed_methanotrophs_pond) # not significant p = 0.515
 ## 
 ## Response: Distances
 ##           Df  Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.03100 0.0062006 0.7229    999  0.602
+## Groups     5 0.03100 0.0062006 0.7229    999  0.603
 ## Residuals 38 0.32593 0.0085771
 ```
 
@@ -5814,7 +5701,7 @@ permutest(betadispr_sed_methanotrophs_solar) # not significant p = 0.682
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     1 0.000028 0.0000282 0.0043    999  0.937
+## Groups     1 0.000028 0.0000282 0.0043    999  0.936
 ## Residuals 42 0.274034 0.0065246
 ```
 
@@ -6450,6 +6337,7 @@ devtools::session_info()
 ##  coda                       0.19-4.1   2024-01-31 [1] CRAN (R 4.3.3)
 ##  codetools                  0.2-19     2023-02-01 [2] CRAN (R 4.3.3)
 ##  colorspace                 2.1-1      2024-07-26 [2] CRAN (R 4.3.3)
+##  commonmark                 2.0.0      2025-07-07 [1] CRAN (R 4.3.3)
 ##  cowplot                  * 1.1.3      2024-01-22 [1] CRAN (R 4.3.2)
 ##  crayon                     1.5.3      2024-06-20 [1] CRAN (R 4.3.2)
 ##  CVXR                       1.0-15     2024-11-07 [1] CRAN (R 4.3.3)
@@ -6491,10 +6379,12 @@ devtools::session_info()
 ##  ggpubr                   * 0.6.0      2023-02-10 [1] CRAN (R 4.3.2)
 ##  ggrepel                    0.9.6      2024-09-07 [1] CRAN (R 4.3.3)
 ##  ggsignif                   0.6.4      2022-10-13 [1] CRAN (R 4.3.2)
+##  ggtext                   * 0.1.2      2022-09-16 [1] CRAN (R 4.3.3)
 ##  gld                        2.6.7      2025-01-17 [1] CRAN (R 4.3.3)
 ##  glue                       1.8.0      2024-09-30 [1] CRAN (R 4.3.3)
 ##  gmp                        0.7-5      2024-08-23 [1] CRAN (R 4.3.3)
 ##  gridExtra                  2.3        2017-09-09 [2] CRAN (R 4.3.3)
+##  gridtext                   0.1.5      2022-09-16 [1] CRAN (R 4.3.3)
 ##  gsl                        2.1-8      2023-01-24 [1] CRAN (R 4.3.2)
 ##  gtable                     0.3.6      2024-10-25 [2] CRAN (R 4.3.3)
 ##  gtools                     3.9.5      2023-11-20 [2] CRAN (R 4.3.3)
@@ -6518,11 +6408,13 @@ devtools::session_info()
 ##  lattice                  * 0.22-5     2023-10-24 [2] CRAN (R 4.3.3)
 ##  lazyeval                   0.2.2      2019-03-15 [2] CRAN (R 4.3.3)
 ##  lifecycle                  1.0.4      2023-11-07 [1] CRAN (R 4.3.2)
+##  litedown                   0.9        2025-12-18 [1] CRAN (R 4.3.3)
 ##  lme4                     * 1.1-37     2025-03-26 [1] CRAN (R 4.3.3)
 ##  lmerTest                 * 3.1-3      2020-10-23 [1] CRAN (R 4.3.3)
 ##  lmom                       3.2        2024-09-30 [1] CRAN (R 4.3.3)
 ##  lubridate                * 1.9.4      2024-12-08 [1] CRAN (R 4.3.3)
 ##  magrittr                   2.0.3      2022-03-30 [2] CRAN (R 4.3.3)
+##  markdown                   2.0        2025-03-23 [1] CRAN (R 4.3.3)
 ##  MASS                       7.3-60.0.1 2024-01-13 [2] CRAN (R 4.3.3)
 ##  Matrix                   * 1.6-5      2024-01-11 [2] CRAN (R 4.3.3)
 ##  MatrixGenerics             1.14.0     2023-10-24 [2] Bioconductor
@@ -6622,7 +6514,8 @@ devtools::session_info()
 ##  viridisLite                0.4.2      2023-05-02 [1] CRAN (R 4.3.3)
 ##  vroom                      1.6.5      2023-12-05 [1] CRAN (R 4.3.2)
 ##  withr                      3.0.2      2024-10-28 [1] CRAN (R 4.3.3)
-##  xfun                       0.52       2025-04-02 [1] CRAN (R 4.3.3)
+##  xfun                       0.56       2026-01-18 [1] CRAN (R 4.3.3)
+##  xml2                       1.3.6      2023-12-04 [2] CRAN (R 4.3.3)
 ##  xtable                     1.8-4      2019-04-21 [2] CRAN (R 4.3.3)
 ##  XVector                  * 0.42.0     2023-10-24 [2] Bioconductor
 ##  yaml                       2.3.10     2024-07-26 [1] CRAN (R 4.3.2)

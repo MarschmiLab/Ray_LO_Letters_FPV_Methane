@@ -1534,7 +1534,7 @@ fig3a_water_pcoa <-
        shape = "Pond",
        x = "Axis.1 [27.4%]",
        y = "Axis.2 [11.3%]",
-       title = expression("Water CH"[4]*" Cyclers")) + 
+       title = expression("Water")) +  # CH"[4]*" Cyclers
   guides(
     color = guide_legend(
       title.position = "top",
@@ -1643,7 +1643,7 @@ fig3b_sed_pcoa <-
        shape = "Pond",
        x = "Axis.1 [32.5%]",
        y = "Axis.2 [15.8%]",
-       title = expression("Sediment CH"[4]*" Cyclers")) + 
+       title = expression("Sediment")) + #  CH"[4]*" Cyclers
   guides(
     color = guide_legend(
       title.position = "top",
@@ -1708,6 +1708,8 @@ Sediment samples are still distinct from other and separate along first axis
 
 ### Save Figure 3
 ```{r fig-3}
+library(patchwork)
+
 ### Final Plot for Submission 
 plot_fig3 <- 
   fig3a_water_pcoa + theme(plot.title = element_text(margin = margin(b = 0))) + 
@@ -1893,8 +1895,11 @@ With betadispr we find the PERMANOVA results are are valid as pond, treatment, a
 
 Now we will calculate the differential abundance between our water and sediment samples. First I will try to do the original methane cyclers in water and sediments. but i may also further break it down into sediment methane cycler type.
 
-### Water
+
+### Fig 4: ASVs more Abundant in FPV
+#### Water
 Note as of this step the results do change in that methanobacteriales is not differentially abundant anymore and we have a reduction in asv_1479 and 976. but all asvs belong to methylococcales order
+
 ```{r diff-abund-water}
 # filter out for ASVs with zero variances; recommended to remove them as they are sparse and lowly abundant 
 
@@ -2185,7 +2190,7 @@ diffAbund_boxplots <- diff_abund_df %>%
 
   
 # Save the plot   
-ggsave(diffAbund_boxplots, width = 6.5, height = 4.5, dpi = 300,
+ggsave(diffAbund_boxplots, width = 4.5, height = 4.5, dpi = 300,
         filename = "figures/Fig_4/Fig_4.png")
 
 ##### ASV_13 Methylococcales #####
@@ -2703,6 +2708,78 @@ fig4 <- (p13 + p32) /
 fig4
 
 ```
+
+
+### Figure S4: ASVs Less abundant in FPVs
+
+```{r FigS4-asvs-lower-in-FPV, fig.width = 4.5, fig.height = 4.5}
+asvs_lower_FPV_water <- 
+  water_ch4_asv_df_glom %>% 
+  dplyr::filter(ASV %in% c("ASV_1479", "ASV_976", "ASV_1367", "ASV_828")) %>% 
+  dplyr::group_by(
+    JDate, Pond, Depth_Class, solar_progress,
+    CH4_Cycler, Phylum, Class, Order, Family, Genus, ASV) %>%
+  dplyr::summarise(
+    total_abundance = sum(Abundance, na.rm = TRUE),
+    .groups = "drop") %>%  
+  # as.data.frame() %>%
+  dplyr::mutate(Genus = ifelse(ASV== "ASV_828", Order, Genus),
+                facet_label = paste0("<i>", Genus, "</i><br>", ASV))
+
+### Plot it 
+# Make Boxplots of the ASVs!
+diffAbund_ASVsLowerFPV_boxplots <- 
+  asvs_lower_FPV_water%>%
+  ggplot(aes(x = solar_progress, y = total_abundance,
+             color = solar_progress)) + 
+  geom_point(aes(shape = Pond),
+             size = 2, alpha = 0.8, stroke = 0.8,
+             position = position_jitterdodge(jitter.width = .5, dodge.width = .3)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0, color = "black", position = position_dodge(0.6)) + 
+  labs(color = "Treatment", y = "Water Column<br>Abundance (Cells mL<sup>-1</sup>)") +
+  ggh4x::facet_wrap2(~ facet_label, scales = "free_y", nrow = 2) +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  scale_y_continuous(labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
+  theme_classic() +
+  guides(
+    color = "none",
+    shape = guide_legend(
+      nrow= 2,
+      byrow = TRUE,
+      title.position = "top",
+      title.hjust = 0.5,
+      override.aes = list(size = 2.5))) +
+  theme_classic() +
+  theme( #legend.position = c(0.75, 0.7),
+    legend.position = "bottom",
+        legend.spacing = unit(0, "cm"),
+        plot.title = element_text(hjust = 0.5),
+        panel.background =  element_rect(color = 'black', size = 1),
+        panel.grid = element_blank(),
+        legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
+        legend.key = element_rect(fill = "transparent", color = NA),
+        legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
+        legend.box.just = "center",
+        #strip.background = element_rect(colour = NA, fill = 'transparent'),
+        plot.background = element_rect(fill = "transparent", color="transparent"),
+        legend.key.size = unit(0.2, "cm"),
+        legend.spacing.x = unit(0.2, "cm"),
+       legend.margin = margin(t = -5, unit = "pt"),
+        strip.text = element_markdown(size = 8),
+       axis.title.y = element_markdown(size = 8, colour = "black"),
+       axis.title.x = element_blank(),
+       axis.text.y = element_text(size = 8, colour = "black"),
+       legend.title = element_text(size = 9, colour = "black"),
+      legend.text = element_text(size = 8, colour = "black")); diffAbund_ASVsLowerFPV_boxplots
+
+
+# Save the plot   
+ggsave(diffAbund_ASVsLowerFPV_boxplots, width = 4.5, height = 4.5, dpi = 300,
+        filename = "figures/Fig_S4/Fig_S4.png")
+
+```
+
 
 
 
