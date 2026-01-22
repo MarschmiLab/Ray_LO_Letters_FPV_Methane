@@ -1,7 +1,7 @@
 ---
 title: "Water Column and Sediment Methanogens & Methanotrophs in FPV Ponds"
 author: "Sophia Aredas & Mar Schmidt"
-date: "07 January, 2026"
+date: "22 January, 2026"
 output:
   html_document:
     code_folding: show
@@ -3431,20 +3431,21 @@ diffAbund_boxplots <- diff_abund_df %>%
       title.hjust = 0.5,
       override.aes = list(size = 2.5))) +
   theme_classic() +
-  theme(legend.position = "bottom",
+  theme( #legend.position = c(0.75, 0.7),
+    legend.position = "bottom",
         legend.spacing = unit(0, "cm"),
         plot.title = element_text(hjust = 0.5),
         panel.background =  element_rect(color = 'black', size = 1),
         panel.grid = element_blank(),
         legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
         legend.key = element_rect(fill = "transparent", color = NA),
-        #legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
+        legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
         legend.box.just = "center",
         #strip.background = element_rect(colour = NA, fill = 'transparent'),
         plot.background = element_rect(fill = "transparent", color="transparent"),
-        legend.key.size = unit(0.4, "cm"),
+        legend.key.size = unit(0.2, "cm"),
         legend.spacing.x = unit(0.2, "cm"),
-      # legend.margin = margin(t = -5, unit = "pt"),
+       legend.margin = margin(t = -5, unit = "pt"),
         strip.text = element_markdown(size = 8),
        axis.title.y = element_markdown(size = 8, colour = "black"),
        axis.title.x = element_blank(),
@@ -3462,8 +3463,8 @@ diffAbund_boxplots <- diff_abund_df %>%
 
   
 # Save the plot   
-# ggsave(diffAbund_boxplots, width = 6, height = 4, dpi = 300,
-#         filename = "figures/Fig_4/Fig_4.png")
+ggsave(diffAbund_boxplots, width = 6.5, height = 4.5, dpi = 300,
+        filename = "figures/Fig_4/Fig_4.png")
 
 ##### ASV_13 Methylococcales #####
 #1. Run stats
@@ -4647,10 +4648,127 @@ pro
 
 ``` r
 # now plot procrustes test
-plot(pro, kind = 1, main = "Procrustes: Methanotrophs fitted to All CH4 Cyclers")
+fig_s4 <- plot(pro, kind = 1, main = "Procrustes Errors"); fig_s4
 ```
 
 ![](Microbial_Analyses_files/figure-html/procrustes-mantel-1.png)<!-- -->
+
+```
+## $heads
+##              Axis.1       Axis.2
+## site1   0.122391284  0.435744262
+## site2  -0.327246913  0.039890340
+## site3   0.243268076  0.174556872
+## site4   0.122842840  0.042554328
+## site5   0.039865000  0.500842863
+## site6  -0.089638441  0.275439376
+## site7   0.387434527 -0.124913440
+## site8   0.268988387 -0.149237036
+## site9   0.257221689  0.380956109
+## site10 -0.056750994  0.204615058
+## site11  0.278123981 -0.111836731
+## site12  0.019268716 -0.181910128
+## site13 -0.127799959  0.236080129
+## site14 -0.324383631  0.008394102
+## site15 -0.253308034  0.022607439
+## site16 -0.219248214  0.097914890
+## site17  0.393294918  0.115928239
+## site18  0.312900926  0.231311808
+## site19  0.397282939 -0.110492061
+## site20  0.405833829 -0.149954116
+## site21  0.209150847  0.232085697
+## site22  0.257702180 -0.016712684
+## site23  0.110387580  0.059395530
+## site24  0.258892920  0.002697917
+## site25 -0.339157405  0.002949797
+## site26 -0.286079637  0.033420577
+## site27 -0.396765683 -0.047184235
+## site28 -0.372011276 -0.097782713
+## site29 -0.296809355 -0.039656782
+## site30 -0.302530231 -0.038991477
+## site31 -0.022927398 -0.173059412
+## site32  0.180534452 -0.129129800
+## site33 -0.123474118 -0.006570566
+## site34  0.278460900 -0.108266657
+## site35 -0.243866732  0.076125231
+## site36 -0.235169549 -0.032438891
+## site37 -0.363215003 -0.119262961
+## site38 -0.361213080 -0.109232339
+## site39 -0.363120605 -0.015325221
+## site40 -0.194822312  0.159536955
+## site41 -0.286136711 -0.214661494
+## site42 -0.293108326 -0.179509057
+## site43  0.371676047 -0.175011229
+## site44  0.375540874 -0.207607553
+## site45  0.346436155 -0.172036743
+## site46  0.373835397 -0.168867472
+## site47 -0.123996832 -0.268420079
+## site48 -0.008554025 -0.184976641
+## 
+## $points
+##                [,1]         [,2]
+## site1   0.123389478  0.425185942
+## site2  -0.330358025  0.047616771
+## site3   0.243449114  0.175293042
+## site4   0.119526201  0.063794251
+## site5   0.038803391  0.489225409
+## site6  -0.096191784  0.269114321
+## site7   0.381131781 -0.135849633
+## site8   0.276791033 -0.171407867
+## site9   0.255558795  0.380174522
+## site10 -0.060767716  0.196617194
+## site11  0.267654226 -0.116007481
+## site12  0.017286865 -0.164129370
+## site13 -0.128278277  0.218240784
+## site14 -0.331290420 -0.001977323
+## site15 -0.251798355  0.018482280
+## site16 -0.227758023  0.099246615
+## site17  0.396123976  0.119560221
+## site18  0.338378058  0.248869510
+## site19  0.394299734 -0.117150874
+## site20  0.409513317 -0.153770719
+## site21  0.207926689  0.226792847
+## site22  0.252782996 -0.014623504
+## site23  0.105231119  0.066329033
+## site24  0.249001710  0.026453825
+## site25 -0.334977450  0.004386123
+## site26 -0.282286608  0.040170545
+## site27 -0.394314484 -0.056947231
+## site28 -0.372412375 -0.104750161
+## site29 -0.293946330 -0.035599311
+## site30 -0.302364154 -0.034880040
+## site31 -0.019836349 -0.161758732
+## site32  0.204488052 -0.099953227
+## site33 -0.119910013  0.003383573
+## site34  0.271695343 -0.105094483
+## site35 -0.240094598  0.081836834
+## site36 -0.237195408 -0.023979119
+## site37 -0.362938709 -0.131751036
+## site38 -0.365296848 -0.122701309
+## site39 -0.360219066 -0.020779239
+## site40 -0.196814071  0.154315697
+## site41 -0.285680342 -0.214358289
+## site42 -0.295049061 -0.179464352
+## site43  0.374291434 -0.187347189
+## site44  0.378915334 -0.218768925
+## site45  0.341926197 -0.183240399
+## site46  0.370820366 -0.181616745
+## site47 -0.123013565 -0.250565762
+## site48 -0.006193175 -0.166617021
+## 
+## attr(,"class")
+## [1] "ordiplot"
+```
+
+``` r
+# save procrustes image 
+ggsave(fig_s4, width = 6.5, height = 6.5, dpi = 300,
+        filename = "figures/Fig_S4/fig_S4.png")
+```
+
+```
+## Error in UseMethod("grid.draw"): no applicable method for 'grid.draw' applied to an object of class "ordiplot"
+```
 
 ``` r
 plot(pro, kind = 2)   # residuals; very low meaning good fit
@@ -5241,7 +5359,7 @@ sed_methanotrophs_permanova
 ## solar_progress        1   0.4677 0.13085 10.5132  0.001 ***
 ## Pond                  4   0.8246 0.23072  4.6343  0.001 ***
 ## JDate                 1   0.4746 0.13279 10.6688  0.001 ***
-## solar_progress:JDate  1   0.0707 0.01977  1.5884  0.125    
+## solar_progress:JDate  1   0.0707 0.01977  1.5884  0.126    
 ## Pond:JDate            4   0.3130 0.08757  1.7589  0.018 *  
 ## Residual             32   1.4235 0.39829                   
 ## Total                43   3.5741 1.00000                   
@@ -5317,7 +5435,7 @@ permutest(betadispr_sed_methanogens_solar) # not significant p = 0.067
 ## 
 ## Response: Distances
 ##           Df  Sum Sq   Mean Sq     F N.Perm Pr(>F)
-## Groups     1 0.00951 0.0095101 2.917    999  0.105
+## Groups     1 0.00951 0.0095101 2.917    999  0.106
 ## Residuals 42 0.13693 0.0032602
 ```
 
@@ -5333,7 +5451,7 @@ permutest(betadispr_sed_methanogens_JDate) # not significant p = 0.44
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     3 0.006703 0.0022343 1.0343    999  0.413
+## Groups     3 0.006703 0.0022343 1.0343    999  0.414
 ## Residuals 40 0.086412 0.0021603
 ```
 
@@ -5979,7 +6097,7 @@ devtools::session_info()
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
 ##  tz       America/New_York
-##  date     2026-01-07
+##  date     2026-01-22
 ##  pandoc   3.1.1 @ /usr/lib/rstudio-server/bin/quarto/bin/tools/ (via rmarkdown)
 ##  quarto   1.3.450 @ /usr/lib/rstudio-server/bin/quarto/bin/quarto
 ## 
@@ -6199,7 +6317,7 @@ devtools::session_info()
 ##  zlibbioc                   1.48.2     2024-03-13 [2] Bioconductor 3.18 (R 4.3.3)
 ##  zoo                        1.8-12     2023-04-13 [2] CRAN (R 4.3.3)
 ## 
-##  [1] /home/sna49/R/x86_64-pc-linux-gnu-library/4.3
+##  [1] /lustre2/home/hendrylab/sna49/R/x86_64-pc-linux-gnu-library/4.3
 ##  [2] /programs/R-4.3.3/lib64/R/library
 ##  * ── Packages attached to the search path.
 ## 

@@ -2142,20 +2142,21 @@ diffAbund_boxplots <- diff_abund_df %>%
       title.hjust = 0.5,
       override.aes = list(size = 2.5))) +
   theme_classic() +
-  theme(legend.position = "bottom",
+  theme( #legend.position = c(0.75, 0.7),
+    legend.position = "bottom",
         legend.spacing = unit(0, "cm"),
         plot.title = element_text(hjust = 0.5),
         panel.background =  element_rect(color = 'black', size = 1),
         panel.grid = element_blank(),
         legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
         legend.key = element_rect(fill = "transparent", color = NA),
-        #legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
+        legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
         legend.box.just = "center",
         #strip.background = element_rect(colour = NA, fill = 'transparent'),
         plot.background = element_rect(fill = "transparent", color="transparent"),
-        legend.key.size = unit(0.4, "cm"),
+        legend.key.size = unit(0.2, "cm"),
         legend.spacing.x = unit(0.2, "cm"),
-      # legend.margin = margin(t = -5, unit = "pt"),
+       legend.margin = margin(t = -5, unit = "pt"),
         strip.text = element_markdown(size = 8),
        axis.title.y = element_markdown(size = 8, colour = "black"),
        axis.title.x = element_blank(),
@@ -2169,8 +2170,8 @@ diffAbund_boxplots <- diff_abund_df %>%
 
   
 # Save the plot   
-# ggsave(diffAbund_boxplots, width = 6, height = 4, dpi = 300,
-#         filename = "figures/Fig_4/Fig_4.png")
+ggsave(diffAbund_boxplots, width = 6.5, height = 4.5, dpi = 300,
+        filename = "figures/Fig_4/Fig_4.png")
 
 ##### ASV_13 Methylococcales #####
 #1. Run stats
@@ -3017,7 +3018,11 @@ pro <- procrustes(
 pro
 
 # now plot procrustes test
-plot(pro, kind = 1, main = "Procrustes: Methanotrophs fitted to All CH4 Cyclers")
+fig_s4 <- plot(pro, kind = 1, main = "Procrustes Errors"); fig_s4
+
+# save procrustes image 
+ggsave(fig_s4, width = 6.5, height = 6.5, dpi = 300,
+        filename = "figures/Fig_S4/fig_S4.png")
 
 plot(pro, kind = 2)   # residuals; very low meaning good fit
 
