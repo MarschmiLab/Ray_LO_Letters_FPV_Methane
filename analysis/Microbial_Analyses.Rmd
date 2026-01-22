@@ -1950,6 +1950,21 @@ water_ch4_fsp <-
   dplyr::filter(diff == 1, passed == 1, abs(lfc) > 1) %>% # 1.2 is good cut off to see effect, below we get ASVs with super low cell counts 
   select(ASV = taxon, Comparison, lfc, passed)
 
+## Show the Q-Values for the results section 
+water_ch4_asv_output$res %>%
+  dplyr::transmute(ASV   = taxon,
+                   lfc   = lfc_solar_progressFPV,
+                   q_value     = q_solar_progressFPV,
+                   diff  = diff_solar_progressFPV,
+                   passed = passed_ss_solar_progressFPV) %>%
+  dplyr::filter(passed, q_value < 0.05) %>%         # core inferential filter
+  dplyr::mutate(Comparison = "FPV vs Open",
+                x_fold_change = exp(lfc),
+                direction = ifelse(lfc > 0, "higher in FPV", "lower in FPV"),
+                q_nonSci = formatC(q_value, format = "f", digits = 7)) %>%
+  dplyr::select(ASV, Comparison, lfc, x_fold_change, direction, q_value, q_nonSci) %>%
+  dplyr::arrange(-lfc)
+
 
 # join by tax table
 clean_water_ch4 <- water_ch4_fsp %>% 
