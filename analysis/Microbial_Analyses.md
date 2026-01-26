@@ -2467,8 +2467,6 @@ fig2
 #export the figure
 ggsave(fig2, width = 6.5, height = 8.5, units = "in", filename = "figures/Fig_2/fig2.png") # could only save at height 8.5, orignally h = 8
 ```
-
-
 We have created main text `fig2` which shows the abundance of water column (absolute abundance) and sediment (relative abundance) methanotrophs and methanogens over time between FPV and Open ponds. 
 
 Each row corresponds to depth (surface water, bottom water, or sediments) and methane cycler (methanotroph or methanogen). The left panel demonstrates the temporal relationships while the right panel is a box plot comparison with linear mixed effects statistical analysis between FPV and Open ponds.
@@ -2725,29 +2723,14 @@ plot_fig3 <-
     legend.spacing.x = unit(0.7, "cm"),
     legend.margin = margin(t = -5, unit = "pt")
   )
-```
-
-```
-## Error: Can't find method for generic `&(e1, e2)`:
-## - e1: <patchwork>
-## - e2: <theme>
-```
-
-``` r
 plot_fig3
 ```
 
-```
-## Error: object 'plot_fig3' not found
-```
+![](Microbial_Analyses_files/figure-html/fig-3-1.png)<!-- -->
 
 ``` r
 ggsave(plot_fig3, width = 6.5, height = 4.5, dpi = 300,
         filename = "figures/Fig_3/Fig_3.png")
-```
-
-```
-## Error: object 'plot_fig3' not found
 ```
 
 
@@ -4176,24 +4159,13 @@ fig4 <-  ASV_13_methylococcales +
   plot_layout(ncol = 3, guides = "collect", widths = c(1,1,1)) & 
   theme(
     legend.position = "bottom")
-```
-
-```
-## Error: Can't find method for generic `&(e1, e2)`:
-## - e1: <patchwork>
-## - e2: <theme>
-```
-
-``` r
     #legend.justification = c(0,.2))
     #legend.box.margin = margin(2, 2, 2, 2.5))
 
 fig4
 ```
 
-```
-## Error: object 'fig4' not found
-```
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-6.png)<!-- -->
 
 ``` r
 p13  <- ASV_13_methylococcales + theme(legend.position = "bottom")
@@ -4210,22 +4182,12 @@ fig4 <- (p13 + p32 + p141) +
     legend.title.position = "top",
     legend.title.align = 0.5,
     legend.title = element_text(margin = margin(b = 0, unit = "pt")))
-```
 
-```
-## Error: Can't find method for generic `&(e1, e2)`:
-## - e1: <patchwork>
-## - e2: <theme>
-```
-
-``` r
   # theme(legend.position = "bottom", legend.box.just = "center", legend.box = "horizontal")
 fig4
 ```
 
-```
-## Error: object 'fig4' not found
-```
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-7.png)<!-- -->
 
 ``` r
 fig4 <- fig4 &
@@ -4234,19 +4196,10 @@ fig4 <- fig4 &
     legend.key.width  = unit(0.35, "cm"),
     legend.spacing.x  = unit(0.4, "cm")
   )
-```
-
-```
-## Error: object 'fig4' not found
-```
-
-``` r
 fig4 
 ```
 
-```
-## Error: object 'fig4' not found
-```
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-8.png)<!-- -->
 
 ``` r
 ## plot all together
@@ -4262,33 +4215,18 @@ fig4 <- ASV_13_methylococcales +
    # legend.justification = c(-30,.2),
    # legend.box.just = "center",
     legend.box.margin = margin(0, 0, 0, 0))
-```
 
-```
-## Error: Can't find method for generic `&(e1, e2)`:
-## - e1: <patchwork>
-## - e2: <theme>
-```
-
-``` r
 fig4
 ```
 
-```
-## Error: object 'fig4' not found
-```
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-9.png)<!-- -->
 
 ``` r
 # Save the plot   
 ggsave(fig4, width = 6.5, height = 4.5, dpi = 300,
         filename = "figures/Fig_4/Fig_4.png")
-```
 
-```
-## Error: object 'fig4' not found
-```
 
-``` r
 #or
 library(ggplot2)
 library(patchwork)
@@ -4316,21 +4254,11 @@ fig4 <- (p13 + p32 + p141) +
     color = guide_legend(title = "Treatment", nrow = 1, byrow = TRUE, title.position = "top", title.hjust = 0.5),
     shape = guide_legend(title = "Pond",      nrow = 2, byrow = TRUE, title.position = "top", title.hjust = 0.5)
   )
-```
 
-```
-## Error: Can't find method for generic `&(e1, e2)`:
-## - e1: <patchwork>
-## - e2: <theme>
-```
-
-``` r
 fig4
 ```
 
-```
-## Error: object 'fig4' not found
-```
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-10.png)<!-- -->
 
 ``` r
 library(cowplot)
@@ -4346,7 +4274,7 @@ leg_plot <- ASV_141_methylobacterc +
         legend.spacing.x = unit(1, "cm"));leg_plot 
 ```
 
-![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-6.png)<!-- -->
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-11.png)<!-- -->
 
 ``` r
        #legend.margin = margin(t = -5, unit = "pt"))
@@ -4369,7 +4297,7 @@ fig4 <- (p13 + p32) +
   plot_layout(widths = c(1,0.5));fig4
 ```
 
-![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-7.png)<!-- -->
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-12.png)<!-- -->
 
 ``` r
 library(patchwork)
@@ -4386,19 +4314,11 @@ fig4 <- (p13 + p32) /
     legend.box.just = "center",
     plot.margin = margin(0, 0, 0, 0)
   )
-```
 
-```
-## Error: Can't find method for generic `&(e1, e2)`:
-## - e1: <patchwork>
-## - e2: <theme>
-```
-
-``` r
 fig4
 ```
 
-![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-8.png)<!-- -->
+![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-13.png)<!-- -->
 
 
 ### Figure S4: ASVs Less abundant in FPVs
@@ -5313,30 +5233,15 @@ plot_figS3 <-
   plot_layout(widths = c(1, 1)) &
   theme(
     plot.tag = element_text(size = 8, colour = "black"))
-```
-
-```
-## Error: Can't find method for generic `&(e1, e2)`:
-## - e1: <patchwork>
-## - e2: <theme>
-```
-
-``` r
 plot_figS3
 ```
 
-```
-## Error: object 'plot_figS3' not found
-```
+![](Microbial_Analyses_files/figure-html/plot-FigS3-1.png)<!-- -->
 
 ``` r
 # Now, actually save the plot   
 ggsave(plot_figS3, width = 6.5, height = 4.5, dpi = 300,
         filename = "figures/Fig_S3/Fig_S3.png")
-```
-
-```
-## Error: object 'plot_figS3' not found
 ```
 
 Sediment samples are still distinct from other and separate along first axis
@@ -5562,7 +5467,7 @@ sed_methanotrophs_permanova
 ## solar_progress        1   0.4677 0.13085 10.5132  0.001 ***
 ## Pond                  4   0.8246 0.23072  4.6343  0.001 ***
 ## JDate                 1   0.4746 0.13279 10.6688  0.001 ***
-## solar_progress:JDate  1   0.0707 0.01977  1.5884  0.125    
+## solar_progress:JDate  1   0.0707 0.01977  1.5884  0.126    
 ## Pond:JDate            4   0.3130 0.08757  1.7589  0.018 *  
 ## Residual             32   1.4235 0.39829                   
 ## Total                43   3.5741 1.00000                   
@@ -5638,7 +5543,7 @@ permutest(betadispr_sed_methanogens_solar) # not significant p = 0.067
 ## 
 ## Response: Distances
 ##           Df  Sum Sq   Mean Sq     F N.Perm Pr(>F)
-## Groups     1 0.00951 0.0095101 2.917    999  0.104
+## Groups     1 0.00951 0.0095101 2.917    999  0.106
 ## Residuals 42 0.13693 0.0032602
 ```
 
@@ -5654,7 +5559,7 @@ permutest(betadispr_sed_methanogens_JDate) # not significant p = 0.44
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     3 0.006703 0.0022343 1.0343    999  0.414
+## Groups     3 0.006703 0.0022343 1.0343    999  0.413
 ## Residuals 40 0.086412 0.0021603
 ```
 
@@ -5687,7 +5592,7 @@ permutest(betadispr_sed_methanotrophs_pond) # not significant p = 0.515
 ## 
 ## Response: Distances
 ##           Df  Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.03100 0.0062006 0.7229    999  0.603
+## Groups     5 0.03100 0.0062006 0.7229    999  0.601
 ## Residuals 38 0.32593 0.0085771
 ```
 
@@ -5703,7 +5608,7 @@ permutest(betadispr_sed_methanotrophs_solar) # not significant p = 0.682
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     1 0.000028 0.0000282 0.0043    999  0.936
+## Groups     1 0.000028 0.0000282 0.0043    999  0.937
 ## Residuals 42 0.274034 0.0065246
 ```
 
@@ -6204,78 +6109,6 @@ do_meth_abund
 ``` r
 ggsave(do_meth_abund, width = 6.5, height = 6.5, dpi = 300,
         filename = "figures/bonus/do_meth_abund.png")
-
-# now lets also plot methane concentrations
-
-# first plot ch4 simple
-# ch4_simple <- do_abundance %>% 
-#   group_by(JDate.x, Pond.x, solar_progress.x, Depth_Class.x) %>%
-#   summarise(avg_ch4 = mean(ch4_mean, na.rm = TRUE), .groups = "drop") %>% 
-#   ggplot(aes(x = JDate.x,
-#              y = avg_ch4,
-#              color = solar_progress.x,
-#              fill = solar_progress.x,
-#              group = Pond.x)) +
-#  # geom_line(alpha = 0.1) +
-#   geom_smooth(aes(group = solar_progress.x), se = FALSE, linewidth = 1.4) +
-#   geom_point(alpha = 0.3) +
-#   #scale_shape_manual(values = pond_shapes)+
-#   #ggh4x::facet_grid2(~Depth_Class.x) +
-#   ggh4x::facet_wrap2(~Depth_Class.x) +
-#   labs(
-#     y = "CH<sub>4</sub> <br> (\u03bcmol L<sup>-1</sup>)",
-#     x = "Day of Year") +
-#   guides(
-#     color = guide_legend(title = "Treatment"),
-#     fill = "none") +
-#   scale_color_manual(values = solar_colors) +
-#   theme_classic() +
-#   theme(axis.text.x =  element_text(size = 8,colour = "black"),
-#          axis.text.y =  element_text(size = 8,colour = "black"),
-#          axis.title.x = element_text(size = 8,colour = "black"),
-#         axis.title.y = element_markdown(size = 8))
-# ch4_simple
-# 
-# # 2 simple; still plot all methanotrophs, just make it simpler and not shape by pond
-# methanotroph_all_abund_simple <- do_abundance %>% 
-#   dplyr::filter(CH4_Cycler == "Methanotroph") %>% 
-#   group_by(JDate.x, Pond.x, solar_progress.x, Depth_Class.x) %>% 
-#   summarise(
-#     total_abundance = sum(Abundance, na.rm = TRUE), # total across all samples
-#     .groups = "drop") %>% 
-#  # summarise(avg_do = mean(HDO_mg.l, na.rm = TRUE), .groups = "drop") %>% 
-#   ggplot(aes(x = JDate.x,
-#              y = total_abundance,
-#              color = solar_progress.x,
-#              fill = solar_progress.x,
-#              group = Pond.x)) +
-#   #geom_line() +
-#   geom_smooth(aes(group = solar_progress.x), se = FALSE, linewidth = 1.4) +
-#   geom_point(alpha = 0.3) +
-#   labs(#title = "All Methanotroph Abundances",
-#        y = "Absolute Abundance (cells per ml)",
-#        x = "Day of Year") +
-#   guides(
-#     color = guide_legend(title = "Treatment"),
-#     fill = "none") +
-#   scale_y_continuous(labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
-#   ggh4x::facet_wrap2(~Depth_Class.x) +
-#   scale_color_manual(values = solar_colors) +
-#   theme_classic() +
-#   theme(axis.text.x =  element_text(size = 8,colour = "black"),
-#          axis.text.y =  element_text(size = 8,colour = "black"),
-#          axis.title.x = element_text(size = 8,colour = "black"),
-#         axis.title.y = element_markdown(size = 8))
-# methanotroph_all_abund_simple
-# 
-# # put together for revision response
-# ch4_meth_abund <- ch4_simple + methanotroph_all_abund_simple +
-#   plot_layout(nrow = 2, ncol = 1,
-#               guides = "collect") 
-# ch4_meth_abund
-# 
-# ggsave(do_meth_abund, width = 6.5, height = 6.5, dpi = 300,
-#         filename = "figures/bonus/do_meth_abund.png")
 ```
 From our rough plots we see that gammaproteobacterial methanotrophs dominate ponds, this makes sense from our figure 2. 
 
@@ -6284,228 +6117,6 @@ although max cell densities reach over 60,000 in surface waters while bottom wat
 
 Open ponds also have more Methylomirabilia (NC10 phylum) in bottom waters but pretty lowly abundant (~3k cells)
 
-## Top Sediment Methanogen ASVs Over Time 
-
-
-``` r
-# Create a dataframe 
-sed_methanogens_df <- 
-  sed_methanogens_physeq %>%
-  speedyseq::psmelt() %>% # melt into dataframe
-  dplyr::select(OTU, Sample, Abundance, DNA_ID, Date_Collected, Deployment_Depth_m, Pond, solar_progress, JDate, Kingdom:CH4_Cycler) %>%
-  dplyr::select(-ASVseqs) %>%
-  mutate(solar_progress = recode(solar_progress, "No FPV" = "Open"))
-
-## Summary Stats of the ASVs for some perusing 
-sed_methanogen_asv_stats <- 
-  sed_methanogens_df %>%
-  group_by(ASV) %>%
-  summarize(mean = mean(Abundance), median = median(Abundance), min = min(Abundance), max = max(Abundance)) 
-
-## Check by FPV and Open 
-sed_methanogen_asv_stats_FPV <- 
-  sed_methanogens_df %>%
-  group_by(ASV, solar_progress) %>%
-  summarize(mean = mean(Abundance), median = median(Abundance), min = min(Abundance), max = max(Abundance)) 
-
-# Just create a vector with the ASV names 
-sed_methanogen_asvs <- 
-  sed_methanogen_asv_stats %>%
-  dplyr::filter(mean > 1e-03) %>% # PULL ASVs with a mean of 0.0015 or 0.15% abundance or higher 
-  pull(ASV) 
-
-length(sed_methanogen_asvs) 
-```
-
-```
-## [1] 21
-```
-
-``` r
-# Make a new df with only these ASVs 
-sed_methanogen_abund_asvs_df <- 
-  sed_methanogens_df %>%
-  dplyr::filter(ASV %in% sed_methanogen_asvs)
-
-# TIME TO PLOT 
-top21_sed_methanogen_ASVS_plot <- 
-  sed_methanogen_abund_asvs_df %>%
-  mutate(ASV_Genus = paste0(ASV, "\n", Genus)) %>%
-  group_by(JDate, Pond, solar_progress, Abundance, ASV) %>%
-  ggplot(aes(x = JDate, y = Abundance, color = solar_progress)) + 
-  facet_wrap(~ASV_Genus, scales = "free_y") +
-  geom_line(aes(group = interaction(Pond, ASV)), 
-            alpha = 0.2) +
-  labs(x = "Day of Year", y = "Relative Abundance", 
-       title = "Top 21 Sediment Methanogen ASVs") + 
-  geom_point(aes(shape = Pond), size = 2) +
-  scale_color_manual(values = solar_colors) +
-  scale_shape_manual(values = pond_shapes) + 
-  theme(legend.position = "bottom"); top21_sed_methanogen_ASVS_plot
-```
-
-![](Microbial_Analyses_files/figure-html/methanogen-over-time-1.png)<!-- -->
-
-``` r
-# Save the plot   
-ggsave(top21_sed_methanogen_ASVS_plot, 
-       width = 12, height = 10, dpi = 300,
-       filename = "figures/bonus/sed_methogen_ASV_time.png")
-```
-
-# Water Column Methanotrophs
-
-``` r
-##### Methanotrophs Water Column Slide #####
-# 1. plot surface water methanotrophs
-methanotroph_surface <- methanotroph_surface_sum %>% 
-  ggplot(aes(x = JDate, y = mean_meth, fill = solar_progress, color = solar_progress)) +
-  #geom_smooth(aes(group = solar_progress), se = FALSE) +
-  geom_line()+
-  geom_point()+
-  theme_classic()+
-  geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
-  geom_point(size = 3, shape = 16)+
-  geom_point(size = 3, shape = 1, color = "black")+
-  labs(y= "Surface Methanotroph<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
-  scale_y_continuous(
-    limits = c(0, 1.27e6),
-    breaks = c(0, 6.25e5, 1.25e6),
-    labels = c("0", "625K", "1.25M"))+
-  # scale_y_continuous(
-  #    limits = c(0, NA),
-  #   # breaks = c(0, 7.5e5, 1.5e6),
-  #   # labels = c("0", "750K", "1.5M"))+
-  #   labels = label_number(scale_cut = cut_short_scale())) +
-  #   #labels = label_number(scale_cut = cut_short_scale(), accuracy = 0.01)) +
-  theme(axis.text.x =  element_text(size = 12,colour = "black"),
-         axis.text.y =  element_text(size = 12,colour = "black"),
-         axis.title.x = element_blank(),
-        axis.title.y = element_markdown(size = 12))+
-  scale_fill_manual(values = solar_colors)+
-  scale_color_manual(values = solar_colors)+
-  theme(legend.position = "none")
-methanotroph_surface
-
-
-# 2. box plot
-methanotroph_surface_box <- methanotroph_surface_data %>% 
-  ggplot(aes(x = solar_progress, y = total_abundance, color = solar_progress)) +
-  geom_boxplot(outlier.shape = NA, color = "black") +
-  geom_jitter(aes(color = solar_progress, fill = solar_progress), width = 0.2, size = 3, shape = 21) +
-  scale_fill_manual(values = solar_colors)+
-  scale_color_manual(values = c("black", "black"))+
-  scale_y_continuous(
-    limits = c(0, 1.27e6),
-    breaks = c(0, 6.25e5, 1.25e6),
-    labels = c("0", "625K", "1.25M"))+
-  # scale_y_continuous(
-  #   limits = c(0, 1.27e6),
-  #   breaks = c(0, 2.5e5, 7.5e5, 1.25e6),
-  #   labels = c("0","250K", "750K", "1.25M"))+
-  #   # breaks = c(0, 5e5, 1e6, 1.5e6),
-  #   #labels = label_number(scale_cut = cut_short_scale())) +
-  theme_classic()+
-  theme(axis.text.x = element_text(size = 12,colour = "black"),
-        axis.title.x = element_blank(),
-        axis.title.y = element_blank(),
-        axis.line.y = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        legend.position = "none") +
-  # stat_compare_means(method = "wilcox.test",
-  #                    #comparisons = list(c("FPV", "Open")),
-  #                    label = "p.format",
-  #                    size = 3,
-  #                    label.y.npc = 0.9,
-  #                    fontface = "italic")
-  #label.y = c(8000, 100000, 500000, 400000, 400000), # get pvalue
- annotate("text", x = 2, y = 1.25e6, label = "p = 0.021", size = 2.822,  fontface = "italic") # add p value
-methanotroph_surface_box
-
-# 2. plot bottom water methanotrophs
-methanotroph_bottom <- methanotroph_bottom_sum %>% 
-  ggplot(aes(x = JDate, y = mean_meth, fill = solar_progress, color = solar_progress)) +
-  geom_line()+
-  geom_point()+
-  theme_classic()+
-  geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
-  geom_point(size = 3, shape = 16)+
-  geom_point(size = 3, shape = 1, color = "black")+
-  labs(y= "Bottom Methanotroph<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
-  scale_y_continuous(
-    breaks = c(0, 6.25e5, 1.25e6),
-    labels = c("0", "625K", "1.25M"))+
-  # scale_y_continuous(
-  #   breaks = c(0, 2.5e5, 7.5e5, 1.25e6),
-  #   labels = c("0", "250K", "750K", "1.25M"))+
-  # labels = label_number(scale_cut = cut_short_scale(), accuracy = 0.01)) +
-  # scale_y_continuous(
-  #   
-  #   limits = c(0, 1.25e6),
-  #   breaks = c(0, 5e5, 1e6, 1.25e6),
-  #   labels = label_number(scale_cut = cut_short_scale())) +
-  theme(axis.text.x =  element_text(size = 12,colour = "black"),
-         axis.text.y =  element_text(size = 12,colour = "black"),
-         axis.title.x = element_text(size = 12,colour = "black"),
-        axis.title.y = element_markdown(size = 12))+
-  scale_fill_manual(values = solar_colors)+
-  scale_color_manual(values = solar_colors)+
-  theme(legend.position = "none")
-methanotroph_bottom
-
-
-
-# 3. box plot
-methanotroph_bottom_box <- methanotroph_bottom_data %>% 
-  ggplot(aes(x = solar_progress, y = total_abundance, color = solar_progress)) +
-  geom_boxplot(outlier.shape = NA, color = "black") +
-  geom_jitter(aes(color = solar_progress, fill = solar_progress), width = 0.2, size = 3, shape = 21) +
-  scale_fill_manual(values = solar_colors) +
-  scale_color_manual(values = c("black", "black"))+
-  scale_y_continuous(
-    breaks = c(0, 6.25e5, 1.25e6),
-    labels = c("0", "625K", "1.25M"))+
-  # scale_y_continuous(
-  #   breaks = c(0, 2.5e5, 7.5e5, 1.25e6),
-  #   labels = c("0","250K", "750K", "1.25M"))+
-    #labels = label_number(scale_cut = cut_short_scale())) +
-  theme_classic()+
-  theme(axis.text.x = element_text(size = 12,colour = "black"),
-        axis.title.x = element_blank(),
-        axis.title.y = element_blank(),
-        axis.line.y = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        legend.position = "none") +#+
-  # stat_compare_means(method = "wilcox.test",
-  #                    #comparisons = list(c("FPV", "Open")),
-  #                    label = "p.format",
-  #                    size = 3,
-  #                    label.y.npc = 0.9,
-  #                    fontface = "italic")
-  #                    #label.y = c(8000, 100000, 500000, 400000, 400000), # get pvalue
- annotate("text", x = 2, y = 1.25e6, label = "p = 0.040", size = 2.822,  fontface = "italic") # add p value
-methanotroph_bottom_box
-
-
-fig2_meth_wc <- 
-  methanotroph_surface +
-  methanotroph_surface_box +
-  methanotroph_bottom  + 
-  methanotroph_bottom_box + 
-  plot_layout(
-    nrow = 2, ncol = 2,
-    widths = c(5, 2)) +
-  plot_annotation(tag_levels = "A", tag_suffix = ".",
-    theme = theme(
-      plot.tag = element_text(size = 8, colour = "black")))
-fig2_meth_wc
-
-
-#export the figure
-ggsave(fig2_meth_wc, width = 6.5, height = 8, units = "in", filename = "figures/bonus/fig2_seminar.png") # could only save at height 8.5, orignally h = 8
-```
 
 # Reproducibility
 
@@ -6662,7 +6273,7 @@ devtools::session_info()
 ##  nnet                       7.3-19     2023-05-03 [2] CRAN (R 4.3.3)
 ##  numDeriv                   2016.8-1.1 2019-06-06 [1] CRAN (R 4.3.2)
 ##  pacman                     0.5.1      2019-03-11 [1] CRAN (R 4.3.2)
-##  patchwork                * 1.3.0      2024-09-16 [1] CRAN (R 4.3.3)
+##  patchwork                * 1.3.2.9000 2026-01-23 [1] Github (thomasp85/patchwork@6b1d88c)
 ##  pbkrtest                   0.5.4      2025-04-28 [1] CRAN (R 4.3.3)
 ##  permute                  * 0.9-7      2022-01-27 [1] CRAN (R 4.3.2)
 ##  phyloseq                 * 1.46.0     2023-10-24 [1] Bioconductor
