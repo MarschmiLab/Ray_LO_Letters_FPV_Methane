@@ -1,7 +1,7 @@
 ---
 title: "ASV-level Temporal Changes of Methanogens and Methanotrophs in FPV and Control Ponds"
 author: "Mar Schmidt"
-date: "23 January, 2026"
+date: "26 January, 2026"
 output:
   html_document:
     code_folding: show
@@ -27,10 +27,10 @@ editor_options:
 
 ``` r
 # Efficiently load packages 
-pacman::p_load(ggplot2, phyloseq, ggpubr, tidyverse, patchwork, 
+pacman::p_load(ggplot2, phyloseq, ggpubr, tidyverse, patchwork,
                speedyseq, rstatix, dplyr, purrr, vegan, ANCOMBC, 
                microViz,cowplot, grid, scales, Biostrings, stringr, 
-               lmerTest, ggtext, install = FALSE)
+               DT, ggtext, install = FALSE)
 
 source("code/functions.R") # contains scale_reads
 source("code/colors_and_shapes.R")
@@ -439,6 +439,7 @@ clean_water_ch4 %>%
 
 ## Plot ASVs over time 
 
+### Water Methanotroph ASVs
 
 ``` r
 # plot differentially abundant ASVs overtime 
@@ -482,7 +483,7 @@ water_ch4_trophs_enriched_plot <-
   labs(
     x = "Day of Year (DOY)",
     y = "Water Column<br>Abundance (Cells mL<sup>-1</sup>)",
-    title = "Methanotrophs Enriched in FPVs"
+    title = "Methanotroph ASVs Enriched in FPVs"
   ) +
   theme_classic() +
   theme( #legend.position = c(0.75, 0.7),
@@ -537,11 +538,9 @@ water_ch4_trophs_enrichedControls_plot <-
   scale_y_continuous(labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) +
-  labs(
-    x = "Day of Year (DOY)",
-    y = "Water Column<br>Abundance (Cells mL<sup>-1</sup>)",
-    title = "Methanotrophs Enriched in Controls"
-  ) +
+  labs(x = "Day of Year (DOY)",
+       y = "Water Column<br>Abundance (Cells mL<sup>-1</sup>)",
+       title = "Methanotroph ASVs Enriched in Controls") +
   theme(legend.position = "bottom") +
   theme_classic() +
   theme( #legend.position = c(0.75, 0.7),
@@ -565,7 +564,6 @@ water_ch4_trophs_enrichedControls_plot <-
        axis.text.y = element_text(size = 8, colour = "black"),
        legend.title = element_text(size = 9, colour = "black"),
       legend.text = element_text(size = 8, colour = "black")); 
-
 
 # Show the plot 
 water_ch4_trophs_enrichedControls_plot
@@ -604,10 +602,31 @@ ggsave(figure_S5,
 ## Sediment 
 
 
+``` r
+# # run ancombc2 for all sediment methane cyclers
+# sed_ch4_asv_output <- ancombc2(data = scaled_sed_ch4_physeq_bc,
+#                                  tax_level = "ASV", # Test for each phylum
+#                                  fix_formula = "solar_progress", # Use Comp_Group_Hier to estimate diff. abundance
+#                                  p_adj_method = "fdr", # Adjust with Holm-Bonferroni correction; recommended by authors
+#                                  pseudo_sens = TRUE, # Run sensitivity test to make sure taxa isn't sensitive to psuedo-count choice
+#                                  prv_cut = 0.05, # Prevalence filter of 10%
+#                                  group = NULL, # Use Comp_Group_Hier as groups when doing pairwise comparisons
+#                                  struc_zero = FALSE, # Do not detect structural zeroes
+#                                  alpha = 0.05, # Significance threshold of 0.05
+#                                  n_cl = 5, # Use 5 threads
+#                                  s0_perc = 0.05,
+#                                  verbose = FALSE, # Don't print verbose output
+#                                  global = FALSE, # Run a global test (sorta like an ANOVA to first find if a given ASV is sig diff)
+#                                  pairwise = FALSE) # Run pairwise tests between groups (sorta like a post-hoc test like Tukey)
+```
 
 # Top Sediment ASVs
 
+To visualize the `FPV × DOY` (seasonal) signal in sediments, I first examined ASV-level time series for the most abundant sediment methanogens. Because the FPV effect appears to operate primarily through time-dependent shifts (rather than a constant treatment offset), I focus here on identifying ASVs that show consistent FPV–Open separation at specific seasonal windows.
+
 ## Methanogen ASVs Over Time 
+
+I begin by filtering to “abundant” methanogen ASVs (mean relative abundance > 0.05%) to avoid highlighting stochastic dynamics in rare taxa. This abundance screen defines the candidate set for subsequent, defensible identification of ASVs driving FPV-associated seasonal divergence.
 
 
 ``` r
@@ -615,7 +634,8 @@ ggsave(figure_S5,
 sed_methanogens_df <- 
   sed_methanogens_physeq %>%
   speedyseq::psmelt() %>% # melt into dataframe
-  dplyr::select(OTU, Sample, Abundance, DNA_ID, Date_Collected, Deployment_Depth_m, Pond, solar_progress, JDate, Kingdom:CH4_Cycler) %>%
+  dplyr::select(OTU, Sample, Abundance, DNA_ID, Date_Collected, Deployment_Depth_m, 
+                Pond, solar_progress, JDate, Kingdom:CH4_Cycler) %>%
   dplyr::select(-ASVseqs) %>%
   mutate(solar_progress = recode(solar_progress, "No FPV" = "Open"))
 
@@ -623,58 +643,199 @@ sed_methanogens_df <-
 sed_methanogen_asv_stats <- 
   sed_methanogens_df %>%
   group_by(ASV) %>%
-  summarize(mean = mean(Abundance), median = median(Abundance), min = min(Abundance), max = max(Abundance)) 
+  # Calculate the mean, median, min, and max abundances 
+  summarize(mean = mean(Abundance, na.rm = TRUE), median = median(Abundance, na.rm = TRUE), 
+            min = min(Abundance, na.rm = TRUE), max = max(Abundance, na.rm = TRUE)) 
 
-## Check by FPV and Open 
-sed_methanogen_asv_stats_FPV <- 
-  sed_methanogens_df %>%
-  group_by(ASV, solar_progress) %>%
-  summarize(mean = mean(Abundance), median = median(Abundance), min = min(Abundance), max = max(Abundance)) 
-
-# Just create a vector with the ASV names 
+# Create a vector with the ASV names 
 sed_methanogen_asvs <- 
   sed_methanogen_asv_stats %>%
-  dplyr::filter(mean > 1e-03) %>% # PULL ASVs with a mean of 0.0015 or 0.15% abundance or higher 
+  # PULL ASVs with a mean of 0.0005 or 0.05% abundance or higher 
+  dplyr::filter(mean > 5e-04) %>% 
+  dplyr::arrange(max) %>%
   pull(ASV) 
+```
 
-length(sed_methanogen_asvs) 
+Next, I quantify FPV–Open separation at each sampling date using the median relative abundance within treatment (robust to outliers). I then summarize each ASV by its maximum positive FPV–Open difference (“peak additive enrichment”), and apply a simple robustness screen to reduce the chance that a single pond or single anomalous sample drives the result.
+
+
+``` r
+# INITIALIZE: Set the criterion: 
+min_dates_support <- 2          # criterion 1: FPV>Open on >=2 dates
+min_fpv_ponds     <- 2          # criterion 2: >=2 FPV ponds support at peak date
+
+# STEP 1: FPV–Open separation by ASV × date (median across samples)
+asv_date_medians_df <-
+  sed_methanogens_df %>%
+  dplyr::filter(ASV %in% sed_methanogen_asvs) %>%                 # Abundance threshold 
+  dplyr::mutate(JDate_bin = as.numeric(JDate)) %>%                # use actual DOY values
+  dplyr::group_by(ASV, JDate_bin, solar_progress) %>%             # ASV × date × treatment
+  dplyr::summarize(med = median(Abundance, na.rm = TRUE), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = solar_progress,
+                     values_from = med,
+                     values_fill = NA_real_) %>%       # don't invent zeros
+  dplyr::mutate(delta = FPV - Open)                    # + = higher in FPV
+
+# Summarize per ASV: peak additive enrichment + how often FPV>Open
+asv_effect_time_df <-
+  asv_date_medians_df %>%
+  dplyr::filter(!is.na(FPV) & !is.na(Open)) %>%   # keep only dates where both treatments exist
+  dplyr::group_by(ASV) %>%
+  dplyr::mutate(n_dates_FPV_gt_Open = sum(delta > 0,  na.rm = TRUE),
+                max_pos_delta       = max(delta,  na.rm = TRUE)) %>%
+  dplyr::filter(delta == max_pos_delta) %>%        # peak row (no ties assumed)
+  dplyr::slice(1) %>%                              # safeguard
+  dplyr::ungroup() %>%
+  dplyr::transmute(ASV, max_pos_delta,
+                   peak_delta_date = JDate_bin,
+                   n_dates_FPV_gt_Open) %>%
+  dplyr::filter(max_pos_delta > 0)
+
+# Pond-level support at the peak delta date ----
+pond_medians_df <-
+  sed_methanogens_df %>%
+  dplyr::filter(ASV %in% sed_methanogen_asvs) %>%
+  dplyr::mutate(JDate_bin = as.numeric(JDate)) %>%
+  dplyr::group_by(ASV, JDate_bin, Pond, solar_progress) %>%
+  dplyr::summarize(pond_med = median(Abundance, na.rm = TRUE), .groups = "drop")
+
+# How many ponds support the peak in abundance? 
+pond_support_at_peak_df <-
+  pond_medians_df %>%
+  inner_join(asv_effect_time_df %>% select(ASV, peak_delta_date), by = "ASV") %>%
+  filter(JDate_bin == peak_delta_date) %>%
+  group_by(ASV) %>%
+  summarize(
+    open_median_at_peak = median(pond_med[solar_progress == "Open"], na.rm = TRUE),
+    fpv_median_at_peak  = median(pond_med[solar_progress == "FPV"],  na.rm = TRUE),
+    # existing support count (good)
+    n_FPV_ponds_support = sum(pond_med[solar_progress == "FPV"] > open_median_at_peak, 
+                              na.rm = TRUE),
+    # Additive effect size at peak, across ponds (robust, bounded)
+    delta_median_at_peak = fpv_median_at_peak - open_median_at_peak,
+    .groups = "drop")
+
+# Apply robustness screen: pass if ANY criterion is met
+asv_effect_time_robust_methanogen_df <-
+  asv_effect_time_df %>%
+  left_join(pond_support_at_peak_df, by = "ASV") %>%
+  mutate(
+    pass_dates  = n_dates_FPV_gt_Open >= min_dates_support,
+    pass_ponds  = n_FPV_ponds_support >= min_fpv_ponds,
+    pass_robust = pass_dates | pass_ponds,
+    tier = case_when(
+      pass_dates & pass_ponds ~ "Strong",
+      pass_dates | pass_ponds ~ "Moderate",
+      TRUE ~ "Weak/Contextual")) %>%
+  filter(pass_robust) %>%
+  arrange(desc(max_pos_delta))
+
+# show it 
+datatable(asv_effect_time_robust_methanogen_df,
+          options = list(pageLength = 10, autoWidth = TRUE, scrollX = TRUE),
+          rownames = FALSE)
+```
+
+```{=html}
+<div class="datatables html-widget html-fill-item" id="htmlwidget-8338bfcbaf18d921ac29" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-8338bfcbaf18d921ac29">{"x":{"filter":"none","vertical":false,"data":[["ASV_568","ASV_262","ASV_102","ASV_286","ASV_321","ASV_203","ASV_302","ASV_54","ASV_415","ASV_712","ASV_352","ASV_806","ASV_165","ASV_406","ASV_786","ASV_400","ASV_495","ASV_580","ASV_340","ASV_683","ASV_674","ASV_642","ASV_831","ASV_499","ASV_662","ASV_434","ASV_656","ASV_444","ASV_517"],[0.005725815699031163,0.005515798183228954,0.004050438039435019,0.004037589591291399,0.002698022410791751,0.002386986002827533,0.001772893958266892,0.00113902401108271,0.001101810629999988,0.000914366720337732,0.0008842538077371543,0.0008182611262996181,0.0007899294028170669,0.0007190998510160526,0.0006489551387553511,0.0006216532400210403,0.0005827673642660059,0.0005240299108241023,0.0005145069434129295,0.0005038219352054506,0.0004168456577829487,0.000408336926745982,0.0003327624554129041,0.0002657061491875936,0.0001924268213955387,0.0001909520230508664,0.0001662265095623314,0.0001301933236221647,9.709346791442045e-05],[193,193,234,193,193,193,193,193,234,193,234,193,193,255,193,172,193,255,193,172,193,172,234,172,255,172,234,193,193],[2,4,3,3,1,2,2,1,4,3,1,2,2,2,1,2,2,3,1,1,2,4,3,2,2,1,1,1,1],[0,0.001610631920948052,0.007022595318595357,0.0004807497852533149,0.0006717180891629029,0.0003351687814220733,0.0005740116266905481,0.008634052081392434,0.0003119151590767311,0,0.001668095772287855,0,0.0007451637274069167,0.001317943054419624,0.0002405465216972963,0.00093503830322395,0.0008370985728333728,0.0007726482518833301,0.00203293896753525,0,0.001243691857829521,0.0005522866682421564,0.0004328505516021233,0.0009806702128753978,0.0008376495698947013,0.0004794670337649483,0.0003806804663335713,0.001793781185136933,0.0004087106498864089],[0.005725815699031163,0.006931028238761478,0.01101357113319791,0.00476507670149737,0.003152717982877298,0.00269487485237122,0.00234690558495744,0.00962561805655605,0.001439142457532375,0.000914366720337732,0.002649180339910844,0.0007454773956771447,0.00165222113717662,0.001723312589755864,0.0004099151234567901,0.001774704014691415,0.001419865937099379,0.001075406604148432,0.002719479487360549,0.000503553467869159,0.00166053751561247,0.0009593095638772064,0.0008627685177251348,0.001150744882067858,0.001053135471517472,0.0008873520073457077,0.0004316092557843876,0.002093720409516994,0.0004572337323757028],[3,3,2,3,3,3,3,3,2,2,2,3,3,3,2,2,2,2,2,3,2,2,2,3,3,2,2,2,3],[0.005725815699031163,0.005320396317813426,0.003990975814602557,0.004284326916244055,0.002480999893714395,0.002359706070949147,0.001772893958266892,0.0009915659751636163,0.001127227298455644,0.000914366720337732,0.0009810845676229887,0.0007454773956771447,0.0009070574097697038,0.00040536953533624,0.0001693686017594938,0.0008396657114674654,0.0005827673642660059,0.000302758352265102,0.0006865405198252989,0.000503553467869159,0.0004168456577829487,0.00040702289563505,0.0004299179661230115,0.00017007466919246,0.0002154859016227711,0.0004078849735807594,5.092878945081635e-05,0.0002999392243800611,4.85230824892939e-05],[true,true,true,true,false,true,true,false,true,true,false,true,true,true,false,true,true,true,false,false,true,true,true,true,true,false,false,false,false],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],["Strong","Strong","Strong","Strong","Moderate","Strong","Strong","Moderate","Strong","Strong","Moderate","Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Moderate","Moderate","Strong","Strong","Strong","Strong","Strong","Moderate","Moderate","Moderate","Moderate"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>ASV<\/th>\n      <th>max_pos_delta<\/th>\n      <th>peak_delta_date<\/th>\n      <th>n_dates_FPV_gt_Open<\/th>\n      <th>open_median_at_peak<\/th>\n      <th>fpv_median_at_peak<\/th>\n      <th>n_FPV_ponds_support<\/th>\n      <th>delta_median_at_peak<\/th>\n      <th>pass_dates<\/th>\n      <th>pass_ponds<\/th>\n      <th>pass_robust<\/th>\n      <th>tier<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"autoWidth":true,"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7]},{"name":"ASV","targets":0},{"name":"max_pos_delta","targets":1},{"name":"peak_delta_date","targets":2},{"name":"n_dates_FPV_gt_Open","targets":3},{"name":"open_median_at_peak","targets":4},{"name":"fpv_median_at_peak","targets":5},{"name":"n_FPV_ponds_support","targets":6},{"name":"delta_median_at_peak","targets":7},{"name":"pass_dates","targets":8},{"name":"pass_ponds","targets":9},{"name":"pass_robust","targets":10},{"name":"tier","targets":11}],"order":[],"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+```
+
+The table above provides an audit trail for why each ASV was retained, including the date of peak FPV enrichment and whether that peak is supported across multiple sampling dates and/or across ponds.
+
+This data frame shows: 
+
+	•	`max_pos_delta`: strongest FPV enrichment (additive)
+	•	`peak_delta_date`: the DOY where that peak enrichment occurs
+	•	`n_dates_FPV_gt_Open`: whether it’s “one-date” vs “multi-date”
+	•	`n_FPV_ponds_support`: whether peak enrichment is supported across ponds
+	•	`pass_dates` / `pass_ponds`: transparent audit trail for defensibility
+
+
+``` r
+# Pull top time-divergent ASVs and remove the weak/noisy or moderate
+top_asvs_time_methogen <- 
+  asv_effect_time_robust_methanogen_df %>%
+  dplyr::filter(tier == "Strong") %>%
+  # Pull the ASVs by the ADDITIVE number: Total process contributions 
+  dplyr::arrange(desc(max_pos_delta)) %>%
+  pull(ASV)
+
+# How many ASVs???
+length(top_asvs_time_methogen)
 ```
 
 ```
-## [1] 21
+## [1] 19
 ```
 
 ``` r
 # Make a new df with only these ASVs 
-sed_methanogen_abund_asvs_df <- 
+sed_methanogen_additive_asvs_df <- 
   sed_methanogens_df %>%
-  dplyr::filter(ASV %in% sed_methanogen_asvs)
-
+  dplyr::filter(ASV %in% top_asvs_time_methogen) %>%
+  dplyr::left_join(., asv_effect_time_robust_methanogen_df, by = "ASV")
+  
 # TIME TO PLOT 
-top21_sed_methanogen_ASVS_plot <- 
-  sed_methanogen_abund_asvs_df %>%
-  mutate(ASV_Genus = paste0(ASV, "\n", Genus)) %>%
-  group_by(JDate, Pond, solar_progress, Abundance, ASV) %>%
-  ggplot(aes(x = JDate, y = Abundance, color = solar_progress)) + 
-  facet_wrap(~ASV_Genus, scales = "free_y") +
-  geom_line(aes(group = interaction(Pond, ASV)), 
-            alpha = 0.2) +
-  labs(x = "Day of Year", y = "Relative Abundance", 
-       title = "Top 21 Sediment Methanogen ASVs") + 
+sed_methanogen_ASV_plot <- 
+  sed_methanogen_additive_asvs_df %>%
+  mutate(ASV_Genus = paste0("Peak:",peak_delta_date, "; ", ASV, "<br>", Genus)) %>%
+  group_by(JDate, Pond, solar_progress, ASV) %>%
+  ggplot(aes(x = JDate, y = Abundance*100, color = solar_progress)) + 
+  facet_wrap(~ASV_Genus, scales = "free_y", 
+             #nrow = 5, ncol = 5
+             ) +
+  geom_line(aes(group = interaction(Pond, ASV)), alpha = 0.2) +
+  #geom_smooth(aes(group = solar_progress), se = FALSE) +
+  stat_summary(aes(group = solar_progress, fill = solar_progress),
+               fun.data = function(y) 
+                 {data.frame(y = median(y, na.rm = TRUE), 
+                             ymin = quantile(y, 0.25, na.rm = TRUE),
+                             ymax = quantile(y, 0.75, na.rm = TRUE))},
+               geom = "ribbon", alpha = 0.15, color = NA) +
+  stat_summary(aes(group = solar_progress), 
+               fun = median, geom = "line", linewidth = 1) +
+  labs(x = "Day of Year (DOY)", y = "Relative Abundance (%)", 
+       title = "Seasonal FPV Effects on Sediment Methanogen ASVs") + 
   geom_point(aes(shape = Pond), size = 2) +
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) + 
-  theme(legend.position = "bottom"); top21_sed_methanogen_ASVS_plot
+  theme(legend.position = "bottom") +
+  theme_classic() +
+  theme( #legend.position = c(0.75, 0.7),
+    legend.position = "bottom",
+        legend.spacing = unit(0, "cm"),
+        plot.title = element_text(hjust = 0.5),
+        panel.background =  element_rect(color = 'black', size = 1),
+        panel.grid = element_blank(),
+        legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
+        legend.key = element_rect(fill = "transparent", color = NA),
+        legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
+        legend.box.just = "center",
+        #strip.background = element_rect(colour = NA, fill = 'transparent'),
+        plot.background = element_rect(fill = "transparent", color="transparent"),
+        legend.key.size = unit(0.2, "cm"),
+        legend.spacing.x = unit(0.2, "cm"),
+       legend.margin = margin(t = -5, unit = "pt"),
+        strip.text = element_markdown(size = 8),
+       axis.title.y = element_markdown(size = 8, colour = "black"),
+       axis.title.x = element_markdown(size = 8, colour = "black"),
+       axis.text.y = element_text(size = 8, colour = "black"),
+       legend.title = element_text(size = 9, colour = "black"),
+      legend.text = element_text(size = 8, colour = "black")); sed_methanogen_ASV_plot
 ```
 
-![](ASV_Temporal_Changes_files/figure-html/methanogen-over-time-1.png)<!-- -->
+![](ASV_Temporal_Changes_files/figure-html/plot-sed-methanogens-1.png)<!-- -->
 
 ``` r
 # Save the plot   
-ggsave(top21_sed_methanogen_ASVS_plot, 
+ggsave(sed_methanogen_ASV_plot, 
        width = 12, height = 10, dpi = 300,
-       filename = "figures/bonus/sed_methogen_ASV_time.png")
+       filename = "figures/bonus/sed_methanogen_ASV_time.png")
 ```
+
+Finally, I plot only the Strong ASVs to highlight the clearest FPV-associated seasonal trajectories. Points show pond-level observations, thin lines connect repeated measures within ponds, and the thick lines/ribbons summarize treatment medians and interquartile ranges at each date. This visualization emphasizes that FPV effects in sediments are concentrated in seasonal windows and can be distributed across multiple abundant ASVs rather than manifesting as a uniform genus-level shift.
+
 
 
 ## Methanotroph ASVs Over Time 
@@ -682,93 +843,122 @@ ggsave(top21_sed_methanogen_ASVS_plot,
 
 ``` r
 # Create a dataframe 
-sed_methanotrophs_df <- 
+sed_methanotroph_df <- 
   sed_methanotrophs_physeq %>%
   speedyseq::psmelt() %>% # melt into dataframe
-  dplyr::select(OTU, Sample, Abundance, DNA_ID, Date_Collected, Deployment_Depth_m, Pond, solar_progress, JDate, Kingdom:CH4_Cycler) %>%
+  dplyr::select(OTU, Sample, Abundance, DNA_ID, Date_Collected, Deployment_Depth_m, 
+                Pond, solar_progress, JDate, Kingdom:CH4_Cycler) %>%
   dplyr::select(-ASVseqs) %>%
   mutate(solar_progress = recode(solar_progress, "No FPV" = "Open"))
 
-# Check 
-dim(sed_methanotrophs_df)
-```
-
-```
-## [1] 8668   18
-```
-
-``` r
 ## Summary Stats of the ASVs for some perusing 
 sed_methanotroph_asv_stats <- 
-  sed_methanotrophs_df %>%
+  sed_methanotroph_df %>%
   group_by(ASV) %>%
-  summarize(mean = mean(Abundance), median = median(Abundance), min = min(Abundance), max = max(Abundance)) 
+  # Calculate the mean, median, min, and max abundances 
+  summarize(mean = mean(Abundance, na.rm = TRUE), median = median(Abundance, na.rm = TRUE), 
+            min = min(Abundance, na.rm = TRUE), max = max(Abundance, na.rm = TRUE)) 
 
-# Check
-dim(sed_methanotrophs_df)
-```
-
-```
-## [1] 8668   18
-```
-
-``` r
-head(sed_methanotroph_asv_stats)
-```
-
-```
-## # A tibble: 6 × 5
-##   ASV             mean   median   min       max
-##   <chr>          <dbl>    <dbl> <dbl>     <dbl>
-## 1 ASV_10021 0.0000152  0            0 0.000335 
-## 2 ASV_10035 0.0000131  0            0 0.000288 
-## 3 ASV_1005  0.000505   0.000361     0 0.00215  
-## 4 ASV_1008  0.0000316  0            0 0.000335 
-## 5 ASV_10257 0.00000218 0            0 0.0000958
-## 6 ASV_10277 0.00000653 0            0 0.000144
-```
-
-``` r
-## Check by FPV and Open 
-sed_methanotroph_asv_stats_FPV <- 
-  sed_methanotrophs_df %>%
-  group_by(ASV, solar_progress) %>%
-  summarize(mean = mean(Abundance), median = median(Abundance), min = min(Abundance), max = max(Abundance)) 
-
-# Check
-dim(sed_methanotroph_asv_stats_FPV)
-```
-
-```
-## [1] 394   6
-```
-
-``` r
-head(sed_methanotroph_asv_stats_FPV)
-```
-
-```
-## # A tibble: 6 × 6
-## # Groups:   ASV [3]
-##   ASV       solar_progress       mean   median   min       max
-##   <chr>     <chr>               <dbl>    <dbl> <dbl>     <dbl>
-## 1 ASV_10021 FPV            0.0000160  0            0 0.000335 
-## 2 ASV_10021 Open           0.0000146  0            0 0.000335 
-## 3 ASV_10035 FPV            0.0000229  0            0 0.000288 
-## 4 ASV_10035 Open           0.00000419 0            0 0.0000963
-## 5 ASV_1005  FPV            0.000590   0.000717     0 0.00130  
-## 6 ASV_1005  Open           0.000427   0.000288     0 0.00215
-```
-
-``` r
-# Just create a vector with the ASV names 
-sed_methanotrophs_asvs <- 
+# Create a vector with the ASV names 
+sed_methanotroph_asvs <- 
   sed_methanotroph_asv_stats %>%
-  dplyr::filter(mean > 1e-03) %>% # PULL ASVs with a mean of 0.0015 or 0.15% abundance or higher 
+  # PULL ASVs with a mean of 0.0005 or 0.05% abundance or higher 
+  dplyr::filter(mean > 5e-04) %>% 
+  dplyr::arrange(max) %>%
   pull(ASV) 
+```
+
+
+``` r
+# STEP 1: FPV–Open separation by ASV × date (median across samples)
+asv_date_medians_methanotroph_df <-
+  sed_methanotroph_df %>%
+  dplyr::filter(ASV %in% sed_methanotroph_asvs) %>%                 # Abundance threshold 
+  dplyr::mutate(JDate_bin = as.numeric(JDate)) %>%                # use actual DOY values
+  dplyr::group_by(ASV, JDate_bin, solar_progress) %>%             # ASV × date × treatment
+  dplyr::summarize(med = median(Abundance, na.rm = TRUE), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = solar_progress,
+                     values_from = med,
+                     values_fill = NA_real_) %>%       # don't invent zeros
+  dplyr::mutate(delta = FPV - Open)                    # + = higher in FPV
+
+# Summarize per ASV: peak additive enrichment + how often FPV>Open
+asv_effect_time_methanotroph_df <-
+  asv_date_medians_methanotroph_df %>%
+  dplyr::filter(!is.na(FPV) & !is.na(Open)) %>%   # keep only dates where both treatments exist
+  dplyr::group_by(ASV) %>%
+  dplyr::mutate(n_dates_FPV_gt_Open = sum(delta > 0,  na.rm = TRUE),
+                max_pos_delta       = max(delta,  na.rm = TRUE)) %>%
+  dplyr::filter(delta == max_pos_delta) %>%        # peak row (no ties assumed)
+  dplyr::slice(1) %>%                              # safeguard
+  dplyr::ungroup() %>%
+  dplyr::transmute(ASV, max_pos_delta,
+                   peak_delta_date = JDate_bin,
+                   n_dates_FPV_gt_Open) %>%
+  dplyr::filter(max_pos_delta > 0)
+
+# Pond-level support at the peak delta date ----
+pond_medians_methanotroph_df <-
+  sed_methanotroph_df %>%
+  dplyr::filter(ASV %in% sed_methanotroph_asvs) %>%
+  dplyr::mutate(JDate_bin = as.numeric(JDate)) %>%
+  dplyr::group_by(ASV, JDate_bin, Pond, solar_progress) %>%
+  dplyr::summarize(pond_med = median(Abundance, na.rm = TRUE), .groups = "drop")
+
+# How many ponds support the peak in abundance? 
+pond_support_at_peak_methanotroph_df <-
+  pond_medians_methanotroph_df %>%
+  inner_join(asv_effect_time_methanotroph_df %>% select(ASV, peak_delta_date), by = "ASV") %>%
+  filter(JDate_bin == peak_delta_date) %>%
+  group_by(ASV) %>%
+  summarize(
+    open_median_at_peak = median(pond_med[solar_progress == "Open"], na.rm = TRUE),
+    fpv_median_at_peak  = median(pond_med[solar_progress == "FPV"],  na.rm = TRUE),
+    # existing support count (good)
+    n_FPV_ponds_support = sum(pond_med[solar_progress == "FPV"] > open_median_at_peak, 
+                              na.rm = TRUE),
+    # Additive effect size at peak, across ponds (robust, bounded)
+    delta_median_at_peak = fpv_median_at_peak - open_median_at_peak,
+    .groups = "drop")
+
+# Apply robustness screen: pass if ANY criterion is met
+asv_effect_time_robust_methanotroph_df <-
+  asv_effect_time_methanotroph_df %>%
+  dplyr::left_join(pond_support_at_peak_methanotroph_df, by = "ASV") %>%
+  dplyr::mutate(
+    pass_dates  = n_dates_FPV_gt_Open >= min_dates_support,
+    pass_ponds  = n_FPV_ponds_support >= min_fpv_ponds,
+    pass_robust = pass_dates | pass_ponds,
+    tier = case_when(
+      pass_dates & pass_ponds ~ "Strong",
+      pass_dates | pass_ponds ~ "Moderate",
+      TRUE ~ "Weak/Contextual")) %>%
+  dplyr::filter(pass_robust) %>%
+  dplyr::arrange(desc(max_pos_delta))
+
+# show it 
+datatable(asv_effect_time_robust_methanotroph_df,
+          options = list(pageLength = 10, autoWidth = TRUE, scrollX = TRUE),
+          rownames = FALSE)
+```
+
+```{=html}
+<div class="datatables html-widget html-fill-item" id="htmlwidget-57820dc24c55e2b6b1b8" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-57820dc24c55e2b6b1b8">{"x":{"filter":"none","vertical":false,"data":[["ASV_110","ASV_313","ASV_409","ASV_363","ASV_1005","ASV_919","ASV_453","ASV_177","ASV_677","ASV_559"],[0.003374608196225171,0.001928553443070333,0.001155795064232616,0.0008909542048271878,0.0008621225342379287,0.0007681064103575837,0.0005935271363700771,0.0002877859140323533,0.0002143353977014658,7.146453502788997e-05],[172,193,172,172,172,172,234,172,193,172],[3,2,4,1,2,4,3,2,3,1],[0.005667784969006832,0.001007145719269743,0.001028519392261971,0.0009588719976240559,0.0001441614608361365,0.0002636913510942614,0.001394650230227769,0.001342414589683094,0.0005769995992178042,0.0003121098626716604],[0.009269915603818275,0.002935699162340076,0.002304873504398891,0.00163341409816645,0.001150718447423748,0.001080207155603466,0.002085311375269465,0.00153437937871203,0.0009144797162538526,0.0003835743976995504],[3,3,3,3,2,3,2,2,3,2],[0.003602130634811443,0.001928553443070333,0.001276354112136919,0.0006745421005423945,0.001006556986587611,0.0008165158045092043,0.0006906611450416956,0.0001919647890289361,0.0003374801170360484,7.146453502788997e-05],[true,true,true,false,true,true,true,true,true,false],[true,true,true,true,true,true,true,true,true,true],[true,true,true,true,true,true,true,true,true,true],["Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Strong","Strong","Moderate"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>ASV<\/th>\n      <th>max_pos_delta<\/th>\n      <th>peak_delta_date<\/th>\n      <th>n_dates_FPV_gt_Open<\/th>\n      <th>open_median_at_peak<\/th>\n      <th>fpv_median_at_peak<\/th>\n      <th>n_FPV_ponds_support<\/th>\n      <th>delta_median_at_peak<\/th>\n      <th>pass_dates<\/th>\n      <th>pass_ponds<\/th>\n      <th>pass_robust<\/th>\n      <th>tier<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"autoWidth":true,"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7]},{"name":"ASV","targets":0},{"name":"max_pos_delta","targets":1},{"name":"peak_delta_date","targets":2},{"name":"n_dates_FPV_gt_Open","targets":3},{"name":"open_median_at_peak","targets":4},{"name":"fpv_median_at_peak","targets":5},{"name":"n_FPV_ponds_support","targets":6},{"name":"delta_median_at_peak","targets":7},{"name":"pass_dates","targets":8},{"name":"pass_ponds","targets":9},{"name":"pass_robust","targets":10},{"name":"tier","targets":11}],"order":[],"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+```
+
+
+``` r
+# Pull top time-divergent ASVs and remove the weak/noisy or moderate
+top_asvs_time_methanotroph <- 
+  asv_effect_time_robust_methanotroph_df %>%
+  dplyr::filter(tier == "Strong") %>%
+  # Pull the ASVs by the ADDITIVE number: Total process contributions 
+  dplyr::arrange(desc(max_pos_delta)) %>%
+  pull(ASV)
 
 # How many ASVs???
-length(sed_methanotrophs_asvs) 
+length(top_asvs_time_methanotroph)
 ```
 
 ```
@@ -776,45 +966,65 @@ length(sed_methanotrophs_asvs)
 ```
 
 ``` r
-# And who???? 
-sed_methanotrophs_asvs
-```
-
-```
-## [1] "ASV_110" "ASV_177" "ASV_184" "ASV_216" "ASV_313" "ASV_363" "ASV_409" "ASV_453"
-```
-
-``` r
 # Make a new df with only these ASVs 
-sed_methanotrophs_abund_asvs_df <- 
-  sed_methanotrophs_df %>%
-  dplyr::filter(ASV %in% sed_methanotrophs_asvs)
-
+sed_methanotroph_asvs_df <- 
+  sed_methanotroph_df %>%
+  dplyr::filter(ASV %in% top_asvs_time_methanotroph) %>%
+  dplyr::left_join(., asv_effect_time_robust_methanotroph_df, by = "ASV")
+  
 # TIME TO PLOT 
-top8_sed_methanotroph_ASVS_plot <- 
-  sed_methanotrophs_abund_asvs_df %>%
-  mutate(ASV_Genus = paste0(ASV, "\n", Genus)) %>%
-  group_by(JDate, Pond, solar_progress, Abundance, ASV) %>%
-  ggplot(aes(x = JDate, y = Abundance, color = solar_progress)) + 
+sed_methanotroph_ASV_plot <- 
+  sed_methanotroph_asvs_df %>%
+  mutate(ASV_Genus = paste0("Peak:", peak_delta_date, "; ", ASV, "<br>", Genus)) %>%
+  group_by(JDate, Pond, solar_progress, ASV) %>%
+  ggplot(aes(x = JDate, y = Abundance*100, color = solar_progress)) + 
   facet_wrap(~ASV_Genus, scales = "free_y", nrow = 2) +
-  geom_line(aes(group = interaction(Pond, ASV)), 
-            alpha = 0.2) +
-  labs(x = "Day of Year", y = "Relative Abundance", 
-       title = "Top 8 Sediment Methanotroph ASVs") + 
+  geom_line(aes(group = interaction(Pond, ASV)), alpha = 0.2) +
+  stat_summary(aes(group = solar_progress, fill = solar_progress),
+               fun.data = function(y) 
+                 {data.frame(y = median(y, na.rm = TRUE), 
+                             ymin = quantile(y, 0.25, na.rm = TRUE),
+                             ymax = quantile(y, 0.75, na.rm = TRUE))},
+               geom = "ribbon", alpha = 0.15, color = NA) +
+  stat_summary(aes(group = solar_progress), 
+               fun = median, geom = "line", linewidth = 1) +
+  labs(x = "Day of Year (DOY)", y = "Relative Abundance (%)", 
+       title = "Seasonal FPV Effects on Sediment Methanotroph ASVs") + 
   geom_point(aes(shape = Pond), size = 2) +
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) + 
-  theme(legend.position = "bottom"); top8_sed_methanotroph_ASVS_plot
+  theme(legend.position = "bottom") +
+  theme_classic() +
+  theme(legend.position = "bottom",
+        legend.spacing = unit(0, "cm"),
+        plot.title = element_text(hjust = 0.5),
+        panel.background =  element_rect(color = 'black', size = 1),
+        panel.grid = element_blank(),
+        legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
+        legend.key = element_rect(fill = "transparent", color = NA),
+        legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
+        legend.box.just = "center",
+        plot.background = element_rect(fill = "transparent", color="transparent"),
+        legend.key.size = unit(0.2, "cm"),
+        legend.spacing.x = unit(0.2, "cm"),
+       legend.margin = margin(t = -5, unit = "pt"),
+        strip.text = element_markdown(size = 8),
+       axis.title.y = element_markdown(size = 8, colour = "black"),
+       axis.title.x = element_markdown(size = 8, colour = "black"),
+       axis.text.y = element_text(size = 8, colour = "black"),
+       legend.title = element_text(size = 9, colour = "black"),
+      legend.text = element_text(size = 8, colour = "black")); sed_methanotroph_ASV_plot
 ```
 
-![](ASV_Temporal_Changes_files/figure-html/methotroph-over-time-1.png)<!-- -->
+![](ASV_Temporal_Changes_files/figure-html/plot-sed-methotroph-1.png)<!-- -->
 
 ``` r
 # Save the plot   
-ggsave(top8_sed_methanotroph_ASVS_plot, 
+ggsave(sed_methanotroph_ASV_plot, 
        width = 8, height = 5, dpi = 300,
-       filename = "figures/bonus/sed_methotroph_ASV_time.png")
+       filename = "figures/bonus/sed_methanotroph_ASV_time.png")
 ```
+
 
 # Reproducibility
 
@@ -834,7 +1044,7 @@ devtools::session_info()
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
 ##  tz       America/New_York
-##  date     2026-01-23
+##  date     2026-01-26
 ##  pandoc   3.1.1 @ /usr/lib/rstudio-server/bin/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -875,6 +1085,7 @@ devtools::session_info()
 ##  commonmark                 2.0.0      2025-07-07 [1] CRAN (R 4.3.3)
 ##  cowplot                  * 1.1.3      2024-01-22 [1] CRAN (R 4.3.2)
 ##  crayon                     1.5.3      2024-06-20 [1] CRAN (R 4.3.2)
+##  crosstalk                  1.2.1      2023-11-23 [1] CRAN (R 4.3.2)
 ##  CVXR                       1.0-15     2024-11-07 [1] CRAN (R 4.3.3)
 ##  data.table                 1.17.4     2025-05-26 [1] CRAN (R 4.3.3)
 ##  DBI                        1.2.3      2024-06-02 [2] CRAN (R 4.3.3)
@@ -889,6 +1100,7 @@ devtools::session_info()
 ##  doParallel                 1.0.17     2022-02-07 [1] CRAN (R 4.3.3)
 ##  doRNG                      1.8.6.2    2025-04-02 [1] CRAN (R 4.3.3)
 ##  dplyr                    * 1.1.4      2023-11-17 [1] CRAN (R 4.3.2)
+##  DT                       * 0.33       2024-04-04 [1] CRAN (R 4.3.2)
 ##  e1071                      1.7-16     2024-09-16 [1] CRAN (R 4.3.3)
 ##  ellipsis                   0.3.2      2021-04-29 [2] CRAN (R 4.3.3)
 ##  energy                     1.7-12     2024-08-24 [1] CRAN (R 4.3.3)
@@ -942,14 +1154,14 @@ devtools::session_info()
 ##  lazyeval                   0.2.2      2019-03-15 [2] CRAN (R 4.3.3)
 ##  lifecycle                  1.0.4      2023-11-07 [1] CRAN (R 4.3.2)
 ##  litedown                   0.9        2025-12-18 [1] CRAN (R 4.3.3)
-##  lme4                     * 1.1-37     2025-03-26 [1] CRAN (R 4.3.3)
-##  lmerTest                 * 3.1-3      2020-10-23 [1] CRAN (R 4.3.3)
+##  lme4                       1.1-37     2025-03-26 [1] CRAN (R 4.3.3)
+##  lmerTest                   3.1-3      2020-10-23 [1] CRAN (R 4.3.3)
 ##  lmom                       3.2        2024-09-30 [1] CRAN (R 4.3.3)
 ##  lubridate                * 1.9.4      2024-12-08 [1] CRAN (R 4.3.3)
 ##  magrittr                   2.0.3      2022-03-30 [2] CRAN (R 4.3.3)
 ##  markdown                   2.0        2025-03-23 [1] CRAN (R 4.3.3)
 ##  MASS                       7.3-60.0.1 2024-01-13 [2] CRAN (R 4.3.3)
-##  Matrix                   * 1.6-5      2024-01-11 [2] CRAN (R 4.3.3)
+##  Matrix                     1.6-5      2024-01-11 [2] CRAN (R 4.3.3)
 ##  MatrixGenerics             1.14.0     2023-10-24 [2] Bioconductor
 ##  matrixStats                1.5.0      2025-01-07 [1] CRAN (R 4.3.3)
 ##  memoise                    2.0.1      2021-11-26 [2] CRAN (R 4.3.3)
