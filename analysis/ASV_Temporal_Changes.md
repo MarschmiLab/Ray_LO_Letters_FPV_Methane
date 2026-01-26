@@ -140,7 +140,7 @@ length(sed_ch4_cyclers_vec)
 
 ## Create Methanogen and Methanotroph Phyloseq Objects
 
-### Water 
+For the Water samples:
 
 
 ``` r
@@ -183,7 +183,8 @@ water_methanotrophs_physeq
 ## taxa are columns
 ```
 
-### Sediment 
+And for the Sediments: 
+
 
 ``` r
 # Create a Sediment methanogen phyloseq object
@@ -225,7 +226,10 @@ sed_methanotrophs_physeq
 ## taxa are rows
 ```
 
-# ANCOM-BC2: Differential Abundance
+
+## Prepare Raw phyloseqs for ANCOM-BC2 Input 
+
+The ANCOMB-BC2 input requires raw counts. So, let's bring those into the workflow. 
 
 
 ``` r
@@ -281,7 +285,10 @@ raw_sediment24_physeq
 ## taxa are rows
 ```
 
-## Water 
+# Water 
+
+# Differential Abundance with ANCOM-BC2
+
 
 ``` r
 # Remove taxa with ZERO variances 
@@ -354,11 +361,10 @@ load("data/03_diff_abund/water_ch4_diffAbundASV_FPV_output.RData")
 #     file = "data/03_diff_abund/water_ch4_diffAbundASV_FPV_output.RData")
 
 # Load in the data 
-load("data/03_diff_abund/water_ch4_diffAbundASV_FPV_output.RData")
+#load("data/03_diff_abund/water_ch4_diffAbundASV_FPV_output.RData")
 ```
 
-
-## Clean up DiffAbundance data 
+### Clean up DiffAbundance data 
 
 
 ``` r
@@ -419,27 +425,20 @@ clean_water_ch4 <-
 
 # Show the taxonomy
 clean_water_ch4 %>%
-  dplyr::select(ASV, Comparison, lfc, Class:Species)
+  dplyr::select(ASV, Comparison, lfc, Class:Species) %>%
+  DT::datatable()
 ```
 
-```
-## # A tibble: 8 × 8
-##   ASV      Comparison     lfc Class               Order           Family            Genus                  Species
-##   <chr>    <chr>        <dbl> <chr>               <chr>           <chr>             <chr>                  <chr>  
-## 1 ASV_13   No FPV : FPV  1.39 Gammaproteobacteria Methylococcales Methylomonadaceae <NA>                   <NA>   
-## 2 ASV_141  No FPV : FPV  1.38 Gammaproteobacteria Methylococcales Methylomonadaceae Methylobacter_C_601751 <NA>   
-## 3 ASV_44   No FPV : FPV  1.15 Gammaproteobacteria Methylococcales Methylomonadaceae Methylomonas           albis  
-## 4 ASV_828  No FPV : FPV -1.09 Gammaproteobacteria Methylococcales Methylococcaceae  <NA>                   <NA>   
-## 5 ASV_1367 No FPV : FPV -1.11 Gammaproteobacteria Methylococcales Methylococcaceae  Methyloterricola       oryzae 
-## 6 ASV_1479 No FPV : FPV -1.18 Gammaproteobacteria Methylococcales Methylococcaceae  Methyloterricola       oryzae 
-## 7 ASV_32   No FPV : FPV  2.48 Gammaproteobacteria Methylococcales Methylococcaceae  Methyloparacoccus      <NA>   
-## 8 ASV_976  No FPV : FPV -1.15 Gammaproteobacteria Methylococcales Methylococcaceae  Methyloterricola       oryzae
+```{=html}
+<div class="datatables html-widget html-fill-item" id="htmlwidget-157892636f713323205d" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-157892636f713323205d">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8"],["ASV_13","ASV_141","ASV_44","ASV_828","ASV_1367","ASV_1479","ASV_32","ASV_976"],["No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV"],[1.394332776061662,1.37656912370484,1.148250684813773,-1.091773594371864,-1.107302284674842,-1.176314631878122,2.477128647783737,-1.146256601411654],["Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria"],["Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales"],["Methylomonadaceae","Methylomonadaceae","Methylomonadaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae"],[null,"Methylobacter_C_601751","Methylomonas",null,"Methyloterricola","Methyloterricola","Methyloparacoccus","Methyloterricola"],[null,null,"albis",null,"oryzae","oryzae",null,"oryzae"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>ASV<\/th>\n      <th>Comparison<\/th>\n      <th>lfc<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":3},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"ASV","targets":1},{"name":"Comparison","targets":2},{"name":"lfc","targets":3},{"name":"Class","targets":4},{"name":"Order","targets":5},{"name":"Family","targets":6},{"name":"Genus","targets":7},{"name":"Species","targets":8}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 ```
 
 
-## Plot ASVs over time 
+### Plot Diff Abund ASVs over time 
 
-### Water Methanotroph ASVs
+**Water Methanotroph ASVs** 
+
 
 ``` r
 # plot differentially abundant ASVs overtime 
@@ -474,7 +473,12 @@ water_ch4_trophs_enriched_plot <-
   ggplot(aes(x = as.factor(JDate), y = total_abundance, color = solar_progress, shape = Pond)) +
   geom_line(aes(group = interaction(Pond, Depth_Class)), 
             alpha = 0.2) +
-  geom_smooth(aes(group = solar_progress), se = FALSE) +
+  stat_summary(aes(group = solar_progress, fill = solar_progress),
+               fun.data = function(y) 
+                 {data.frame(y = median(y, na.rm = TRUE), 
+                             ymin = quantile(y, 0.25, na.rm = TRUE),
+                             ymax = quantile(y, 0.75, na.rm = TRUE))},
+               geom = "ribbon", alpha = 0.15, color = NA) +
   geom_point(aes(shape = Pond), size = 2) +
   ggh4x::facet_grid2(Depth_Class~ASV_Genus) +
   scale_y_continuous(labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
@@ -482,8 +486,8 @@ water_ch4_trophs_enriched_plot <-
   scale_shape_manual(values = pond_shapes) +
   labs(
     x = "Day of Year (DOY)",
-    y = "Water Column<br>Abundance (Cells mL<sup>-1</sup>)",
-    title = "Methanotroph ASVs Enriched in FPVs"
+    y = "Absolute Abundance (Cells mL<sup>-1</sup>)",
+    title = "Water Methanotroph ASVs Enriched in FPVs"
   ) +
   theme_classic() +
   theme( #legend.position = c(0.75, 0.7),
@@ -532,15 +536,20 @@ water_ch4_trophs_enrichedControls_plot <-
              color = solar_progress, shape = Pond)) +
   geom_line(aes(group = interaction(Pond, Depth_Class)), 
             alpha = 0.2) +
-  geom_smooth(aes(group = solar_progress), se = FALSE) +
+  stat_summary(aes(group = solar_progress, fill = solar_progress),
+               fun.data = function(y) 
+                 {data.frame(y = median(y, na.rm = TRUE), 
+                             ymin = quantile(y, 0.25, na.rm = TRUE),
+                             ymax = quantile(y, 0.75, na.rm = TRUE))},
+               geom = "ribbon", alpha = 0.15, color = NA) +
   geom_point(aes(shape = Pond), size = 2) +
   ggh4x::facet_grid2(Depth_Class~ASV_Genus) +
   scale_y_continuous(labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) +
   labs(x = "Day of Year (DOY)",
-       y = "Water Column<br>Abundance (Cells mL<sup>-1</sup>)",
-       title = "Methanotroph ASVs Enriched in Controls") +
+       y = "Absolute Abundance (Cells mL<sup>-1</sup>)",
+       title = "Water Methanotroph ASVs Enriched in Controls") +
   theme(legend.position = "bottom") +
   theme_classic() +
   theme( #legend.position = c(0.75, 0.7),
@@ -599,28 +608,304 @@ ggsave(figure_S5,
 ```
 
 
-## Sediment 
+
+# Sediment ASVs
+
+## Differential Abundance with ANCOM-BC2 
 
 
 ``` r
-# # run ancombc2 for all sediment methane cyclers
-# sed_ch4_asv_output <- ancombc2(data = scaled_sed_ch4_physeq_bc,
-#                                  tax_level = "ASV", # Test for each phylum
-#                                  fix_formula = "solar_progress", # Use Comp_Group_Hier to estimate diff. abundance
-#                                  p_adj_method = "fdr", # Adjust with Holm-Bonferroni correction; recommended by authors
-#                                  pseudo_sens = TRUE, # Run sensitivity test to make sure taxa isn't sensitive to psuedo-count choice
-#                                  prv_cut = 0.05, # Prevalence filter of 10%
-#                                  group = NULL, # Use Comp_Group_Hier as groups when doing pairwise comparisons
-#                                  struc_zero = FALSE, # Do not detect structural zeroes
-#                                  alpha = 0.05, # Significance threshold of 0.05
-#                                  n_cl = 5, # Use 5 threads
-#                                  s0_perc = 0.05,
-#                                  verbose = FALSE, # Don't print verbose output
-#                                  global = FALSE, # Run a global test (sorta like an ANOVA to first find if a given ASV is sig diff)
-#                                  pairwise = FALSE) # Run pairwise tests between groups (sorta like a post-hoc test like Tukey)
+# Confirm the levels for solar_progress
+raw_sediment24_physeq@sam_data$solar_progress <- 
+  factor(raw_sediment24_physeq@sam_data$solar_progress, levels = c("No FPV", "FPV"))
+
+# run ancombc2 for all sediment methane cyclers
+#sed_ch4_diffAbundASV_FPV_output <- 
+#  ancombc2(data = raw_sediment24_physeq,
+#           tax_level = "ASV",              # Test at ASV level
+#           fix_formula = "solar_progress", # Tests time-averaged FPV effect only (no FPV × DOY)
+#           p_adj_method = "fdr",           # FDR correction
+#           pseudo_sens = TRUE,             # Check sensitivity to pseudo-count choice
+#           prv_cut = 0.05,                 # Prevalence filter (≥5% of samples)
+#           group = NULL,                   # No pairwise group comparisons
+#           struc_zero = FALSE,             # Do not infer structural zeros
+#           alpha = 0.05,                   # Significance threshold
+#           n_cl = 10,                      # Parallel threads
+#           verbose = FALSE,                # Suppress console output
+#           s0_perc = 0.05,                 # Variance shrinkage parameter
+#           global = FALSE,                 # No global (omnibus) test
+#           pairwise = FALSE)               # No post-hoc pairwise tests
+
+# Save the data 
+#save(sed_ch4_diffAbundASV_FPV_output, 
+#     file = "data/03_diff_abund/sed_ch4_diffAbundASV_FPV_output.RData")
+
+# Load in the data 
+load("data/03_diff_abund/sed_ch4_diffAbundASV_FPV_output.RData")
 ```
 
-# Top Sediment ASVs
+## Clean up DiffAbundance data 
+
+
+``` r
+# plot ASV differential abundance
+sed_ch4_diffAbundASV_FPV_df <- 
+  sed_ch4_diffAbundASV_FPV_output$res %>%
+  select(taxon, starts_with("lfc"), starts_with("diff"), starts_with("passed_ss")) %>%
+  pivot_longer(cols = !taxon, names_to = "metric", values_to = "value") %>%
+  separate_wider_delim(cols = metric, delim = "_", names = c("variable", "Comparison"), too_many = "merge") %>%
+  mutate(Comparison = str_remove(Comparison, "\\(Intercept\\)")) %>% 
+  mutate(Comparison = str_remove(Comparison, "ss_")) %>%
+  pivot_wider(id_cols = c("taxon","Comparison"), names_from = variable, values_from = value) %>%
+  mutate(Comparison = str_remove(Comparison, "solar_progress"),
+         Comparison = str_replace(Comparison, "_solar_progrss", ";")) %>%
+  separate_wider_delim(Comparison, delim = ";", names = c("Ref1", "Ref2"), too_few = "align_start") %>%
+  dplyr::filter(!is.na(Ref1) & Ref1 != "") %>%
+  mutate(
+    Ref2 = ifelse(is.na(Ref2), "No FPV", Ref2), # relevel with basegroup which is no solar 
+    Comparison = paste0(Ref2, " : ", Ref1)) %>% 
+  dplyr::filter(diff == 1, passed == 1, abs(lfc) > 1) %>% # 1.2 is good cut off to see effect, below we get ASVs with super low cell counts 
+  select(ASV = taxon, Comparison, lfc, passed)
+
+## Show the Q-Values for the results section 
+sed_ch4_diffAbundASV_FPV_output$res %>%
+  dplyr::transmute(ASV   = taxon,
+                   lfc   = lfc_solar_progressFPV,
+                   q_value     = q_solar_progressFPV,
+                   diff  = diff_solar_progressFPV,
+                   passed = passed_ss_solar_progressFPV) %>%
+  dplyr::filter(passed, q_value < 0.05) %>%         # core inferential filter
+  dplyr::mutate(Comparison = "FPV vs Open",
+                x_fold_change = exp(lfc),
+                direction = ifelse(lfc > 0, "higher in FPV", "lower in FPV"),
+                q_nonSci = formatC(q_value, format = "f", digits = 7)) %>%
+  dplyr::select(ASV, Comparison, lfc, x_fold_change, direction, q_value, q_nonSci) %>%
+  dplyr::arrange(-lfc)
+```
+
+```
+##         ASV  Comparison        lfc x_fold_change     direction      q_value  q_nonSci
+## 1  ASV_4603 FPV vs Open  2.2254479     9.2576286 higher in FPV 0.0009076527 0.0009077
+## 2  ASV_4057 FPV vs Open  0.5494003     1.7322139 higher in FPV 0.0336812276 0.0336812
+## 3    ASV_14 FPV vs Open -0.4390494     0.6446489  lower in FPV 0.0264832949 0.0264833
+## 4  ASV_2288 FPV vs Open -0.4704658     0.6247112  lower in FPV 0.0493035089 0.0493035
+## 5  ASV_2045 FPV vs Open -0.4958904     0.6090284  lower in FPV 0.0342891502 0.0342892
+## 6  ASV_2740 FPV vs Open -0.5381620     0.5838203  lower in FPV 0.0429676597 0.0429677
+## 7   ASV_785 FPV vs Open -0.5541495     0.5745607  lower in FPV 0.0245715485 0.0245715
+## 8  ASV_2676 FPV vs Open -0.5769176     0.5616268  lower in FPV 0.0284779299 0.0284779
+## 9  ASV_2213 FPV vs Open -0.5812552     0.5591960  lower in FPV 0.0245715485 0.0245715
+## 10  ASV_184 FPV vs Open -0.6081393     0.5443628  lower in FPV 0.0086861626 0.0086862
+## 11 ASV_1069 FPV vs Open -0.6415747     0.5264628  lower in FPV 0.0174790060 0.0174790
+## 12 ASV_1433 FPV vs Open -0.6873240     0.5029201  lower in FPV 0.0174790060 0.0174790
+## 13  ASV_340 FPV vs Open -0.6888615     0.5021474  lower in FPV 0.0265732171 0.0265732
+## 14  ASV_231 FPV vs Open -0.8459623     0.4291442  lower in FPV 0.0028206172 0.0028206
+## 15  ASV_510 FPV vs Open -0.9828232     0.3742530  lower in FPV 0.0009076527 0.0009077
+## 16  ASV_645 FPV vs Open -0.9873642     0.3725574  lower in FPV 0.0002073924 0.0002074
+## 17  ASV_431 FPV vs Open -1.0335389     0.3557458  lower in FPV 0.0010185011 0.0010185
+## 18 ASV_2746 FPV vs Open -1.1113941     0.3290998  lower in FPV 0.0006607709 0.0006608
+## 19 ASV_4747 FPV vs Open -1.3000752     0.2725113  lower in FPV 0.0169279304 0.0169279
+## 20 ASV_4541 FPV vs Open -1.5692291     0.2082056  lower in FPV 0.0056485919 0.0056486
+```
+
+``` r
+# join by tax table
+clean_sed_ch4 <- 
+  sed_ch4_diffAbundASV_FPV_df %>% 
+  left_join(., as.data.frame(sed_ch4_cyclers_physeq@tax_table), 
+            by = "ASV"); 
+
+# Show the taxonomy
+clean_sed_ch4 %>%
+  dplyr::select(ASV, Comparison, lfc, CH4_Cycler, Class:Species) %>%
+  DT::datatable()
+```
+
+```{=html}
+<div class="datatables html-widget html-fill-item" id="htmlwidget-194020739964796f9686" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-194020739964796f9686">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5"],["ASV_4747","ASV_431","ASV_4603","ASV_2746","ASV_4541"],["No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV"],[-1.300075171599253,-1.033538941190584,2.225447922544627,-1.11139412587768,-1.569229101225373],["Methanotroph","Methanogen","Methanotroph","Methanogen","Methanotroph"],["Methylomirabilia","Methanosarcinia","Methanosarcinia","Methanomicrobia","Gammaproteobacteria"],["Methylomirabilales","Methanotrichales","Methanosarcinales_A_2632","Methanomicrobiales","Methylococcales"],["2-02-FULL-66-22","Methanotrichaceae","Methanoperedenaceae","Methanospirillaceae_2121","Methylomonadaceae"],["2-02-FULL-66-22","Methanothrix_B","Methanoperedens_A","UBA288",null],["sp001771285","sp002256595","sp002487355","sp004332335",null]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>ASV<\/th>\n      <th>Comparison<\/th>\n      <th>lfc<\/th>\n      <th>CH4_Cycler<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":3},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"ASV","targets":1},{"name":"Comparison","targets":2},{"name":"lfc","targets":3},{"name":"CH4_Cycler","targets":4},{"name":"Class","targets":5},{"name":"Order","targets":6},{"name":"Family","targets":7},{"name":"Genus","targets":8},{"name":"Species","targets":9}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+```
+
+**Important Note:** Most of the sediment ASVs are more abundant in the Controls, with the exception of ASV_4603, a *Methanoperedens_A*.
+
+
+### Plot Diff Abund ASVs over time 
+
+**Sediment Methanotroph ASVs** 
+
+
+``` r
+# plot differentially abundant ASVs overtime 
+#1. tax glom at ASV level
+sed_ch4_asv_df_glom <- 
+  sed_ch4_cyclers_physeq %>% 
+  tax_glom(taxrank = "ASV") %>% 
+  psmelt() %>% 
+  mutate(solar_progress = recode(solar_progress, "Solar" = "FPV", "No FPV" = "Open"))
+
+# Fix levels
+sed_ch4_asv_df_glom$solar_progress <- factor(sed_ch4_asv_df_glom$solar_progress,
+                                               levels = c("FPV", "Open"))
+
+# Rename by fixing the CH4 cycler column
+sed_ch4_asv_df_glom <- 
+  sed_ch4_asv_df_glom %>%
+  dplyr::mutate(CH4_Cycler = NULL) %>%
+  left_join(., dplyr::select(as.data.frame(sed_ch4_cyclers_physeq@tax_table), 
+                             ASV, CH4_Cycler), by ="ASV")
+
+# create list of differentially abundanct asvs, updated results
+sed_ch4_methanotrophs_enrichedFPV <- 
+  clean_sed_ch4 %>%
+  dplyr::filter(lfc >0)%>%
+  pull(ASV)
+
+# now plot overtime: ENRICHED in FPVs
+sed_ch4_trophs_enriched_plot <- 
+  sed_ch4_asv_df_glom %>% 
+  dplyr::filter(ASV %in% sed_ch4_methanotrophs_enrichedFPV) %>% 
+  dplyr::mutate(ASV_Genus = paste0(CH4_Cycler, "<br>", ASV, "<br>", Genus)) %>%
+  ggplot(aes(x = JDate, y = Abundance*100, color = solar_progress, shape = Pond)) +
+  geom_line(aes(group = interaction(Pond)), alpha = 0.2) +
+  stat_summary(aes(group = solar_progress, fill = solar_progress),
+               fun.data = function(y) 
+                 {data.frame(y = median(y, na.rm = TRUE), 
+                             ymin = quantile(y, 0.25, na.rm = TRUE),
+                             ymax = quantile(y, 0.75, na.rm = TRUE))},
+               geom = "ribbon", alpha = 0.15, color = NA) +
+  geom_point(aes(shape = Pond), size = 2) +
+  facet_grid(~ASV_Genus) +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  labs(
+    x = "Day of Year (DOY)",
+    y = "Relative Abundance (%)",
+    title = "Sediment ASVs Enriched in FPVs") +
+  theme_classic() +
+  theme( #legend.position = c(0.75, 0.7),
+    legend.position = "bottom",
+        legend.spacing = unit(0, "cm"),
+        plot.title = element_text(hjust = 0.5),
+        panel.background =  element_rect(color = 'black', size = 1),
+        panel.grid = element_blank(),
+        legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
+        legend.key = element_rect(fill = "transparent", color = NA),
+        legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
+        legend.box.just = "center",
+        #strip.background = element_rect(colour = NA, fill = 'transparent'),
+        plot.background = element_rect(fill = "transparent", color="transparent"),
+        legend.key.size = unit(0.2, "cm"),
+        legend.spacing.x = unit(0.2, "cm"),
+       legend.margin = margin(t = -5, unit = "pt"),
+        strip.text = element_markdown(size = 8),
+       axis.title.y = element_markdown(size = 8, colour = "black"),
+       axis.title.x = element_markdown(size = 8, colour = "black"),
+       axis.text.y = element_text(size = 8, colour = "black"),
+       legend.title = element_text(size = 9, colour = "black"),
+      legend.text = element_text(size = 8, colour = "black")); 
+
+# Show the plot 
+sed_ch4_trophs_enriched_plot
+```
+
+![](ASV_Temporal_Changes_files/figure-html/sediment-ASVs-over-time-1.png)<!-- -->
+
+``` r
+## CONTROLS 
+# And for controls
+sed_ch4_methanotrophs_enrichedControls <- 
+  clean_sed_ch4 %>%
+  dplyr::filter(lfc <0)%>%
+  pull(ASV)
+
+# now plot overtime: ENRICHED in CONTROLS 
+sed_ch4_trophs_enrichedControls_plot <- 
+  sed_ch4_asv_df_glom %>% 
+  dplyr::filter(ASV %in% sed_ch4_methanotrophs_enrichedControls) %>% 
+  dplyr::mutate(ASV_Genus = paste0(CH4_Cycler, "<br>", ASV, "<br>", Genus)) %>%
+  ggplot(aes(x = JDate, y = Abundance*100, color = solar_progress, shape = Pond)) +
+  geom_line(aes(group = interaction(Pond)), alpha = 0.2) +
+  stat_summary(aes(group = solar_progress, fill = solar_progress),
+               fun.data = function(y) 
+                 {data.frame(y = median(y, na.rm = TRUE), 
+                             ymin = quantile(y, 0.25, na.rm = TRUE),
+                             ymax = quantile(y, 0.75, na.rm = TRUE))},
+               geom = "ribbon", alpha = 0.15, color = NA) +
+  geom_point(aes(shape = Pond), size = 2) +
+  facet_wrap(~ASV_Genus, nrow = 2, scales = "free_y") +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  labs(
+    x = "Day of Year (DOY)",
+    y = "Relative Abundance (%)",
+    title = "Sediment ASVs Enriched in FPVs") +
+  theme_classic() +
+  theme( #legend.position = c(0.75, 0.7),
+    legend.position = "bottom",
+        legend.spacing = unit(0, "cm"),
+        plot.title = element_text(hjust = 0.5),
+        panel.background =  element_rect(color = 'black', size = 1),
+        panel.grid = element_blank(),
+        legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
+        legend.key = element_rect(fill = "transparent", color = NA),
+        legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
+        legend.box.just = "center",
+        #strip.background = element_rect(colour = NA, fill = 'transparent'),
+        plot.background = element_rect(fill = "transparent", color="transparent"),
+        legend.key.size = unit(0.2, "cm"),
+        legend.spacing.x = unit(0.2, "cm"),
+       legend.margin = margin(t = -5, unit = "pt"),
+        strip.text = element_markdown(size = 8),
+       axis.title.y = element_markdown(size = 8, colour = "black"),
+       axis.title.x = element_markdown(size = 8, colour = "black"),
+       axis.text.y = element_text(size = 8, colour = "black"),
+       legend.title = element_text(size = 9, colour = "black"),
+      legend.text = element_text(size = 8, colour = "black")); 
+
+# Show the plot 
+sed_ch4_trophs_enrichedControls_plot
+```
+
+![](ASV_Temporal_Changes_files/figure-html/sediment-ASVs-over-time-2.png)<!-- -->
+
+
+
+``` r
+#devtools::install_github("thomasp85/patchwork")
+#library(patchwork)
+
+# Remove legends
+sed_enrichFPV_plot     <- sed_ch4_trophs_enriched_plot + theme(legend.position = "none")
+sed_enrichControl_plot <- sed_ch4_trophs_enrichedControls_plot + theme(legend.position = "bottom")
+
+# Make A half-width by pairing with a spacer
+plot_A_halfwidth <-
+  sed_enrichFPV_plot + plot_spacer() +
+  plot_layout(widths = c(0.47, 0.53))   # 50% plot, 50% empty space
+
+# Stack A over B
+sed_diffAbund_ASVs_plot <-
+  (plot_A_halfwidth / sed_enrichControl_plot) +
+  plot_annotation(tag_levels = "A") +
+  plot_layout(heights = c(0.4, 1))
+
+# Show
+sed_diffAbund_ASVs_plot
+```
+
+![](ASV_Temporal_Changes_files/figure-html/sed-diffAbund-ASVs-1.png)<!-- -->
+
+``` r
+# Save the plot   
+ggsave(sed_diffAbund_ASVs_plot, 
+       width = 4.5, height = 7, dpi = 300,
+       filename = "figures/bonus/sed_diffAbund_ASVs.png")
+```
+
+
+
+# Manual Calculations of ASVs Over Time 
+
+**Because the FPV x DOY signal, there are changes that are not captured in ANCOM-BC2. Therefore, those results are too conservative. Let's take a more manual approach to pull out these differences.**
 
 To visualize the `FPV × DOY` (seasonal) signal in sediments, I first examined ASV-level time series for the most abundant sediment methanogens. Because the FPV effect appears to operate primarily through time-dependent shifts (rather than a constant treatment offset), I focus here on identifying ASVs that show consistent FPV–Open separation at specific seasonal windows.
 
@@ -737,8 +1022,8 @@ datatable(asv_effect_time_robust_methanogen_df,
 ```
 
 ```{=html}
-<div class="datatables html-widget html-fill-item" id="htmlwidget-8338bfcbaf18d921ac29" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-8338bfcbaf18d921ac29">{"x":{"filter":"none","vertical":false,"data":[["ASV_568","ASV_262","ASV_102","ASV_286","ASV_321","ASV_203","ASV_302","ASV_54","ASV_415","ASV_712","ASV_352","ASV_806","ASV_165","ASV_406","ASV_786","ASV_400","ASV_495","ASV_580","ASV_340","ASV_683","ASV_674","ASV_642","ASV_831","ASV_499","ASV_662","ASV_434","ASV_656","ASV_444","ASV_517"],[0.005725815699031163,0.005515798183228954,0.004050438039435019,0.004037589591291399,0.002698022410791751,0.002386986002827533,0.001772893958266892,0.00113902401108271,0.001101810629999988,0.000914366720337732,0.0008842538077371543,0.0008182611262996181,0.0007899294028170669,0.0007190998510160526,0.0006489551387553511,0.0006216532400210403,0.0005827673642660059,0.0005240299108241023,0.0005145069434129295,0.0005038219352054506,0.0004168456577829487,0.000408336926745982,0.0003327624554129041,0.0002657061491875936,0.0001924268213955387,0.0001909520230508664,0.0001662265095623314,0.0001301933236221647,9.709346791442045e-05],[193,193,234,193,193,193,193,193,234,193,234,193,193,255,193,172,193,255,193,172,193,172,234,172,255,172,234,193,193],[2,4,3,3,1,2,2,1,4,3,1,2,2,2,1,2,2,3,1,1,2,4,3,2,2,1,1,1,1],[0,0.001610631920948052,0.007022595318595357,0.0004807497852533149,0.0006717180891629029,0.0003351687814220733,0.0005740116266905481,0.008634052081392434,0.0003119151590767311,0,0.001668095772287855,0,0.0007451637274069167,0.001317943054419624,0.0002405465216972963,0.00093503830322395,0.0008370985728333728,0.0007726482518833301,0.00203293896753525,0,0.001243691857829521,0.0005522866682421564,0.0004328505516021233,0.0009806702128753978,0.0008376495698947013,0.0004794670337649483,0.0003806804663335713,0.001793781185136933,0.0004087106498864089],[0.005725815699031163,0.006931028238761478,0.01101357113319791,0.00476507670149737,0.003152717982877298,0.00269487485237122,0.00234690558495744,0.00962561805655605,0.001439142457532375,0.000914366720337732,0.002649180339910844,0.0007454773956771447,0.00165222113717662,0.001723312589755864,0.0004099151234567901,0.001774704014691415,0.001419865937099379,0.001075406604148432,0.002719479487360549,0.000503553467869159,0.00166053751561247,0.0009593095638772064,0.0008627685177251348,0.001150744882067858,0.001053135471517472,0.0008873520073457077,0.0004316092557843876,0.002093720409516994,0.0004572337323757028],[3,3,2,3,3,3,3,3,2,2,2,3,3,3,2,2,2,2,2,3,2,2,2,3,3,2,2,2,3],[0.005725815699031163,0.005320396317813426,0.003990975814602557,0.004284326916244055,0.002480999893714395,0.002359706070949147,0.001772893958266892,0.0009915659751636163,0.001127227298455644,0.000914366720337732,0.0009810845676229887,0.0007454773956771447,0.0009070574097697038,0.00040536953533624,0.0001693686017594938,0.0008396657114674654,0.0005827673642660059,0.000302758352265102,0.0006865405198252989,0.000503553467869159,0.0004168456577829487,0.00040702289563505,0.0004299179661230115,0.00017007466919246,0.0002154859016227711,0.0004078849735807594,5.092878945081635e-05,0.0002999392243800611,4.85230824892939e-05],[true,true,true,true,false,true,true,false,true,true,false,true,true,true,false,true,true,true,false,false,true,true,true,true,true,false,false,false,false],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],["Strong","Strong","Strong","Strong","Moderate","Strong","Strong","Moderate","Strong","Strong","Moderate","Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Moderate","Moderate","Strong","Strong","Strong","Strong","Strong","Moderate","Moderate","Moderate","Moderate"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>ASV<\/th>\n      <th>max_pos_delta<\/th>\n      <th>peak_delta_date<\/th>\n      <th>n_dates_FPV_gt_Open<\/th>\n      <th>open_median_at_peak<\/th>\n      <th>fpv_median_at_peak<\/th>\n      <th>n_FPV_ponds_support<\/th>\n      <th>delta_median_at_peak<\/th>\n      <th>pass_dates<\/th>\n      <th>pass_ponds<\/th>\n      <th>pass_robust<\/th>\n      <th>tier<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"autoWidth":true,"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7]},{"name":"ASV","targets":0},{"name":"max_pos_delta","targets":1},{"name":"peak_delta_date","targets":2},{"name":"n_dates_FPV_gt_Open","targets":3},{"name":"open_median_at_peak","targets":4},{"name":"fpv_median_at_peak","targets":5},{"name":"n_FPV_ponds_support","targets":6},{"name":"delta_median_at_peak","targets":7},{"name":"pass_dates","targets":8},{"name":"pass_ponds","targets":9},{"name":"pass_robust","targets":10},{"name":"tier","targets":11}],"order":[],"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-f4b58a275263d4372e3a" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-f4b58a275263d4372e3a">{"x":{"filter":"none","vertical":false,"data":[["ASV_568","ASV_262","ASV_102","ASV_286","ASV_321","ASV_203","ASV_302","ASV_54","ASV_415","ASV_712","ASV_352","ASV_806","ASV_165","ASV_406","ASV_786","ASV_400","ASV_495","ASV_580","ASV_340","ASV_683","ASV_674","ASV_642","ASV_831","ASV_499","ASV_662","ASV_434","ASV_656","ASV_444","ASV_517"],[0.005725815699031163,0.005515798183228954,0.004050438039435019,0.004037589591291399,0.002698022410791751,0.002386986002827533,0.001772893958266892,0.00113902401108271,0.001101810629999988,0.000914366720337732,0.0008842538077371543,0.0008182611262996181,0.0007899294028170669,0.0007190998510160526,0.0006489551387553511,0.0006216532400210403,0.0005827673642660059,0.0005240299108241023,0.0005145069434129295,0.0005038219352054506,0.0004168456577829487,0.000408336926745982,0.0003327624554129041,0.0002657061491875936,0.0001924268213955387,0.0001909520230508664,0.0001662265095623314,0.0001301933236221647,9.709346791442045e-05],[193,193,234,193,193,193,193,193,234,193,234,193,193,255,193,172,193,255,193,172,193,172,234,172,255,172,234,193,193],[2,4,3,3,1,2,2,1,4,3,1,2,2,2,1,2,2,3,1,1,2,4,3,2,2,1,1,1,1],[0,0.001610631920948052,0.007022595318595357,0.0004807497852533149,0.0006717180891629029,0.0003351687814220733,0.0005740116266905481,0.008634052081392434,0.0003119151590767311,0,0.001668095772287855,0,0.0007451637274069167,0.001317943054419624,0.0002405465216972963,0.00093503830322395,0.0008370985728333728,0.0007726482518833301,0.00203293896753525,0,0.001243691857829521,0.0005522866682421564,0.0004328505516021233,0.0009806702128753978,0.0008376495698947013,0.0004794670337649483,0.0003806804663335713,0.001793781185136933,0.0004087106498864089],[0.005725815699031163,0.006931028238761478,0.01101357113319791,0.00476507670149737,0.003152717982877298,0.00269487485237122,0.00234690558495744,0.00962561805655605,0.001439142457532375,0.000914366720337732,0.002649180339910844,0.0007454773956771447,0.00165222113717662,0.001723312589755864,0.0004099151234567901,0.001774704014691415,0.001419865937099379,0.001075406604148432,0.002719479487360549,0.000503553467869159,0.00166053751561247,0.0009593095638772064,0.0008627685177251348,0.001150744882067858,0.001053135471517472,0.0008873520073457077,0.0004316092557843876,0.002093720409516994,0.0004572337323757028],[3,3,2,3,3,3,3,3,2,2,2,3,3,3,2,2,2,2,2,3,2,2,2,3,3,2,2,2,3],[0.005725815699031163,0.005320396317813426,0.003990975814602557,0.004284326916244055,0.002480999893714395,0.002359706070949147,0.001772893958266892,0.0009915659751636163,0.001127227298455644,0.000914366720337732,0.0009810845676229887,0.0007454773956771447,0.0009070574097697038,0.00040536953533624,0.0001693686017594938,0.0008396657114674654,0.0005827673642660059,0.000302758352265102,0.0006865405198252989,0.000503553467869159,0.0004168456577829487,0.00040702289563505,0.0004299179661230115,0.00017007466919246,0.0002154859016227711,0.0004078849735807594,5.092878945081635e-05,0.0002999392243800611,4.85230824892939e-05],[true,true,true,true,false,true,true,false,true,true,false,true,true,true,false,true,true,true,false,false,true,true,true,true,true,false,false,false,false],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],["Strong","Strong","Strong","Strong","Moderate","Strong","Strong","Moderate","Strong","Strong","Moderate","Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Moderate","Moderate","Strong","Strong","Strong","Strong","Strong","Moderate","Moderate","Moderate","Moderate"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>ASV<\/th>\n      <th>max_pos_delta<\/th>\n      <th>peak_delta_date<\/th>\n      <th>n_dates_FPV_gt_Open<\/th>\n      <th>open_median_at_peak<\/th>\n      <th>fpv_median_at_peak<\/th>\n      <th>n_FPV_ponds_support<\/th>\n      <th>delta_median_at_peak<\/th>\n      <th>pass_dates<\/th>\n      <th>pass_ponds<\/th>\n      <th>pass_robust<\/th>\n      <th>tier<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"autoWidth":true,"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7]},{"name":"ASV","targets":0},{"name":"max_pos_delta","targets":1},{"name":"peak_delta_date","targets":2},{"name":"n_dates_FPV_gt_Open","targets":3},{"name":"open_median_at_peak","targets":4},{"name":"fpv_median_at_peak","targets":5},{"name":"n_FPV_ponds_support","targets":6},{"name":"delta_median_at_peak","targets":7},{"name":"pass_dates","targets":8},{"name":"pass_ponds","targets":9},{"name":"pass_robust","targets":10},{"name":"tier","targets":11}],"order":[],"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 ```
 
 The table above provides an audit trail for why each ASV was retained, including the date of peak FPV enrichment and whether that peak is supported across multiple sampling dates and/or across ponds.
@@ -786,7 +1071,6 @@ sed_methanogen_ASV_plot <-
              #nrow = 5, ncol = 5
              ) +
   geom_line(aes(group = interaction(Pond, ASV)), alpha = 0.2) +
-  #geom_smooth(aes(group = solar_progress), se = FALSE) +
   stat_summary(aes(group = solar_progress, fill = solar_progress),
                fun.data = function(y) 
                  {data.frame(y = median(y, na.rm = TRUE), 
@@ -830,7 +1114,7 @@ sed_methanogen_ASV_plot <-
 ``` r
 # Save the plot   
 ggsave(sed_methanogen_ASV_plot, 
-       width = 12, height = 10, dpi = 300,
+       width = 10, height = 8, dpi = 300,
        filename = "figures/bonus/sed_methanogen_ASV_time.png")
 ```
 
@@ -943,8 +1227,8 @@ datatable(asv_effect_time_robust_methanotroph_df,
 ```
 
 ```{=html}
-<div class="datatables html-widget html-fill-item" id="htmlwidget-57820dc24c55e2b6b1b8" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-57820dc24c55e2b6b1b8">{"x":{"filter":"none","vertical":false,"data":[["ASV_110","ASV_313","ASV_409","ASV_363","ASV_1005","ASV_919","ASV_453","ASV_177","ASV_677","ASV_559"],[0.003374608196225171,0.001928553443070333,0.001155795064232616,0.0008909542048271878,0.0008621225342379287,0.0007681064103575837,0.0005935271363700771,0.0002877859140323533,0.0002143353977014658,7.146453502788997e-05],[172,193,172,172,172,172,234,172,193,172],[3,2,4,1,2,4,3,2,3,1],[0.005667784969006832,0.001007145719269743,0.001028519392261971,0.0009588719976240559,0.0001441614608361365,0.0002636913510942614,0.001394650230227769,0.001342414589683094,0.0005769995992178042,0.0003121098626716604],[0.009269915603818275,0.002935699162340076,0.002304873504398891,0.00163341409816645,0.001150718447423748,0.001080207155603466,0.002085311375269465,0.00153437937871203,0.0009144797162538526,0.0003835743976995504],[3,3,3,3,2,3,2,2,3,2],[0.003602130634811443,0.001928553443070333,0.001276354112136919,0.0006745421005423945,0.001006556986587611,0.0008165158045092043,0.0006906611450416956,0.0001919647890289361,0.0003374801170360484,7.146453502788997e-05],[true,true,true,false,true,true,true,true,true,false],[true,true,true,true,true,true,true,true,true,true],[true,true,true,true,true,true,true,true,true,true],["Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Strong","Strong","Moderate"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>ASV<\/th>\n      <th>max_pos_delta<\/th>\n      <th>peak_delta_date<\/th>\n      <th>n_dates_FPV_gt_Open<\/th>\n      <th>open_median_at_peak<\/th>\n      <th>fpv_median_at_peak<\/th>\n      <th>n_FPV_ponds_support<\/th>\n      <th>delta_median_at_peak<\/th>\n      <th>pass_dates<\/th>\n      <th>pass_ponds<\/th>\n      <th>pass_robust<\/th>\n      <th>tier<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"autoWidth":true,"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7]},{"name":"ASV","targets":0},{"name":"max_pos_delta","targets":1},{"name":"peak_delta_date","targets":2},{"name":"n_dates_FPV_gt_Open","targets":3},{"name":"open_median_at_peak","targets":4},{"name":"fpv_median_at_peak","targets":5},{"name":"n_FPV_ponds_support","targets":6},{"name":"delta_median_at_peak","targets":7},{"name":"pass_dates","targets":8},{"name":"pass_ponds","targets":9},{"name":"pass_robust","targets":10},{"name":"tier","targets":11}],"order":[],"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-cd164276acfa157a4562" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-cd164276acfa157a4562">{"x":{"filter":"none","vertical":false,"data":[["ASV_110","ASV_313","ASV_409","ASV_363","ASV_1005","ASV_919","ASV_453","ASV_177","ASV_677","ASV_559"],[0.003374608196225171,0.001928553443070333,0.001155795064232616,0.0008909542048271878,0.0008621225342379287,0.0007681064103575837,0.0005935271363700771,0.0002877859140323533,0.0002143353977014658,7.146453502788997e-05],[172,193,172,172,172,172,234,172,193,172],[3,2,4,1,2,4,3,2,3,1],[0.005667784969006832,0.001007145719269743,0.001028519392261971,0.0009588719976240559,0.0001441614608361365,0.0002636913510942614,0.001394650230227769,0.001342414589683094,0.0005769995992178042,0.0003121098626716604],[0.009269915603818275,0.002935699162340076,0.002304873504398891,0.00163341409816645,0.001150718447423748,0.001080207155603466,0.002085311375269465,0.00153437937871203,0.0009144797162538526,0.0003835743976995504],[3,3,3,3,2,3,2,2,3,2],[0.003602130634811443,0.001928553443070333,0.001276354112136919,0.0006745421005423945,0.001006556986587611,0.0008165158045092043,0.0006906611450416956,0.0001919647890289361,0.0003374801170360484,7.146453502788997e-05],[true,true,true,false,true,true,true,true,true,false],[true,true,true,true,true,true,true,true,true,true],[true,true,true,true,true,true,true,true,true,true],["Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Strong","Strong","Moderate"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>ASV<\/th>\n      <th>max_pos_delta<\/th>\n      <th>peak_delta_date<\/th>\n      <th>n_dates_FPV_gt_Open<\/th>\n      <th>open_median_at_peak<\/th>\n      <th>fpv_median_at_peak<\/th>\n      <th>n_FPV_ponds_support<\/th>\n      <th>delta_median_at_peak<\/th>\n      <th>pass_dates<\/th>\n      <th>pass_ponds<\/th>\n      <th>pass_robust<\/th>\n      <th>tier<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"autoWidth":true,"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7]},{"name":"ASV","targets":0},{"name":"max_pos_delta","targets":1},{"name":"peak_delta_date","targets":2},{"name":"n_dates_FPV_gt_Open","targets":3},{"name":"open_median_at_peak","targets":4},{"name":"fpv_median_at_peak","targets":5},{"name":"n_FPV_ponds_support","targets":6},{"name":"delta_median_at_peak","targets":7},{"name":"pass_dates","targets":8},{"name":"pass_ponds","targets":9},{"name":"pass_robust","targets":10},{"name":"tier","targets":11}],"order":[],"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 ```
 
 
