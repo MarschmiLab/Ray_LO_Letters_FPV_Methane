@@ -1,7 +1,7 @@
 ---
 title: "Water Column and Sediment Methanogens & Methanotrophs in FPV Ponds"
 author: "Sophia Aredas & Mar Schmidt"
-date: "22 January, 2026"
+date: "26 January, 2026"
 output:
   html_document:
     code_folding: show
@@ -2467,6 +2467,8 @@ fig2
 #export the figure
 ggsave(fig2, width = 6.5, height = 8.5, units = "in", filename = "figures/Fig_2/fig2.png") # could only save at height 8.5, orignally h = 8
 ```
+
+
 We have created main text `fig2` which shows the abundance of water column (absolute abundance) and sediment (relative abundance) methanotrophs and methanogens over time between FPV and Open ponds. 
 
 Each row corresponds to depth (surface water, bottom water, or sediments) and methane cycler (methanotroph or methanogen). The left panel demonstrates the temporal relationships while the right panel is a box plot comparison with linear mixed effects statistical analysis between FPV and Open ponds.
@@ -6202,6 +6204,78 @@ do_meth_abund
 ``` r
 ggsave(do_meth_abund, width = 6.5, height = 6.5, dpi = 300,
         filename = "figures/bonus/do_meth_abund.png")
+
+# now lets also plot methane concentrations
+
+# first plot ch4 simple
+# ch4_simple <- do_abundance %>% 
+#   group_by(JDate.x, Pond.x, solar_progress.x, Depth_Class.x) %>%
+#   summarise(avg_ch4 = mean(ch4_mean, na.rm = TRUE), .groups = "drop") %>% 
+#   ggplot(aes(x = JDate.x,
+#              y = avg_ch4,
+#              color = solar_progress.x,
+#              fill = solar_progress.x,
+#              group = Pond.x)) +
+#  # geom_line(alpha = 0.1) +
+#   geom_smooth(aes(group = solar_progress.x), se = FALSE, linewidth = 1.4) +
+#   geom_point(alpha = 0.3) +
+#   #scale_shape_manual(values = pond_shapes)+
+#   #ggh4x::facet_grid2(~Depth_Class.x) +
+#   ggh4x::facet_wrap2(~Depth_Class.x) +
+#   labs(
+#     y = "CH<sub>4</sub> <br> (\u03bcmol L<sup>-1</sup>)",
+#     x = "Day of Year") +
+#   guides(
+#     color = guide_legend(title = "Treatment"),
+#     fill = "none") +
+#   scale_color_manual(values = solar_colors) +
+#   theme_classic() +
+#   theme(axis.text.x =  element_text(size = 8,colour = "black"),
+#          axis.text.y =  element_text(size = 8,colour = "black"),
+#          axis.title.x = element_text(size = 8,colour = "black"),
+#         axis.title.y = element_markdown(size = 8))
+# ch4_simple
+# 
+# # 2 simple; still plot all methanotrophs, just make it simpler and not shape by pond
+# methanotroph_all_abund_simple <- do_abundance %>% 
+#   dplyr::filter(CH4_Cycler == "Methanotroph") %>% 
+#   group_by(JDate.x, Pond.x, solar_progress.x, Depth_Class.x) %>% 
+#   summarise(
+#     total_abundance = sum(Abundance, na.rm = TRUE), # total across all samples
+#     .groups = "drop") %>% 
+#  # summarise(avg_do = mean(HDO_mg.l, na.rm = TRUE), .groups = "drop") %>% 
+#   ggplot(aes(x = JDate.x,
+#              y = total_abundance,
+#              color = solar_progress.x,
+#              fill = solar_progress.x,
+#              group = Pond.x)) +
+#   #geom_line() +
+#   geom_smooth(aes(group = solar_progress.x), se = FALSE, linewidth = 1.4) +
+#   geom_point(alpha = 0.3) +
+#   labs(#title = "All Methanotroph Abundances",
+#        y = "Absolute Abundance (cells per ml)",
+#        x = "Day of Year") +
+#   guides(
+#     color = guide_legend(title = "Treatment"),
+#     fill = "none") +
+#   scale_y_continuous(labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
+#   ggh4x::facet_wrap2(~Depth_Class.x) +
+#   scale_color_manual(values = solar_colors) +
+#   theme_classic() +
+#   theme(axis.text.x =  element_text(size = 8,colour = "black"),
+#          axis.text.y =  element_text(size = 8,colour = "black"),
+#          axis.title.x = element_text(size = 8,colour = "black"),
+#         axis.title.y = element_markdown(size = 8))
+# methanotroph_all_abund_simple
+# 
+# # put together for revision response
+# ch4_meth_abund <- ch4_simple + methanotroph_all_abund_simple +
+#   plot_layout(nrow = 2, ncol = 1,
+#               guides = "collect") 
+# ch4_meth_abund
+# 
+# ggsave(do_meth_abund, width = 6.5, height = 6.5, dpi = 300,
+#         filename = "figures/bonus/do_meth_abund.png")
 ```
 From our rough plots we see that gammaproteobacterial methanotrophs dominate ponds, this makes sense from our figure 2. 
 
@@ -6279,6 +6353,159 @@ ggsave(top21_sed_methanogen_ASVS_plot,
        filename = "figures/bonus/sed_methogen_ASV_time.png")
 ```
 
+# Water Column Methanotrophs
+
+``` r
+##### Methanotrophs Water Column Slide #####
+# 1. plot surface water methanotrophs
+methanotroph_surface <- methanotroph_surface_sum %>% 
+  ggplot(aes(x = JDate, y = mean_meth, fill = solar_progress, color = solar_progress)) +
+  #geom_smooth(aes(group = solar_progress), se = FALSE) +
+  geom_line()+
+  geom_point()+
+  theme_classic()+
+  geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_point(size = 3, shape = 16)+
+  geom_point(size = 3, shape = 1, color = "black")+
+  labs(y= "Surface Methanotroph<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
+  scale_y_continuous(
+    limits = c(0, 1.27e6),
+    breaks = c(0, 6.25e5, 1.25e6),
+    labels = c("0", "625K", "1.25M"))+
+  # scale_y_continuous(
+  #    limits = c(0, NA),
+  #   # breaks = c(0, 7.5e5, 1.5e6),
+  #   # labels = c("0", "750K", "1.5M"))+
+  #   labels = label_number(scale_cut = cut_short_scale())) +
+  #   #labels = label_number(scale_cut = cut_short_scale(), accuracy = 0.01)) +
+  theme(axis.text.x =  element_text(size = 12,colour = "black"),
+         axis.text.y =  element_text(size = 12,colour = "black"),
+         axis.title.x = element_blank(),
+        axis.title.y = element_markdown(size = 12))+
+  scale_fill_manual(values = solar_colors)+
+  scale_color_manual(values = solar_colors)+
+  theme(legend.position = "none")
+methanotroph_surface
+
+
+# 2. box plot
+methanotroph_surface_box <- methanotroph_surface_data %>% 
+  ggplot(aes(x = solar_progress, y = total_abundance, color = solar_progress)) +
+  geom_boxplot(outlier.shape = NA, color = "black") +
+  geom_jitter(aes(color = solar_progress, fill = solar_progress), width = 0.2, size = 3, shape = 21) +
+  scale_fill_manual(values = solar_colors)+
+  scale_color_manual(values = c("black", "black"))+
+  scale_y_continuous(
+    limits = c(0, 1.27e6),
+    breaks = c(0, 6.25e5, 1.25e6),
+    labels = c("0", "625K", "1.25M"))+
+  # scale_y_continuous(
+  #   limits = c(0, 1.27e6),
+  #   breaks = c(0, 2.5e5, 7.5e5, 1.25e6),
+  #   labels = c("0","250K", "750K", "1.25M"))+
+  #   # breaks = c(0, 5e5, 1e6, 1.5e6),
+  #   #labels = label_number(scale_cut = cut_short_scale())) +
+  theme_classic()+
+  theme(axis.text.x = element_text(size = 12,colour = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  # stat_compare_means(method = "wilcox.test",
+  #                    #comparisons = list(c("FPV", "Open")),
+  #                    label = "p.format",
+  #                    size = 3,
+  #                    label.y.npc = 0.9,
+  #                    fontface = "italic")
+  #label.y = c(8000, 100000, 500000, 400000, 400000), # get pvalue
+ annotate("text", x = 2, y = 1.25e6, label = "p = 0.021", size = 2.822,  fontface = "italic") # add p value
+methanotroph_surface_box
+
+# 2. plot bottom water methanotrophs
+methanotroph_bottom <- methanotroph_bottom_sum %>% 
+  ggplot(aes(x = JDate, y = mean_meth, fill = solar_progress, color = solar_progress)) +
+  geom_line()+
+  geom_point()+
+  theme_classic()+
+  geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_point(size = 3, shape = 16)+
+  geom_point(size = 3, shape = 1, color = "black")+
+  labs(y= "Bottom Methanotroph<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
+  scale_y_continuous(
+    breaks = c(0, 6.25e5, 1.25e6),
+    labels = c("0", "625K", "1.25M"))+
+  # scale_y_continuous(
+  #   breaks = c(0, 2.5e5, 7.5e5, 1.25e6),
+  #   labels = c("0", "250K", "750K", "1.25M"))+
+  # labels = label_number(scale_cut = cut_short_scale(), accuracy = 0.01)) +
+  # scale_y_continuous(
+  #   
+  #   limits = c(0, 1.25e6),
+  #   breaks = c(0, 5e5, 1e6, 1.25e6),
+  #   labels = label_number(scale_cut = cut_short_scale())) +
+  theme(axis.text.x =  element_text(size = 12,colour = "black"),
+         axis.text.y =  element_text(size = 12,colour = "black"),
+         axis.title.x = element_text(size = 12,colour = "black"),
+        axis.title.y = element_markdown(size = 12))+
+  scale_fill_manual(values = solar_colors)+
+  scale_color_manual(values = solar_colors)+
+  theme(legend.position = "none")
+methanotroph_bottom
+
+
+
+# 3. box plot
+methanotroph_bottom_box <- methanotroph_bottom_data %>% 
+  ggplot(aes(x = solar_progress, y = total_abundance, color = solar_progress)) +
+  geom_boxplot(outlier.shape = NA, color = "black") +
+  geom_jitter(aes(color = solar_progress, fill = solar_progress), width = 0.2, size = 3, shape = 21) +
+  scale_fill_manual(values = solar_colors) +
+  scale_color_manual(values = c("black", "black"))+
+  scale_y_continuous(
+    breaks = c(0, 6.25e5, 1.25e6),
+    labels = c("0", "625K", "1.25M"))+
+  # scale_y_continuous(
+  #   breaks = c(0, 2.5e5, 7.5e5, 1.25e6),
+  #   labels = c("0","250K", "750K", "1.25M"))+
+    #labels = label_number(scale_cut = cut_short_scale())) +
+  theme_classic()+
+  theme(axis.text.x = element_text(size = 12,colour = "black"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +#+
+  # stat_compare_means(method = "wilcox.test",
+  #                    #comparisons = list(c("FPV", "Open")),
+  #                    label = "p.format",
+  #                    size = 3,
+  #                    label.y.npc = 0.9,
+  #                    fontface = "italic")
+  #                    #label.y = c(8000, 100000, 500000, 400000, 400000), # get pvalue
+ annotate("text", x = 2, y = 1.25e6, label = "p = 0.040", size = 2.822,  fontface = "italic") # add p value
+methanotroph_bottom_box
+
+
+fig2_meth_wc <- 
+  methanotroph_surface +
+  methanotroph_surface_box +
+  methanotroph_bottom  + 
+  methanotroph_bottom_box + 
+  plot_layout(
+    nrow = 2, ncol = 2,
+    widths = c(5, 2)) +
+  plot_annotation(tag_levels = "A", tag_suffix = ".",
+    theme = theme(
+      plot.tag = element_text(size = 8, colour = "black")))
+fig2_meth_wc
+
+
+#export the figure
+ggsave(fig2_meth_wc, width = 6.5, height = 8, units = "in", filename = "figures/bonus/fig2_seminar.png") # could only save at height 8.5, orignally h = 8
+```
 
 # Reproducibility
 
@@ -6298,7 +6525,7 @@ devtools::session_info()
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
 ##  tz       America/New_York
-##  date     2026-01-22
+##  date     2026-01-26
 ##  pandoc   3.1.1 @ /usr/lib/rstudio-server/bin/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
