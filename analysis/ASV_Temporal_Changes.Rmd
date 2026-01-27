@@ -623,6 +623,19 @@ figure_4
 
 **Figure 4. Blooming water-column methanotroph ASVs under floating solar infrastructure** Methanotroph ASVs identified as differentially abundant between FPV and open ponds using ANCOM-BC2 are shown as absolute abundance (cells mL⁻¹) across the sampling season. (A) Methanotroph ASVs that bloom in FPV ponds and (B) methanotroph ASVs enriched in open ponds. Panels are faceted by ASV and water column depth (surface vs bottom). Points represent individual pond observations, lines connect repeated measurements through time within each pond–depth combination, and shaded ribbons indicate the median and interquartile range (25th–75th percentiles) for each treatment at each sampling day. Taxonomic assignments are shown at the genus and species level, except ASV_13, which is classified within the family *Methylomonadaceae*, and ASV_828, which is classified within the family *Methylococcaceae.* For visualization, two low-abundance FPV-enriched ASVs (ASV_2028, ASV_346) and one open-pond ASV with minimal separation in absolute abundance (ASV_1019) were excluded.
 
+
+**What is the taxonomy of the Water Methanotroph ASVs in Figure 4 above?? **
+
+```{r water-methanotrophs-showTaxonomy}
+  water_ch4_asv_df_glom %>% 
+  dplyr::filter(ASV %in% c(water_ch4_methanotrophs_enrichedFPV, water_ch4_methanotrophs_enrichedControls))  %>%
+  dplyr::select(Kingdom:ASV) %>%
+  unique() %>%
+  arrange(Phylum, Class, Order) %>%
+  dplyr::mutate(Genus = if_else(Genus == "Methylobacter_C_601751", "Methylobacter_C", Genus)) %>%
+  DT::datatable(options = list(pageLength = nrow(.), lengthChange = FALSE))
+```
+
 # Sediment
 
 ## Differential Abundance with ANCOM-BC2 
@@ -1089,6 +1102,8 @@ sed_methanogen_ASV_plot
 
 **Figure 5. Seasonal FPV-associated divergence of sediment methanogen ASVs.** Sediment methanogen ASVs showing strong, time-dependent divergence between FPV and open ponds were identified using a manual, seasonally explicit screening approach and are shown as relative abundance (%) across the sampling season. Analysis focused on abundant methanogen ASVs (mean relative abundance >0.05%) and quantified FPV–Open separation at each sampling date using median abundances. ASVs were retained if peak FPV enrichment was supported across multiple sampling dates and/or multiple FPV ponds (see Supplemental Methods). Panels are faceted by ASV and annotated with the day of year (DOY) at which maximum FPV enrichment occurred. Points represent individual pond observations, thin lines connect repeated measurements within ponds, and thick lines and shaded ribbons indicate the median and interquartile range (25th–75th percentiles) for each treatment at each date.
 
+**What is the taxonomy of the Methanogen ASVs in Figure 5?? **
+
 ```{r sed-methanogen-showTaxonomy}
 sed_methanogen_asvs_df %>%
   dplyr::select(Kingdom:ASV) %>%
@@ -1277,6 +1292,8 @@ sed_methanotroph_ASV_plot
 ```
 
 **Figure SX. Sediment methanotroph ASV time series screened for seasonal FPV–Open divergence.** Sediment methanotroph ASVs are shown as relative abundance (%) across the sampling season. To visualize potential time-dependent FPV–Open separation not captured by a constant treatment effect, we screened abundant methanotroph ASVs (mean relative abundance > 0.05%) and quantified FPV–Open differences at each sampling date using median abundances. ASVs shown are those with positive peak FPV enrichment supported across multiple sampling dates and/or multiple FPV ponds (see Supplemental Methods). Panels are faceted by ASV and annotated with the day of year (DOY) of maximum FPV enrichment. Points represent pond observations, thin lines connect repeated measures within ponds, and thick lines and shaded ribbons indicate treatment medians and interquartile ranges (25th–75th percentiles) at each date. This figure is provided for visualization; community-level tests did not detect a significant `FPV × time` effect for sediment methanotrophs.
+
+**What is the taxonomy of the Methanotroph ASVs in Figure SX above? **
 
 ```{r sed-methanotroph-showTaxonomy}
 sed_methanotroph_asvs_df %>%
