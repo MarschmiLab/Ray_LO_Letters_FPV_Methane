@@ -1597,6 +1597,7 @@ sed_methanogen_ASV_plot <-
        color = "Treatment", fill  = "Treatment",
        title = "Seasonal FPV Effects on Sediment Methanogen ASVs") + 
   geom_point(aes(shape = Pond), size = 2) +
+  scale_x_continuous(limits = c(170,260), breaks = seq(150, 275, by = 25)) +
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) + 
   guides(color = guide_legend(ncol = 1),
@@ -1829,6 +1830,7 @@ sed_methanotroph_ASV_plot <-
        color = "Treatment", fill  = "Treatment",
        title = "Seasonal FPV Effects on Sediment Methanotroph ASVs") + 
   geom_point(aes(shape = Pond), size = 2) +
+  scale_x_continuous(limits = c(170,260), breaks = seq(150, 275, by = 25)) +
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) + 
   guides(color = guide_legend(ncol = 1),
