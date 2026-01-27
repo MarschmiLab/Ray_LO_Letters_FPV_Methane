@@ -4512,36 +4512,7 @@ water_ch4_phy_rmASV_ZeroVariance_physeq@sam_data$solar_progress &lt;-
 #     file = &quot;data/03_diff_abund/water_ch4_diffAbundASV_FPV_output.RData&quot;)
 
 # Load in the data 
-load(&quot;data/03_diff_abund/water_ch4_diffAbundASV_FPV_output.RData&quot;)
-
-# Check out the results 
-#water_ch4_diffAbundASV_FPV_output$res
-
-# Now run a FPV x DOY aware 
-#water_ch4_diffAbundASV_FPVxDOY_output &lt;- 
-#  ancombc2(
-#    data = water_ch4_phy_rmASV_ZeroVariance_physeq,
-#    tax_level = &quot;ASV&quot;,
-#    fix_formula  = as.formula(&quot;solar_progress * JDate&quot;), # Mean FPV + seasonal trend + FPV × DOY
-#    #rand_formula = &quot;(1 | Pond)&quot;,             # Repeated measures by pond
-#    p_adj_method = &quot;fdr&quot;,
-#    pseudo_sens  = TRUE,
-#    prv_cut      = 0.05,
-#    struc_zero   = FALSE,
-#    alpha        = 0.05,
-#    n_cl         = 10,
-#    verbose      = FALSE,
-#    s0_perc      = 0.05,
-#    global       = FALSE,
-#    pairwise     = FALSE)
-
-
-# Save the data 
-#save(water_ch4_diffAbundASV_FPV_output, 
-#     file = &quot;data/03_diff_abund/water_ch4_diffAbundASV_FPV_output.RData&quot;)
-
-# Load in the data 
-#load(&quot;data/03_diff_abund/water_ch4_diffAbundASV_FPV_output.RData&quot;)</code></pre>
+load(&quot;data/03_diff_abund/water_ch4_diffAbundASV_FPV_output.RData&quot;)</code></pre>
 <div id="clean-up-diffabundance-data" class="section level3">
 <h3>Clean up DiffAbundance data</h3>
 <pre class="r"><code># plot ASV differential abundance
