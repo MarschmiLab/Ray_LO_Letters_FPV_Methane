@@ -762,7 +762,10 @@ water_ch4_methanotrophs_enrichedFPV <-
 water_ch4_trophs_enriched_plot <- 
   water_ch4_asv_df_glom %>% 
   dplyr::filter(ASV %in% water_ch4_methanotrophs_enrichedFPV) %>% 
-  dplyr::mutate(total_abundance = Abundance,
+  dplyr::mutate(Genus = ifelse(ASV == "ASV_13", Order, Genus),
+                Genus = if_else(Genus == "Methylobacter_C_601751", 
+                                "Methylobacter_C", Genus),
+                total_abundance = Abundance,
                 ASV_Genus = paste0(ASV, "<br>", Genus)) %>%
   ggplot(aes(x = as.factor(JDate), y = total_abundance, color = solar_progress, shape = Pond)) +
   geom_line(aes(group = interaction(Pond, Depth_Class)), 
@@ -883,22 +886,22 @@ library(patchwork)
 pA <- water_ch4_trophs_enriched_plot + theme(legend.position = "none")
 pB <- water_ch4_trophs_enrichedControls_plot + theme(legend.position = "bottom")
 
-figure_S5 <-
+figure_4 <-
   (pA / pB) +
   plot_annotation(tag_levels = "A") + 
   plot_layout(heights = c(0.95, 1))
 
 # Show the plot
-figure_S5
+figure_4
 ```
 
-![](ASV_Temporal_Changes_files/figure-html/Fig-S5-1.png)<!-- -->
+![](ASV_Temporal_Changes_files/figure-html/Fig-4-1.png)<!-- -->
 
 ``` r
 # Save the plot   
-ggsave(figure_S5, 
+ggsave(figure_4, 
        width = 6, height = 7, dpi = 300,
-       filename = "figures/bonus/figure_S5.png")
+       filename = "figures/bonus/figure_4.png")
 ```
 
 
@@ -1403,13 +1406,13 @@ sed_methanogen_ASV_plot <-
       legend.text = element_text(size = 8, colour = "black")); sed_methanogen_ASV_plot
 ```
 
-![](ASV_Temporal_Changes_files/figure-html/plot-sed-methanogens-1.png)<!-- -->
+![](ASV_Temporal_Changes_files/figure-html/Fig-5-sed-methanogens-1.png)<!-- -->
 
 ``` r
 # Save the plot   
 ggsave(sed_methanogen_ASV_plot, 
        width = 10, height = 8, dpi = 300,
-       filename = "figures/bonus/sed_methanogen_ASV_time.png")
+       filename = "figures/bonus/figure_5.png")
 ```
 
 Finally, I plot only the Strong ASVs to highlight the clearest FPV-associated seasonal trajectories. Points show pond-level observations, thin lines connect repeated measures within ponds, and the thick lines/ribbons summarize treatment medians and interquartile ranges at each date. This visualization emphasizes that FPV effects in sediments are concentrated in seasonal windows and can be distributed across multiple abundant ASVs rather than manifesting as a uniform genus-level shift.
