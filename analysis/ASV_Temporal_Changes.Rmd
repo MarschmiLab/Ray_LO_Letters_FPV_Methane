@@ -331,7 +331,8 @@ water_ch4_diffAbundASV_FPV_df <-
   mutate(
     Ref2 = ifelse(is.na(Ref2), "No FPV", Ref2), # relevel with basegroup which is no solar 
     Comparison = paste0(Ref2, " : ", Ref1)) %>% 
-  dplyr::filter(diff == 1, passed == 1, abs(lfc) > 1) %>% # 1.2 is good cut off to see effect, below we get ASVs with super low cell counts 
+  # EDIT ME HERE!!!!! 
+  dplyr::filter(diff == 1, abs(lfc) > 0.5) %>% # NOTE: Removed passed == 1
   select(ASV = taxon, Comparison, lfc, passed)
 
 ## Show the Q-Values for the results section 
@@ -347,7 +348,8 @@ water_ch4_diffAbundASV_FPV_output$res %>%
                 direction = ifelse(lfc > 0, "higher in FPV", "lower in FPV"),
                 q_nonSci = formatC(q_value, format = "f", digits = 7)) %>%
   dplyr::select(ASV, Comparison, lfc, x_fold_change, direction, q_value, q_nonSci) %>%
-  dplyr::arrange(-lfc)
+  dplyr::arrange(-lfc) %>%
+  DT::datatable()
 
 
 # join by tax table
@@ -357,9 +359,35 @@ clean_water_ch4 <-
             by = "ASV"); 
 
 # Show the taxonomy
+## METHANOGENS
+##### Include ones that have passed = 1 OR 0
 clean_water_ch4 %>%
+  dplyr::filter(CH4_Cycler == "Methanogen") %>%
   dplyr::select(ASV, Comparison, lfc, Class:Species) %>%
-  DT::datatable()
+  arrange(lfc) %>%
+  DT::datatable(options = list(pageLength = nrow(.), lengthChange = FALSE))
+
+##### Include ones that have passed == 1 
+clean_water_ch4 %>%
+  dplyr::filter(CH4_Cycler == "Methanogen", passed == 1) %>%
+  dplyr::select(ASV, Comparison, lfc, Class:Species) %>%
+  arrange(lfc) %>%
+  DT::datatable(options = list(pageLength = nrow(.), lengthChange = FALSE))
+
+## METHANOTROPHS
+##### Include ones that have passed = 1 OR 0
+clean_water_ch4 %>%
+  dplyr::filter(CH4_Cycler == "Methanotroph") %>%
+  dplyr::select(ASV, Comparison, lfc, Class:Species) %>%
+  arrange(lfc) %>%
+  DT::datatable(options = list(pageLength = nrow(.), lengthChange = FALSE))
+
+##### Include ones that have passed == 1 
+clean_water_ch4 %>%
+  dplyr::filter(CH4_Cycler == "Methanotroph", passed == 1) %>%
+  dplyr::select(ASV, Comparison, lfc, Class:Species) %>%
+  arrange(lfc) %>%
+  DT::datatable(options = list(pageLength = nrow(.), lengthChange = FALSE))
 ```
 
 
@@ -385,22 +413,48 @@ water_ch4_asv_df_glom <-
 water_ch4_asv_df_glom$solar_progress <- factor(water_ch4_asv_df_glom$solar_progress,
                                                levels = c("FPV", "Open"))
 
+### Now, let's pull the ASVs for plotting. BUT FIRST: 
+water_ch4_methanotrophs_enrichedFPV_raw <- 
+  clean_water_ch4 %>%
+  dplyr::filter(CH4_Cycler == "Methanotroph", lfc > 0) %>%
+  pull(ASV)
+
+# Show them 
+length(water_ch4_methanotrophs_enrichedFPV_raw)
+water_ch4_methanotrophs_enrichedFPV_raw
+
+### Note that ASV_2028 and ASV_346 are VERY LOWLY ABUNDANT! 
+water_ch4_asv_df_glom %>% 
+  dplyr::filter(ASV %in% water_ch4_methanotrophs_enrichedFPV_raw) %>%
+  group_by(ASV, solar_progress) %>%
+  summarize(median_abund = median(Abundance, na.rm = TRUE),
+            mean_abund = mean(Abundance, na.rm = TRUE),
+            max_abund = max(Abundance, na.rm = TRUE), 
+            min_abund = min(Abundance, na.rm = TRUE))
+# RESULT: Remove  ASV_2028 and ASV_346 from visualization 
+
 # create list of differentially abundanct asvs, updated results
 water_ch4_methanotrophs_enrichedFPV <- 
   clean_water_ch4 %>%
-  dplyr::filter(lfc >0)%>%
+  dplyr::filter(CH4_Cycler == "Methanotroph", lfc > 0) %>%
+  dplyr::filter(!ASV %in% c("ASV_2028", "ASV_346")) %>%
   pull(ASV)
+
+# Length
+length(water_ch4_methanotrophs_enrichedFPV)
+water_ch4_methanotrophs_enrichedFPV
 
 # now plot overtime: ENRICHED in FPVs
 water_ch4_trophs_enriched_plot <- 
   water_ch4_asv_df_glom %>% 
   dplyr::filter(ASV %in% water_ch4_methanotrophs_enrichedFPV) %>% 
-  dplyr::mutate(Genus = ifelse(ASV == "ASV_13", Order, Genus),
+  dplyr::mutate(JDate = as.numeric(JDate), 
+                Genus = ifelse(ASV == "ASV_13", Family, Genus),
                 Genus = if_else(Genus == "Methylobacter_C_601751", 
                                 "Methylobacter_C", Genus),
                 total_abundance = Abundance,
-                ASV_Genus = paste0(ASV, "<br>", Genus)) %>%
-  ggplot(aes(x = as.factor(JDate), y = total_abundance, color = solar_progress, shape = Pond)) +
+                ASV_Genus = paste0(Genus, "<br>", Species, "<br>", ASV)) %>%
+  ggplot(aes(x = JDate, y = total_abundance, color = solar_progress, shape = Pond)) +
   geom_line(aes(group = interaction(Pond, Depth_Class)), 
             alpha = 0.2) +
   stat_summary(aes(group = solar_progress, fill = solar_progress),
@@ -410,8 +464,9 @@ water_ch4_trophs_enriched_plot <-
                              ymax = quantile(y, 0.75, na.rm = TRUE))},
                geom = "ribbon", alpha = 0.15, color = NA) +
   geom_point(aes(shape = Pond), size = 2) +
-  ggh4x::facet_grid2(Depth_Class~ASV_Genus) +
+  facet_grid(Depth_Class~ASV_Genus) + 
   scale_y_continuous(labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
+  scale_x_continuous(limits = c(170,260), breaks = seq(150, 275, by = 25)) +
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) +
   labs(
@@ -445,20 +500,46 @@ water_ch4_trophs_enriched_plot <-
 # Show the plot 
 water_ch4_trophs_enriched_plot
 
+
+###########################################
 ## CONTROLS 
+# And for controls
+water_ch4_methanotrophs_enrichedControls_raw <- 
+  clean_water_ch4 %>%
+  dplyr::filter(CH4_Cycler == "Methanotroph", lfc <0) %>%
+  pull(ASV)
+
+# How many??? 
+length(water_ch4_methanotrophs_enrichedControls_raw)
+water_ch4_methanotrophs_enrichedControls_raw #who??
+
+### Now, let's pull the ASVs for plotting. BUT FIRST: 
+### Note that ASV_1019 doesn't look very different -- NULL RESULT
+water_ch4_asv_df_glom %>% 
+  dplyr::filter(ASV %in% water_ch4_methanotrophs_enrichedControls_raw) %>%
+  group_by(ASV, solar_progress) %>%
+  summarize(median_abund = median(Abundance, na.rm = TRUE),
+            mean_abund = mean(Abundance, na.rm = TRUE),
+            max_abund = max(Abundance, na.rm = TRUE), 
+            min_abund = min(Abundance, na.rm = TRUE))
+# RESULT: Remove ASV_1019 doesn't look very different -- NULL RESULT
+
 # And for controls
 water_ch4_methanotrophs_enrichedControls <- 
   clean_water_ch4 %>%
-  dplyr::filter(lfc <0)%>%
+  dplyr::filter(CH4_Cycler == "Methanotroph", lfc <0) %>%
+    dplyr::filter(ASV != "ASV_1019") %>%
   pull(ASV)
 
 # now plot overtime: ENRICHED in CONTROLS 
 water_ch4_trophs_enrichedControls_plot <- 
   water_ch4_asv_df_glom %>% 
   dplyr::filter(ASV %in% water_ch4_methanotrophs_enrichedControls) %>% 
-  dplyr::mutate(total_abundance = Abundance,
-                ASV_Genus = paste0(ASV, "<br>", Genus)) %>%
-  ggplot(aes(x = as.factor(JDate), y = total_abundance, 
+  dplyr::mutate(Genus = ifelse(ASV == "ASV_828", Family, Genus),
+                JDate = as.numeric(JDate), 
+                total_abundance = Abundance,
+                ASV_Genus = paste0(Genus, "<br>", Species, "<br>", ASV)) %>%
+  ggplot(aes(x = JDate, y = total_abundance, 
              color = solar_progress, shape = Pond)) +
   geom_line(aes(group = interaction(Pond, Depth_Class)), 
             alpha = 0.2) +
@@ -469,8 +550,9 @@ water_ch4_trophs_enrichedControls_plot <-
                              ymax = quantile(y, 0.75, na.rm = TRUE))},
                geom = "ribbon", alpha = 0.15, color = NA) +
   geom_point(aes(shape = Pond), size = 2) +
-  ggh4x::facet_grid2(Depth_Class~ASV_Genus) +
+  facet_grid(Depth_Class~ASV_Genus) +
   scale_y_continuous(labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
+  scale_x_continuous(limits = c(170,260), breaks = seq(150, 275, by = 25)) +
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) +
   labs(x = "Day of Year (DOY)",
@@ -504,29 +586,38 @@ water_ch4_trophs_enrichedControls_plot <-
 water_ch4_trophs_enrichedControls_plot
 ```
 
+### Figure 4
 
+**Water Column: Differentially Abundant Taxa**
 ```{r Fig-4, fig.width=6, fig.height=7}
 #devtools::install_github("thomasp85/patchwork")
 library(patchwork)
 
-pA <- water_ch4_trophs_enriched_plot + theme(legend.position = "none")
-pB <- water_ch4_trophs_enrichedControls_plot + theme(legend.position = "bottom")
+fig4A_raw <- water_ch4_trophs_enriched_plot + theme(legend.position = "none")
+
+fig4A <- fig4A_raw + 
+  plot_spacer() +
+  plot_layout(widths = c(0.88, 0.12))   # 50% plot, 50% empty space
+
+fig4B <- water_ch4_trophs_enrichedControls_plot + theme(legend.position = "bottom")
 
 figure_4 <-
-  (pA / pB) +
+  (fig4A / fig4B) +
   plot_annotation(tag_levels = "A") + 
-  plot_layout(heights = c(0.95, 1))
+  plot_layout(heights = c(0.9, 1))
 
 # Show the plot
 figure_4
 
 # Save the plot   
 ggsave(figure_4, 
-       width = 6, height = 7, dpi = 300,
+       width = 9, height = 8, dpi = 300,
        filename = "figures/bonus/figure_4.png")
 ```
 
+**Figure 4. Differentially abundant water-column methanotroph ASVs identified using ANCOM-BC2 and visualized as absolute abundance (cells mL⁻¹) across the growing season.** (A) Methanotroph ASVs significantly enriched in floating photovoltaic (FPV) ponds relative to open ponds and (B) methanotroph ASVs significantly enriched in open ponds relative to FPV ponds (FDR-corrected q < 0.05, |log-fold change| > 1). Taxonomic assignments are shown at the lowest confident rank for each ASV.
 
+Points represent individual pond–date observations (shape indicates pond identity), with faint lines connecting repeated measurements through time within each pond and depth. Shaded ribbons denote the median ± interquartile range for each treatment. Panels are faceted by ASV (columns) and water column depth (surface vs bottom; rows). Absolute abundances were calculated by combining amplicon relative abundances with flow cytometry–derived cell counts. Day of year (DOY) indicates sampling date.
 
 # Sediment
 
