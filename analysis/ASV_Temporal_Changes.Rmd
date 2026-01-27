@@ -627,6 +627,7 @@ figure_4
 
 **Figure 4. Blooming water-column methanotroph ASVs under floating solar infrastructure** Methanotroph ASVs identified as differentially abundant between FPV and open ponds using ANCOM-BC2 are shown as absolute abundance (cells mL⁻¹) across the sampling season. (A) Methanotroph ASVs that bloom under FPV infrastructure and (B) methanotroph ASVs enriched in open ponds. Panels are faceted by ASV and water-column depth (surface vs bottom). Points represent individual pond observations, lines connect repeated measurements through time within each pond–depth combination, and thick lines and shaded ribbons indicate treatment medians and interquartile ranges (25th–75th percentiles) at each date. FPV-enriched ASVs are dominated by members of the family Methylomonadaceae, with a single FPV-enriched Methylococcaceae ASV (*Methyloparacoccus*, ASV_32), whereas ASVs enriched in open ponds belong exclusively to Methylococcaceae. Taxonomic assignments are shown at the genus and species level, except ASV_13, which is classified within Methylomonadaceae, and ASV_828, which is classified within Methylococcaceae. For visualization, two low-abundance FPV-enriched ASVs (ASV_2028, ASV_346) and one open-pond ASV with minimal separation in absolute abundance (ASV_1019) were excluded.
 
+**Note 16S rRNA copy Number:** We considered whether variation in 16S rRNA operon copy number among methanotroph taxa could account for the high absolute abundances observed under FPV infrastructure. However, reported rrn copy numbers for dominant methanotroph lineages in our dataset (including *Methylomonas*, *Methylobacter*, *Methyloparacoccus*, *Methyloterricola*, and *Methylococcus*) typically range from one to six copies, implying at most a several-fold difference in apparent abundance. In contrast, FPV-associated methanotroph ASVs in the water column exhibit increases of one to two orders of magnitude relative to open ponds (10⁵–10⁶ vs. 10³–10⁴ cells mL⁻¹), far exceeding what could be explained by rrn copy number alone. Moreover, enrichment patterns are strongly structured at the family level, with FPV-associated blooms dominated by Methylomonadaceae, while ASVs enriched in open ponds belong exclusively to Methylococcaceae, arguing against a nonspecific copy-number artifact. Together, these observations indicate that Figure 4 reflects true population-level responses to FPV infrastructure rather than methodological inflation due to rRNA gene copy number.
 
 **What is the taxonomy of the Water Methanotroph ASVs in Figure 4 above?? **
 
@@ -638,6 +639,87 @@ figure_4
   arrange(Phylum, Class, Order) %>%
   dplyr::mutate(Genus = if_else(Genus == "Methylobacter_C_601751", "Methylobacter_C", Genus)) %>%
   DT::datatable(options = list(pageLength = nrow(.), lengthChange = FALSE))
+```
+
+
+## Alphas versus Gammas 
+
+```{r water-alphas-vs-gammas, fig.width = 4, fig.height = 6}
+# Make a dataframe that is collapsed at the Class level 
+water_methanotroph_class_df_glom <- 
+  water_ch4_cyclers_physeq %>% 
+  subset_taxa(CH4_Cycler == "Methanotroph") %>%
+  tax_glom(taxrank = "Class") %>% 
+  psmelt() %>% 
+  dplyr::mutate(solar_progress = recode(solar_progress, "Solar" = "FPV", "No FPV" = "Open"),
+                Depth_Class = case_when(Depth_Class == "S" ~ "Surface Water",
+                                        Depth_Class == "B" ~ "Bottom Water"),
+                Depth_Class = factor(Depth_Class, levels = c("Surface Water", "Bottom Water"))) %>%
+  dplyr::select(-c(input:Date_Collected, Deployment_ID:Freezer_Temp_NegDegrees, 
+                   D_Number:Integrated_Depths_m, Max_Depth:lag, Order:CH4_Cycler))
+
+
+# look
+colnames(water_methanotroph_class_df_glom)
+
+# Plot it 
+class_level_methanotroph_water_plot <- 
+  water_methanotroph_class_df_glom %>% 
+  ggplot(aes(x = JDate, y = Abundance, 
+             color = solar_progress, shape = Pond)) +
+  geom_line(aes(group = interaction(Pond, Depth_Class)), alpha = 0.2) +
+  stat_summary(aes(group = solar_progress, fill = solar_progress),
+               fun.data = function(y) 
+                 {data.frame(y = median(y, na.rm = TRUE), 
+                             ymin = quantile(y, 0.25, na.rm = TRUE),
+                             ymax = quantile(y, 0.75, na.rm = TRUE))},
+               geom = "ribbon", alpha = 0.15, color = NA) +
+  stat_summary(aes(group = solar_progress), 
+               fun = median, geom = "line", linewidth = 1) +
+  geom_point(aes(shape = Pond), size = 2) +
+  facet_grid(Class~Depth_Class, scales = "free_y") +
+  scale_y_continuous(labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
+  scale_x_continuous(limits = c(170,260), breaks = seq(150, 275, by = 25)) +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  guides(color = guide_legend(ncol = 1),
+         fill  = guide_legend(ncol = 1),
+         shape = guide_legend(ncol = 3)) + 
+  labs(x = "Day of Year (DOY)",
+       y = "Absolute Abundance (Cells mL<sup>-1</sup>)",
+       color = "Treatment", fill  = "Treatment",
+       title = "Water Methanotrophs: Class-Level") +
+  theme(legend.position = "bottom") +
+  theme_classic() +
+  theme( #legend.position = c(0.75, 0.7),
+    legend.position = "bottom",
+        legend.spacing = unit(0, "cm"),
+        plot.title = element_text(hjust = 0.5),
+        panel.background =  element_rect(color = 'black', size = 1),
+        panel.grid = element_blank(),
+        legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
+        legend.key = element_rect(fill = "transparent", color = NA),
+        legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
+        legend.box.just = "center",
+        #strip.background = element_rect(colour = NA, fill = 'transparent'),
+        plot.background = element_rect(fill = "transparent", color="transparent"),
+        legend.key.size = unit(0.2, "cm"),
+        legend.spacing.x = unit(0.2, "cm"),
+       legend.margin = margin(t = -5, unit = "pt"),
+        strip.text = element_markdown(size = 8),
+       axis.title.y = element_markdown(size = 8, colour = "black"),
+       axis.title.x = element_markdown(size = 8, colour = "black"),
+       axis.text.y = element_text(size = 8, colour = "black"),
+       legend.title = element_text(size = 9, colour = "black"),
+      legend.text = element_text(size = 8, colour = "black")); 
+
+
+# Save the plot   
+ggsave(class_level_methanotroph_water_plot, 
+       width = 4, height = 6, dpi = 300,
+       filename = "figures/bonus/class_level_methanotroph_water.png")
+
+class_level_methanotroph_water_plot
 ```
 
 # Sediment
@@ -754,7 +836,7 @@ sed_ch4_asv_df_glom <-
 # create list of differentially abundanct asvs, updated results
 sed_ch4_methanotrophs_enrichedFPV <- 
   clean_sed_ch4 %>%
-  dplyr::filter(lfc >0)%>%
+  dplyr::filter(lfc > 0)%>%
   pull(ASV)
 
 # now plot overtime: ENRICHED in FPVs
@@ -886,6 +968,18 @@ sed_diffAbund_ASVs_plot
 ggsave(sed_diffAbund_ASVs_plot, 
        width = 4.5, height = 7, dpi = 300,
        filename = "figures/bonus/sed_diffAbund_ASVs.png")
+```
+
+
+**What is the taxonomy of the Methanotroph ASVs in Figure SX above? **
+
+```{r sed-diffAbund-showTaxonomy}
+sed_ch4_asv_df_glom %>% 
+  dplyr::select(CH4_Cycler, Kingdom:ASV) %>%
+  unique() %>%
+  arrange(Phylum, Class, Order) %>%
+#  dplyr::mutate(Genus = if_else(Genus == "Methylobacter_C_601751", "Methylobacter_C", Genus)) %>%
+  DT::datatable(options = list(pageLength = nrow(.), lengthChange = FALSE))
 ```
 
 
