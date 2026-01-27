@@ -1027,8 +1027,6 @@ Next, I plot only the Strong ASVs to highlight the clearest FPV-associated seaso
 top_asvs_time_methogen <- 
   asv_effect_time_robust_methanogen_df %>%
   dplyr::filter(tier == "Strong") %>%
-  # REMOVE FEN-33 BECAUSE IT"S ASSOCIATED with methanogenesis, it's NOT a methanogen
-  dplyr::filter(GEnus !="FEN-33") %>%
   # Pull the ASVs 
   dplyr::arrange(desc(max_pos_delta)) %>%
   pull(ASV)
@@ -1040,13 +1038,20 @@ length(top_asvs_time_methogen)
 sed_methanogen_asvs_df <- 
   sed_methanogens_df %>%
   dplyr::filter(ASV %in% top_asvs_time_methogen) %>%
-  dplyr::left_join(., asv_effect_time_robust_methanogen_df, by = "ASV")
+  dplyr::left_join(., asv_effect_time_robust_methanogen_df, by = "ASV") %>%
+  # REMOVE FEN-33 BECAUSE IT"S ASSOCIATED with methanogenesis, it's NOT a methanogen
+  dplyr::filter(ASV != "ASV_406")
   
+length(unique(sed_methanogen_asvs_df$ASV))
+
+# What's the diff?? 
+setdiff(top_asvs_time_methogen, unique(sed_methanogen_asvs_df$ASV))
+
 # TIME TO PLOT 
 sed_methanogen_ASV_plot <- 
   sed_methanogen_asvs_df %>%
   # REMOVE FEN-33 BECAUSE IT"S ASSOCIATED with methanogenesis, it's NOT a methanogen
-  dplyr::filter(Genus !="FEN-33") %>%
+  dplyr::filter(ASV != "ASV_406") %>%
   dplyr::mutate(Genus = if_else(Genus == "Methanobacterium_D_1054", "Methanobacterium_D",
                                 if_else(Genus == "Methanobacterium_F_900", "Methanobacterium_F",
                                         if_else(Genus == "Methanosarcina_2619", "Methanosarcina", Genus))),
@@ -1116,7 +1121,7 @@ sed_methanogen_ASV_plot
 ```{r sed-methanogen-showTaxonomy}
 sed_methanogen_asvs_df %>%
   # REMOVE FEN-33 bc it's NOT a methanogen
-  dplyr::filter(Genus !="FEN-33") %>%
+  dplyr::filter(ASV != "ASV_406") %>%
   dplyr::select(Kingdom:ASV) %>%
   unique() %>%
   arrange(Phylum, Class, Order) %>%
