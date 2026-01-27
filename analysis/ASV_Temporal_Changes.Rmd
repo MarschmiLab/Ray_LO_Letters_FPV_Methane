@@ -12,7 +12,7 @@ output:
     toc_float:
       collapsed: no
       smooth_scroll: yes
-      toc_depth: 3
+      toc_depth: 2
 editor_options: 
   chunk_output_type: console
   markdown: 
@@ -469,11 +469,13 @@ water_ch4_trophs_enriched_plot <-
   scale_x_continuous(limits = c(170,260), breaks = seq(150, 275, by = 25)) +
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) +
-  labs(
-    x = "Day of Year (DOY)",
-    y = "Absolute Abundance (Cells mL<sup>-1</sup>)",
-    title = "Water Methanotroph ASVs Enriched in FPV Ponds"
-  ) +
+  guides(color = guide_legend(ncol = 1),
+         fill  = guide_legend(ncol = 1),
+         shape = guide_legend(ncol = 3)) + 
+  labs(x = "Day of Year (DOY)",
+       y = "Absolute Abundance (Cells mL<sup>-1</sup>)",
+       color = "Treatment", fill  = "Treatment",
+       title = "Water Methanotroph ASVs Enriched in FPV Ponds") +
   theme_classic() +
   theme( #legend.position = c(0.75, 0.7),
     legend.position = "bottom",
@@ -555,8 +557,12 @@ water_ch4_trophs_enrichedControls_plot <-
   scale_x_continuous(limits = c(170,260), breaks = seq(150, 275, by = 25)) +
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) +
+  guides(color = guide_legend(ncol = 1),
+         fill  = guide_legend(ncol = 1),
+         shape = guide_legend(ncol = 3)) + 
   labs(x = "Day of Year (DOY)",
        y = "Absolute Abundance (Cells mL<sup>-1</sup>)",
+       color = "Treatment", fill  = "Treatment",
        title = "Water Methanotroph ASVs Enriched in Open Ponds") +
   theme(legend.position = "bottom") +
   theme_classic() +
@@ -586,10 +592,10 @@ water_ch4_trophs_enrichedControls_plot <-
 water_ch4_trophs_enrichedControls_plot
 ```
 
-### Figure 4
+## Figure 4
 
 **Water Column: Differentially Abundant Taxa**
-```{r Fig-4, fig.width=6, fig.height=7}
+```{r Fig-4, fig.width=9, fig.height=8}
 #devtools::install_github("thomasp85/patchwork")
 library(patchwork)
 
@@ -606,18 +612,16 @@ figure_4 <-
   plot_annotation(tag_levels = "A") + 
   plot_layout(heights = c(0.9, 1))
 
-# Show the plot
-figure_4
-
 # Save the plot   
 ggsave(figure_4, 
        width = 9, height = 8, dpi = 300,
-       filename = "figures/bonus/figure_4.png")
+       filename = "figures/Fig_4.png")
+
+# Show the plot
+figure_4
 ```
 
-**Figure 4. Differentially abundant water-column methanotroph ASVs identified using ANCOM-BC2 and visualized as absolute abundance (cells mL⁻¹) across the growing season.** (A) Methanotroph ASVs significantly enriched in floating photovoltaic (FPV) ponds relative to open ponds and (B) methanotroph ASVs significantly enriched in open ponds relative to FPV ponds (FDR-corrected q < 0.05, |log-fold change| > 1). Taxonomic assignments are shown at the lowest confident rank for each ASV.
-
-Points represent individual pond–date observations (shape indicates pond identity), with faint lines connecting repeated measurements through time within each pond and depth. Shaded ribbons denote the median ± interquartile range for each treatment. Panels are faceted by ASV (columns) and water column depth (surface vs bottom; rows). Absolute abundances were calculated by combining amplicon relative abundances with flow cytometry–derived cell counts. Day of year (DOY) indicates sampling date.
+**Figure 4. Blooming water-column methanotroph ASVs under floating solar infrastructure** Methanotroph ASVs identified as differentially abundant between FPV and open ponds using ANCOM-BC2 are shown as absolute abundance (cells mL⁻¹) across the sampling season. (A) Methanotroph ASVs that bloom in FPV ponds and (B) methanotroph ASVs enriched in open ponds. Panels are faceted by ASV and water column depth (surface vs bottom). Points represent individual pond observations, lines connect repeated measurements through time within each pond–depth combination, and shaded ribbons indicate the median and interquartile range (25th–75th percentiles) for each treatment at each sampling day. Taxonomic assignments are shown at the genus and species level, except ASV_13, which is classified within the family *Methylomonadaceae*, and ASV_828, which is classified within the family *Methylococcaceae.* For visualization, two low-abundance FPV-enriched ASVs (ASV_2028, ASV_346) and one open-pond ASV with minimal separation in absolute abundance (ASV_1019) were excluded.
 
 # Sediment
 
@@ -994,6 +998,12 @@ This data frame shows:
 	•	`n_dates_FPV_gt_Open`: whether it’s “one-date” vs “multi-date”
 	•	`n_FPV_ponds_support`: whether peak enrichment is supported across ponds
 	•	`pass_dates` / `pass_ponds`: transparent audit trail for defensibility
+	
+	
+
+## Figure 5
+
+Next, I plot only the Strong ASVs to highlight the clearest FPV-associated seasonal trajectories. Points show pond-level observations, thin lines connect repeated measures within ponds, and the thick lines/ribbons summarize treatment medians and interquartile ranges at each date. This visualization emphasizes that FPV effects in sediments are concentrated in seasonal windows and can be distributed across multiple abundant ASVs rather than manifesting as a uniform genus-level shift.
 
 ```{r Fig-5-sed-methanogens, fig.width = 10, fig.height = 8}
 # Pull top time-divergent ASVs and remove the weak/noisy or moderate
@@ -1008,15 +1018,18 @@ top_asvs_time_methogen <-
 length(top_asvs_time_methogen)
 
 # Make a new df with only these ASVs 
-sed_methanogen_additive_asvs_df <- 
+sed_methanogen_asvs_df <- 
   sed_methanogens_df %>%
   dplyr::filter(ASV %in% top_asvs_time_methogen) %>%
   dplyr::left_join(., asv_effect_time_robust_methanogen_df, by = "ASV")
   
 # TIME TO PLOT 
 sed_methanogen_ASV_plot <- 
-  sed_methanogen_additive_asvs_df %>%
-  mutate(ASV_Genus = paste0("Peak:",peak_delta_date, "; ", ASV, "<br>", Genus)) %>%
+  sed_methanogen_asvs_df %>%
+  dplyr::mutate(Genus = if_else(Genus == "Methanobacterium_D_1054", "Methanobacterium_D",
+                                if_else(Genus == "Methanobacterium_F_900", "Methanobacterium_F",
+                                        if_else(Genus == "Methanosarcina_2619", "Methanosarcina", Genus))),
+                ASV_Genus = paste0("Peak:",peak_delta_date, "; ", ASV, "<br>", Genus)) %>%
   group_by(JDate, Pond, solar_progress, ASV) %>%
   ggplot(aes(x = JDate, y = Abundance*100, color = solar_progress)) + 
   facet_wrap(~ASV_Genus, scales = "free_y", 
@@ -1032,10 +1045,14 @@ sed_methanogen_ASV_plot <-
   stat_summary(aes(group = solar_progress), 
                fun = median, geom = "line", linewidth = 1) +
   labs(x = "Day of Year (DOY)", y = "Relative Abundance (%)", 
+       color = "Treatment", fill  = "Treatment",
        title = "Seasonal FPV Effects on Sediment Methanogen ASVs") + 
   geom_point(aes(shape = Pond), size = 2) +
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) + 
+  guides(color = guide_legend(ncol = 1),
+         fill  = guide_legend(ncol = 1),
+         shape = guide_legend(ncol = 3)) + 
   theme(legend.position = "bottom") +
   theme_classic() +
   theme( #legend.position = c(0.75, 0.7),
@@ -1058,18 +1075,30 @@ sed_methanogen_ASV_plot <-
        axis.title.x = element_markdown(size = 8, colour = "black"),
        axis.text.y = element_text(size = 8, colour = "black"),
        legend.title = element_text(size = 9, colour = "black"),
-      legend.text = element_text(size = 8, colour = "black")); sed_methanogen_ASV_plot
-
+      legend.text = element_text(size = 8, colour = "black")); 
 
 # Save the plot   
 ggsave(sed_methanogen_ASV_plot, 
        width = 10, height = 8, dpi = 300,
-       filename = "figures/bonus/figure_5.png")
+       filename = "figures/Fig_5.png")
+
+# Show the Plot 
+sed_methanogen_ASV_plot
 ```
 
-Finally, I plot only the Strong ASVs to highlight the clearest FPV-associated seasonal trajectories. Points show pond-level observations, thin lines connect repeated measures within ponds, and the thick lines/ribbons summarize treatment medians and interquartile ranges at each date. This visualization emphasizes that FPV effects in sediments are concentrated in seasonal windows and can be distributed across multiple abundant ASVs rather than manifesting as a uniform genus-level shift.
 
+**Figure 5. Seasonal FPV-associated divergence of sediment methanogen ASVs.** Sediment methanogen ASVs showing strong, time-dependent divergence between FPV and open ponds were identified using a manual, seasonally explicit screening approach and are shown as relative abundance (%) across the sampling season. Analysis focused on abundant methanogen ASVs (mean relative abundance >0.05%) and quantified FPV–Open separation at each sampling date using median abundances. ASVs were retained if peak FPV enrichment was supported across multiple sampling dates and/or multiple FPV ponds (see Supplemental Methods). Panels are faceted by ASV and annotated with the day of year (DOY) at which maximum FPV enrichment occurred. Points represent individual pond observations, thin lines connect repeated measurements within ponds, and thick lines and shaded ribbons indicate the median and interquartile range (25th–75th percentiles) for each treatment at each date.
 
+```{r sed-methanogen-showTaxonomy}
+sed_methanogen_asvs_df %>%
+  dplyr::select(Kingdom:ASV) %>%
+  unique() %>%
+  arrange(Phylum, Class, Order) %>%
+  dplyr::mutate(Genus = if_else(Genus == "Methanobacterium_D_1054", "Methanobacterium_D",
+                                if_else(Genus == "Methanobacterium_F_900", "Methanobacterium_F",
+                                        if_else(Genus == "Methanosarcina_2619", "Methanosarcina", Genus)))) %>%
+  DT::datatable(options = list(pageLength = nrow(.), lengthChange = FALSE))
+```
 
 ## Methanotroph ASVs Over Time 
 
@@ -1194,7 +1223,8 @@ sed_methanotroph_asvs_df <-
 # TIME TO PLOT 
 sed_methanotroph_ASV_plot <- 
   sed_methanotroph_asvs_df %>%
-  mutate(ASV_Genus = paste0("Peak:", peak_delta_date, "; ", ASV, "<br>", Genus)) %>%
+  dplyr::mutate(Genus = if_else(Genus == "Methylobacter_C_601751", "Methylobacter_C", Genus),
+                ASV_Genus = paste0("Peak:", peak_delta_date, "; ", ASV, "<br>", Genus)) %>%
   group_by(JDate, Pond, solar_progress, ASV) %>%
   ggplot(aes(x = JDate, y = Abundance*100, color = solar_progress)) + 
   facet_wrap(~ASV_Genus, scales = "free_y", nrow = 2) +
@@ -1208,11 +1238,14 @@ sed_methanotroph_ASV_plot <-
   stat_summary(aes(group = solar_progress), 
                fun = median, geom = "line", linewidth = 1) +
   labs(x = "Day of Year (DOY)", y = "Relative Abundance (%)", 
+       color = "Treatment", fill  = "Treatment",
        title = "Seasonal FPV Effects on Sediment Methanotroph ASVs") + 
   geom_point(aes(shape = Pond), size = 2) +
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) + 
-  theme(legend.position = "bottom") +
+  guides(color = guide_legend(ncol = 1),
+         fill  = guide_legend(ncol = 1),
+         shape = guide_legend(ncol = 3)) + 
   theme_classic() +
   theme(legend.position = "bottom",
         legend.spacing = unit(0, "cm"),
@@ -1232,13 +1265,26 @@ sed_methanotroph_ASV_plot <-
        axis.title.x = element_markdown(size = 8, colour = "black"),
        axis.text.y = element_text(size = 8, colour = "black"),
        legend.title = element_text(size = 9, colour = "black"),
-      legend.text = element_text(size = 8, colour = "black")); sed_methanotroph_ASV_plot
-
+      legend.text = element_text(size = 8, colour = "black")); 
 
 # Save the plot   
 ggsave(sed_methanotroph_ASV_plot, 
        width = 8, height = 5, dpi = 300,
        filename = "figures/bonus/sed_methanotroph_ASV_time.png")
+
+# Show the plot 
+sed_methanotroph_ASV_plot
+```
+
+**Figure SX. Sediment methanotroph ASV time series screened for seasonal FPV–Open divergence.** Sediment methanotroph ASVs are shown as relative abundance (%) across the sampling season. To visualize potential time-dependent FPV–Open separation not captured by a constant treatment effect, we screened abundant methanotroph ASVs (mean relative abundance > 0.05%) and quantified FPV–Open differences at each sampling date using median abundances. ASVs shown are those with positive peak FPV enrichment supported across multiple sampling dates and/or multiple FPV ponds (see Supplemental Methods). Panels are faceted by ASV and annotated with the day of year (DOY) of maximum FPV enrichment. Points represent pond observations, thin lines connect repeated measures within ponds, and thick lines and shaded ribbons indicate treatment medians and interquartile ranges (25th–75th percentiles) at each date. This figure is provided for visualization; community-level tests did not detect a significant `FPV × time` effect for sediment methanotrophs.
+
+```{r sed-methanotroph-showTaxonomy}
+sed_methanotroph_asvs_df %>%
+  dplyr::select(Kingdom:ASV) %>%
+  unique() %>%
+  arrange(Phylum, Class, Order) %>%
+  dplyr::mutate(Genus = if_else(Genus == "Methylobacter_C_601751", "Methylobacter_C", Genus)) %>%
+  DT::datatable(options = list(pageLength = nrow(.), lengthChange = FALSE))
 ```
 
 
