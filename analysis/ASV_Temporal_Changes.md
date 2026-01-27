@@ -1,7 +1,7 @@
 ---
 title: "ASV-level Temporal Changes of Methanogens and Methanotrophs in FPV and Control Ponds"
 author: "Mar Schmidt"
-date: "26 January, 2026"
+date: "27 January, 2026"
 output:
   html_document:
     code_folding: show
@@ -287,7 +287,301 @@ raw_sediment24_physeq
 
 # Water 
 
-# Differential Abundance with ANCOM-BC2
+## PERMANOVA 
+
+Three steps: 
+
+1. Calculate Bray Curtis Distances
+2. Calculate the PERMANOVA 
+3. Calculate the betadisper 
+
+
+``` r
+### ### ### ### ### ### ### ### ###
+# FIRST, calculate Bray-Curtis PERMANOVA using phyloseq distance
+## Methanotrophs 
+water_methanotroph_bray <- phyloseq::distance(water_methanotrophs_physeq, method = "bray", binary = FALSE)
+# pull out Methanotroph Metadata 
+water_methanotroph_metadata <- 
+  water_methanotrophs_physeq%>%
+  sample_data() %>%
+  data.frame()
+
+## Methanogens
+water_methanogen_bray <- phyloseq::distance(water_methanogens_physeq, method = "bray", binary = FALSE)
+
+## OOH, an important warning message! 
+## How many samples have NO methanogens?? 
+sum(rowSums(otu_table(water_methanogens_physeq)) == 0)
+```
+
+```
+## [1] 5
+```
+
+``` r
+## How many DO have methanogens? 
+sum(rowSums(otu_table(water_methanogens_physeq)) > 0)
+```
+
+```
+## [1] 43
+```
+
+``` r
+### How does this compare in total counts to methanotrophs???
+methanogen_counts <- rowSums(otu_table(water_methanogens_physeq))
+methanogen_counts
+```
+
+```
+## SA_D060 SA_D068 SA_D076 SA_D091 SA_D053 SA_D061 SA_D069 SA_D077 SA_D084 SA_D092 SA_D054 SA_D062 SA_D070 SA_D078 SA_D085 SA_D093 SA_D055 SA_D063 SA_D071 SA_D079 SA_D086 SA_D094 SA_D056 SA_D064 SA_D072 SA_D080 SA_D087 SA_D095 SA_D057 SA_D073 SA_D081 
+##   40063   14405   20949     627       0     554    8246     834  107153    4131    5024    2892   32375    2390       0       0    1413     352    1973    1170    5351    7211   15402    1786   25266    5738    1585    1167       0    1163    1525 
+## SA_D088 SA_D096 SA_D058 SA_D066 SA_D074 SA_D082 SA_D089 SA_D097 SA_D059 SA_D067 SA_D075 SA_D083 SA_D090 SA_D098 SA_D099 SA_D100 SA_D065 
+##    8118    3910   11599   13092   14411    4444     581     291     746    2220    1509     824   11737       0    5441    4392     486
+```
+
+``` r
+sum(methanogen_counts)
+```
+
+```
+## [1] 394546
+```
+
+``` r
+methanotroph_counts <- rowSums(otu_table(water_methanotrophs_physeq))
+methanotroph_counts
+```
+
+```
+## SA_D060 SA_D068 SA_D076 SA_D091 SA_D053 SA_D061 SA_D069 SA_D077 SA_D084 SA_D092 SA_D054 SA_D062 SA_D070 SA_D078 SA_D085 SA_D093 SA_D055 SA_D063 SA_D071 SA_D079 SA_D086 SA_D094 SA_D056 SA_D064 SA_D072 SA_D080 SA_D087 SA_D095 SA_D057 SA_D073 SA_D081 
+##   94536  335836  180325  592889   68197   34984   59364  373600  190392  294655  323223  261287   82976  307858  170054  815647  121503   20215   99791  724705  169701  683450  140752  206148  104644  853628  291664   53366   78768  104221  427444 
+## SA_D088 SA_D096 SA_D058 SA_D066 SA_D074 SA_D082 SA_D089 SA_D097 SA_D059 SA_D067 SA_D075 SA_D083 SA_D090 SA_D098 SA_D099 SA_D100 SA_D065 
+##  476040   46917  215775  693884  163476  437498 1267346   24064   19407  461046  235349  171036 1215710   28937  236323  165553  289870
+```
+
+``` r
+sum(methanotroph_counts)
+```
+
+```
+## [1] 14414054
+```
+
+``` r
+# pull out Methanotroph Metadata 
+water_methanogen_metadata <- 
+  water_methanogens_physeq%>%
+  sample_data() %>%
+  data.frame()
+
+
+### ### ### ### ### ### ### 
+### SECOND, time to calculate the PERMANOVA
+## Results to add to Table S7 for the water column data. 
+## Methanotrophs
+water_methanotroph_permanova <- adonis2(water_methanotroph_bray ~ solar_progress * Pond * JDate, 
+                                        data = water_methanotroph_metadata, by = "terms"); 
+# Show the results 
+water_methanotroph_permanova
+```
+
+```
+## Permutation test for adonis under reduced model
+## Terms added sequentially (first to last)
+## Permutation: free
+## Number of permutations: 999
+## 
+## adonis2(formula = water_methanotroph_bray ~ solar_progress * Pond * JDate, data = water_methanotroph_metadata, by = "terms")
+##                      Df SumOfSqs      R2      F Pr(>F)    
+## solar_progress        1   1.7286 0.13228 9.9873  0.001 ***
+## Pond                  4   2.0848 0.15955 3.0114  0.001 ***
+## JDate                 1   1.1437 0.08752 6.6079  0.001 ***
+## solar_progress:JDate  1   0.8020 0.06137 4.6337  0.001 ***
+## Pond:JDate            4   1.0772 0.08244 1.5560  0.032 *  
+## Residual             36   6.2308 0.47683                  
+## Total                47  13.0671 1.00000                  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+``` r
+## Methanogens
+water_methanogens_permanova <- adonis2(water_methanogen_bray ~ solar_progress * Pond * JDate, 
+                                        data = water_methanogen_metadata, by = "terms"); 
+```
+
+```
+## Error in if (any(lhs < -TOL)) stop("dissimilarities must be non-negative"): missing value where TRUE/FALSE needed
+```
+
+``` r
+# Show the results 
+water_methanogens_permanova
+```
+
+```
+## Error: object 'water_methanogens_permanova' not found
+```
+
+``` r
+### ### ### ### ### ### ### ### 
+# THIRD, calculate the betadispersion 
+## Methanotrophs
+##### FPV 
+betadispr_water_methanotroph_solar <- betadisper(water_methanotroph_bray, water_methanotroph_metadata$solar_progress)
+permutest(betadispr_water_methanotroph_solar)
+```
+
+```
+## 
+## Permutation test for homogeneity of multivariate dispersions
+## Permutation: free
+## Number of permutations: 999
+## 
+## Response: Distances
+##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)   
+## Groups     1 0.12236 0.122360 9.1435    999  0.004 **
+## Residuals 46 0.61558 0.013382                        
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+``` r
+##### Pond
+betadispr_water_methanotroph_pond <- betadisper(water_methanotroph_bray, water_methanotroph_metadata$Pond)
+permutest(betadispr_water_methanotroph_pond)
+```
+
+```
+## 
+## Permutation test for homogeneity of multivariate dispersions
+## Permutation: free
+## Number of permutations: 999
+## 
+## Response: Distances
+##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)
+## Groups     5 0.09255 0.018511 0.9979    999  0.445
+## Residuals 42 0.77906 0.018549
+```
+
+``` r
+##### Depth 
+betadispr_water_methanotroph_depth <- betadisper(water_methanotroph_bray, water_methanotroph_metadata$Depth_Class)
+permutest(betadispr_water_methanotroph_depth)
+```
+
+```
+## 
+## Permutation test for homogeneity of multivariate dispersions
+## Permutation: free
+## Number of permutations: 999
+## 
+## Response: Distances
+##           Df  Sum Sq  Mean Sq    F N.Perm Pr(>F)
+## Groups     1 0.01116 0.011156 0.81    999  0.323
+## Residuals 46 0.63353 0.013772
+```
+
+``` r
+##### Day of Year: Julian Date 
+betadispr_water_methanotroph_JDate <- betadisper(water_methanotroph_bray, water_methanotroph_metadata$JDate)
+permutest(betadispr_water_methanotroph_JDate)
+```
+
+```
+## 
+## Permutation test for homogeneity of multivariate dispersions
+## Permutation: free
+## Number of permutations: 999
+## 
+## Response: Distances
+##           Df  Sum Sq  Mean Sq     F N.Perm Pr(>F)    
+## Groups     3 0.23694 0.078979 5.531    999  0.001 ***
+## Residuals 44 0.62829 0.014279                        
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+``` r
+## Methogens
+##### FPV 
+betadispr_water_methanogen_solar <- betadisper(water_methanogen_bray, water_methanotroph_metadata$solar_progress)
+permutest(betadispr_water_methanogen_solar)
+```
+
+```
+## 
+## Permutation test for homogeneity of multivariate dispersions
+## Permutation: free
+## Number of permutations: 999
+## 
+## Response: Distances
+##           Df   Sum Sq   Mean Sq     F N.Perm Pr(>F)  
+## Groups     1 0.020615 0.0206149 2.943    999  0.093 .
+## Residuals 42 0.294196 0.0070047                      
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+``` r
+##### Pond
+betadispr_water_methanogen_pond <- betadisper(water_methanogen_bray, water_methanotroph_metadata$Pond); 
+permutest(betadispr_water_methanogen_pond)
+```
+
+```
+## 
+## Permutation test for homogeneity of multivariate dispersions
+## Permutation: free
+## Number of permutations: 999
+## 
+## Response: Distances
+##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)
+## Groups     5 0.09006 0.018013 1.2109    999  0.322
+## Residuals 38 0.56524 0.014875
+```
+
+``` r
+##### Depth 
+betadispr_water_methanogen_depth <- betadisper(water_methanogen_bray, water_methanotroph_metadata$Depth_Class)
+permutest(betadispr_water_methanogen_depth)
+```
+
+```
+## 
+## Permutation test for homogeneity of multivariate dispersions
+## Permutation: free
+## Number of permutations: 999
+## 
+## Response: Distances
+##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)   
+## Groups     1 0.07985 0.079846 8.6029    999  0.005 **
+## Residuals 42 0.38982 0.009281                        
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+``` r
+##### Day of Year: Julian Date 
+betadispr_water_methanogen_JDate <- betadisper(water_methanogen_bray, water_methanotroph_metadata$JDate)
+permutest(betadispr_water_methanogen_JDate)
+```
+
+```
+## 
+## Permutation test for homogeneity of multivariate dispersions
+## Permutation: free
+## Number of permutations: 999
+## 
+## Response: Distances
+##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)
+## Groups     3 0.05417 0.018055 1.1876    999  0.315
+## Residuals 40 0.60810 0.015203
+```
+
+## Differential Abundance with ANCOM-BC2
 
 
 ``` r
@@ -430,8 +724,8 @@ clean_water_ch4 %>%
 ```
 
 ```{=html}
-<div class="datatables html-widget html-fill-item" id="htmlwidget-157892636f713323205d" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-157892636f713323205d">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8"],["ASV_13","ASV_141","ASV_44","ASV_828","ASV_1367","ASV_1479","ASV_32","ASV_976"],["No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV"],[1.394332776061662,1.37656912370484,1.148250684813773,-1.091773594371864,-1.107302284674842,-1.176314631878122,2.477128647783737,-1.146256601411654],["Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria"],["Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales"],["Methylomonadaceae","Methylomonadaceae","Methylomonadaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae"],[null,"Methylobacter_C_601751","Methylomonas",null,"Methyloterricola","Methyloterricola","Methyloparacoccus","Methyloterricola"],[null,null,"albis",null,"oryzae","oryzae",null,"oryzae"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>ASV<\/th>\n      <th>Comparison<\/th>\n      <th>lfc<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":3},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"ASV","targets":1},{"name":"Comparison","targets":2},{"name":"lfc","targets":3},{"name":"Class","targets":4},{"name":"Order","targets":5},{"name":"Family","targets":6},{"name":"Genus","targets":7},{"name":"Species","targets":8}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-2cbecdc42115fc9ac757" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-2cbecdc42115fc9ac757">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8"],["ASV_13","ASV_141","ASV_44","ASV_828","ASV_1367","ASV_1479","ASV_32","ASV_976"],["No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV"],[1.394332776061662,1.37656912370484,1.148250684813773,-1.091773594371864,-1.107302284674842,-1.176314631878122,2.477128647783737,-1.146256601411654],["Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria"],["Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales"],["Methylomonadaceae","Methylomonadaceae","Methylomonadaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae"],[null,"Methylobacter_C_601751","Methylomonas",null,"Methyloterricola","Methyloterricola","Methyloparacoccus","Methyloterricola"],[null,null,"albis",null,"oryzae","oryzae",null,"oryzae"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>ASV<\/th>\n      <th>Comparison<\/th>\n      <th>lfc<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":3},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"ASV","targets":1},{"name":"Comparison","targets":2},{"name":"lfc","targets":3},{"name":"Class","targets":4},{"name":"Order","targets":5},{"name":"Family","targets":6},{"name":"Genus","targets":7},{"name":"Species","targets":8}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 ```
 
 
@@ -487,7 +781,7 @@ water_ch4_trophs_enriched_plot <-
   labs(
     x = "Day of Year (DOY)",
     y = "Absolute Abundance (Cells mL<sup>-1</sup>)",
-    title = "Water Methanotroph ASVs Enriched in FPVs"
+    title = "Water Methanotroph ASVs Enriched in FPV Ponds"
   ) +
   theme_classic() +
   theme( #legend.position = c(0.75, 0.7),
@@ -549,7 +843,7 @@ water_ch4_trophs_enrichedControls_plot <-
   scale_shape_manual(values = pond_shapes) +
   labs(x = "Day of Year (DOY)",
        y = "Absolute Abundance (Cells mL<sup>-1</sup>)",
-       title = "Water Methanotroph ASVs Enriched in Controls") +
+       title = "Water Methanotroph ASVs Enriched in Open Ponds") +
   theme(legend.position = "bottom") +
   theme_classic() +
   theme( #legend.position = c(0.75, 0.7),
@@ -609,7 +903,7 @@ ggsave(figure_S5,
 
 
 
-# Sediment ASVs
+# Sediment
 
 ## Differential Abundance with ANCOM-BC2 
 
@@ -721,8 +1015,8 @@ clean_sed_ch4 %>%
 ```
 
 ```{=html}
-<div class="datatables html-widget html-fill-item" id="htmlwidget-194020739964796f9686" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-194020739964796f9686">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5"],["ASV_4747","ASV_431","ASV_4603","ASV_2746","ASV_4541"],["No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV"],[-1.300075171599253,-1.033538941190584,2.225447922544627,-1.11139412587768,-1.569229101225373],["Methanotroph","Methanogen","Methanotroph","Methanogen","Methanotroph"],["Methylomirabilia","Methanosarcinia","Methanosarcinia","Methanomicrobia","Gammaproteobacteria"],["Methylomirabilales","Methanotrichales","Methanosarcinales_A_2632","Methanomicrobiales","Methylococcales"],["2-02-FULL-66-22","Methanotrichaceae","Methanoperedenaceae","Methanospirillaceae_2121","Methylomonadaceae"],["2-02-FULL-66-22","Methanothrix_B","Methanoperedens_A","UBA288",null],["sp001771285","sp002256595","sp002487355","sp004332335",null]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>ASV<\/th>\n      <th>Comparison<\/th>\n      <th>lfc<\/th>\n      <th>CH4_Cycler<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":3},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"ASV","targets":1},{"name":"Comparison","targets":2},{"name":"lfc","targets":3},{"name":"CH4_Cycler","targets":4},{"name":"Class","targets":5},{"name":"Order","targets":6},{"name":"Family","targets":7},{"name":"Genus","targets":8},{"name":"Species","targets":9}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-2e2d592f723f7efa69e3" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-2e2d592f723f7efa69e3">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5"],["ASV_4747","ASV_431","ASV_4603","ASV_2746","ASV_4541"],["No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV","No FPV : FPV"],[-1.300075171599253,-1.033538941190584,2.225447922544627,-1.11139412587768,-1.569229101225373],["Methanotroph","Methanogen","Methanotroph","Methanogen","Methanotroph"],["Methylomirabilia","Methanosarcinia","Methanosarcinia","Methanomicrobia","Gammaproteobacteria"],["Methylomirabilales","Methanotrichales","Methanosarcinales_A_2632","Methanomicrobiales","Methylococcales"],["2-02-FULL-66-22","Methanotrichaceae","Methanoperedenaceae","Methanospirillaceae_2121","Methylomonadaceae"],["2-02-FULL-66-22","Methanothrix_B","Methanoperedens_A","UBA288",null],["sp001771285","sp002256595","sp002487355","sp004332335",null]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>ASV<\/th>\n      <th>Comparison<\/th>\n      <th>lfc<\/th>\n      <th>CH4_Cycler<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":3},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"ASV","targets":1},{"name":"Comparison","targets":2},{"name":"lfc","targets":3},{"name":"CH4_Cycler","targets":4},{"name":"Class","targets":5},{"name":"Order","targets":6},{"name":"Family","targets":7},{"name":"Genus","targets":8},{"name":"Species","targets":9}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 ```
 
 **Important Note:** Most of the sediment ASVs are more abundant in the Controls, with the exception of ASV_4603, a *Methanoperedens_A*.
@@ -779,7 +1073,7 @@ sed_ch4_trophs_enriched_plot <-
   labs(
     x = "Day of Year (DOY)",
     y = "Relative Abundance (%)",
-    title = "Sediment ASVs Enriched in FPVs") +
+    title = "Sediment ASVs Enriched in FPV Ponds") +
   theme_classic() +
   theme( #legend.position = c(0.75, 0.7),
     legend.position = "bottom",
@@ -837,7 +1131,7 @@ sed_ch4_trophs_enrichedControls_plot <-
   labs(
     x = "Day of Year (DOY)",
     y = "Relative Abundance (%)",
-    title = "Sediment ASVs Enriched in FPVs") +
+    title = "Sediment ASVs Enriched in Open Ponds") +
   theme_classic() +
   theme( #legend.position = c(0.75, 0.7),
     legend.position = "bottom",
@@ -1022,8 +1316,8 @@ datatable(asv_effect_time_robust_methanogen_df,
 ```
 
 ```{=html}
-<div class="datatables html-widget html-fill-item" id="htmlwidget-f4b58a275263d4372e3a" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-f4b58a275263d4372e3a">{"x":{"filter":"none","vertical":false,"data":[["ASV_568","ASV_262","ASV_102","ASV_286","ASV_321","ASV_203","ASV_302","ASV_54","ASV_415","ASV_712","ASV_352","ASV_806","ASV_165","ASV_406","ASV_786","ASV_400","ASV_495","ASV_580","ASV_340","ASV_683","ASV_674","ASV_642","ASV_831","ASV_499","ASV_662","ASV_434","ASV_656","ASV_444","ASV_517"],[0.005725815699031163,0.005515798183228954,0.004050438039435019,0.004037589591291399,0.002698022410791751,0.002386986002827533,0.001772893958266892,0.00113902401108271,0.001101810629999988,0.000914366720337732,0.0008842538077371543,0.0008182611262996181,0.0007899294028170669,0.0007190998510160526,0.0006489551387553511,0.0006216532400210403,0.0005827673642660059,0.0005240299108241023,0.0005145069434129295,0.0005038219352054506,0.0004168456577829487,0.000408336926745982,0.0003327624554129041,0.0002657061491875936,0.0001924268213955387,0.0001909520230508664,0.0001662265095623314,0.0001301933236221647,9.709346791442045e-05],[193,193,234,193,193,193,193,193,234,193,234,193,193,255,193,172,193,255,193,172,193,172,234,172,255,172,234,193,193],[2,4,3,3,1,2,2,1,4,3,1,2,2,2,1,2,2,3,1,1,2,4,3,2,2,1,1,1,1],[0,0.001610631920948052,0.007022595318595357,0.0004807497852533149,0.0006717180891629029,0.0003351687814220733,0.0005740116266905481,0.008634052081392434,0.0003119151590767311,0,0.001668095772287855,0,0.0007451637274069167,0.001317943054419624,0.0002405465216972963,0.00093503830322395,0.0008370985728333728,0.0007726482518833301,0.00203293896753525,0,0.001243691857829521,0.0005522866682421564,0.0004328505516021233,0.0009806702128753978,0.0008376495698947013,0.0004794670337649483,0.0003806804663335713,0.001793781185136933,0.0004087106498864089],[0.005725815699031163,0.006931028238761478,0.01101357113319791,0.00476507670149737,0.003152717982877298,0.00269487485237122,0.00234690558495744,0.00962561805655605,0.001439142457532375,0.000914366720337732,0.002649180339910844,0.0007454773956771447,0.00165222113717662,0.001723312589755864,0.0004099151234567901,0.001774704014691415,0.001419865937099379,0.001075406604148432,0.002719479487360549,0.000503553467869159,0.00166053751561247,0.0009593095638772064,0.0008627685177251348,0.001150744882067858,0.001053135471517472,0.0008873520073457077,0.0004316092557843876,0.002093720409516994,0.0004572337323757028],[3,3,2,3,3,3,3,3,2,2,2,3,3,3,2,2,2,2,2,3,2,2,2,3,3,2,2,2,3],[0.005725815699031163,0.005320396317813426,0.003990975814602557,0.004284326916244055,0.002480999893714395,0.002359706070949147,0.001772893958266892,0.0009915659751636163,0.001127227298455644,0.000914366720337732,0.0009810845676229887,0.0007454773956771447,0.0009070574097697038,0.00040536953533624,0.0001693686017594938,0.0008396657114674654,0.0005827673642660059,0.000302758352265102,0.0006865405198252989,0.000503553467869159,0.0004168456577829487,0.00040702289563505,0.0004299179661230115,0.00017007466919246,0.0002154859016227711,0.0004078849735807594,5.092878945081635e-05,0.0002999392243800611,4.85230824892939e-05],[true,true,true,true,false,true,true,false,true,true,false,true,true,true,false,true,true,true,false,false,true,true,true,true,true,false,false,false,false],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],["Strong","Strong","Strong","Strong","Moderate","Strong","Strong","Moderate","Strong","Strong","Moderate","Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Moderate","Moderate","Strong","Strong","Strong","Strong","Strong","Moderate","Moderate","Moderate","Moderate"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>ASV<\/th>\n      <th>max_pos_delta<\/th>\n      <th>peak_delta_date<\/th>\n      <th>n_dates_FPV_gt_Open<\/th>\n      <th>open_median_at_peak<\/th>\n      <th>fpv_median_at_peak<\/th>\n      <th>n_FPV_ponds_support<\/th>\n      <th>delta_median_at_peak<\/th>\n      <th>pass_dates<\/th>\n      <th>pass_ponds<\/th>\n      <th>pass_robust<\/th>\n      <th>tier<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"autoWidth":true,"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7]},{"name":"ASV","targets":0},{"name":"max_pos_delta","targets":1},{"name":"peak_delta_date","targets":2},{"name":"n_dates_FPV_gt_Open","targets":3},{"name":"open_median_at_peak","targets":4},{"name":"fpv_median_at_peak","targets":5},{"name":"n_FPV_ponds_support","targets":6},{"name":"delta_median_at_peak","targets":7},{"name":"pass_dates","targets":8},{"name":"pass_ponds","targets":9},{"name":"pass_robust","targets":10},{"name":"tier","targets":11}],"order":[],"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-ea50fa3f17003b8bfed9" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-ea50fa3f17003b8bfed9">{"x":{"filter":"none","vertical":false,"data":[["ASV_568","ASV_262","ASV_102","ASV_286","ASV_321","ASV_203","ASV_302","ASV_54","ASV_415","ASV_712","ASV_352","ASV_806","ASV_165","ASV_406","ASV_786","ASV_400","ASV_495","ASV_580","ASV_340","ASV_683","ASV_674","ASV_642","ASV_831","ASV_499","ASV_662","ASV_434","ASV_656","ASV_444","ASV_517"],[0.005725815699031163,0.005515798183228954,0.004050438039435019,0.004037589591291399,0.002698022410791751,0.002386986002827533,0.001772893958266892,0.00113902401108271,0.001101810629999988,0.000914366720337732,0.0008842538077371543,0.0008182611262996181,0.0007899294028170669,0.0007190998510160526,0.0006489551387553511,0.0006216532400210403,0.0005827673642660059,0.0005240299108241023,0.0005145069434129295,0.0005038219352054506,0.0004168456577829487,0.000408336926745982,0.0003327624554129041,0.0002657061491875936,0.0001924268213955387,0.0001909520230508664,0.0001662265095623314,0.0001301933236221647,9.709346791442045e-05],[193,193,234,193,193,193,193,193,234,193,234,193,193,255,193,172,193,255,193,172,193,172,234,172,255,172,234,193,193],[2,4,3,3,1,2,2,1,4,3,1,2,2,2,1,2,2,3,1,1,2,4,3,2,2,1,1,1,1],[0,0.001610631920948052,0.007022595318595357,0.0004807497852533149,0.0006717180891629029,0.0003351687814220733,0.0005740116266905481,0.008634052081392434,0.0003119151590767311,0,0.001668095772287855,0,0.0007451637274069167,0.001317943054419624,0.0002405465216972963,0.00093503830322395,0.0008370985728333728,0.0007726482518833301,0.00203293896753525,0,0.001243691857829521,0.0005522866682421564,0.0004328505516021233,0.0009806702128753978,0.0008376495698947013,0.0004794670337649483,0.0003806804663335713,0.001793781185136933,0.0004087106498864089],[0.005725815699031163,0.006931028238761478,0.01101357113319791,0.00476507670149737,0.003152717982877298,0.00269487485237122,0.00234690558495744,0.00962561805655605,0.001439142457532375,0.000914366720337732,0.002649180339910844,0.0007454773956771447,0.00165222113717662,0.001723312589755864,0.0004099151234567901,0.001774704014691415,0.001419865937099379,0.001075406604148432,0.002719479487360549,0.000503553467869159,0.00166053751561247,0.0009593095638772064,0.0008627685177251348,0.001150744882067858,0.001053135471517472,0.0008873520073457077,0.0004316092557843876,0.002093720409516994,0.0004572337323757028],[3,3,2,3,3,3,3,3,2,2,2,3,3,3,2,2,2,2,2,3,2,2,2,3,3,2,2,2,3],[0.005725815699031163,0.005320396317813426,0.003990975814602557,0.004284326916244055,0.002480999893714395,0.002359706070949147,0.001772893958266892,0.0009915659751636163,0.001127227298455644,0.000914366720337732,0.0009810845676229887,0.0007454773956771447,0.0009070574097697038,0.00040536953533624,0.0001693686017594938,0.0008396657114674654,0.0005827673642660059,0.000302758352265102,0.0006865405198252989,0.000503553467869159,0.0004168456577829487,0.00040702289563505,0.0004299179661230115,0.00017007466919246,0.0002154859016227711,0.0004078849735807594,5.092878945081635e-05,0.0002999392243800611,4.85230824892939e-05],[true,true,true,true,false,true,true,false,true,true,false,true,true,true,false,true,true,true,false,false,true,true,true,true,true,false,false,false,false],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],["Strong","Strong","Strong","Strong","Moderate","Strong","Strong","Moderate","Strong","Strong","Moderate","Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Moderate","Moderate","Strong","Strong","Strong","Strong","Strong","Moderate","Moderate","Moderate","Moderate"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>ASV<\/th>\n      <th>max_pos_delta<\/th>\n      <th>peak_delta_date<\/th>\n      <th>n_dates_FPV_gt_Open<\/th>\n      <th>open_median_at_peak<\/th>\n      <th>fpv_median_at_peak<\/th>\n      <th>n_FPV_ponds_support<\/th>\n      <th>delta_median_at_peak<\/th>\n      <th>pass_dates<\/th>\n      <th>pass_ponds<\/th>\n      <th>pass_robust<\/th>\n      <th>tier<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"autoWidth":true,"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7]},{"name":"ASV","targets":0},{"name":"max_pos_delta","targets":1},{"name":"peak_delta_date","targets":2},{"name":"n_dates_FPV_gt_Open","targets":3},{"name":"open_median_at_peak","targets":4},{"name":"fpv_median_at_peak","targets":5},{"name":"n_FPV_ponds_support","targets":6},{"name":"delta_median_at_peak","targets":7},{"name":"pass_dates","targets":8},{"name":"pass_ponds","targets":9},{"name":"pass_robust","targets":10},{"name":"tier","targets":11}],"order":[],"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 ```
 
 The table above provides an audit trail for why each ASV was retained, including the date of peak FPV enrichment and whether that peak is supported across multiple sampling dates and/or across ponds.
@@ -1227,8 +1521,8 @@ datatable(asv_effect_time_robust_methanotroph_df,
 ```
 
 ```{=html}
-<div class="datatables html-widget html-fill-item" id="htmlwidget-cd164276acfa157a4562" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-cd164276acfa157a4562">{"x":{"filter":"none","vertical":false,"data":[["ASV_110","ASV_313","ASV_409","ASV_363","ASV_1005","ASV_919","ASV_453","ASV_177","ASV_677","ASV_559"],[0.003374608196225171,0.001928553443070333,0.001155795064232616,0.0008909542048271878,0.0008621225342379287,0.0007681064103575837,0.0005935271363700771,0.0002877859140323533,0.0002143353977014658,7.146453502788997e-05],[172,193,172,172,172,172,234,172,193,172],[3,2,4,1,2,4,3,2,3,1],[0.005667784969006832,0.001007145719269743,0.001028519392261971,0.0009588719976240559,0.0001441614608361365,0.0002636913510942614,0.001394650230227769,0.001342414589683094,0.0005769995992178042,0.0003121098626716604],[0.009269915603818275,0.002935699162340076,0.002304873504398891,0.00163341409816645,0.001150718447423748,0.001080207155603466,0.002085311375269465,0.00153437937871203,0.0009144797162538526,0.0003835743976995504],[3,3,3,3,2,3,2,2,3,2],[0.003602130634811443,0.001928553443070333,0.001276354112136919,0.0006745421005423945,0.001006556986587611,0.0008165158045092043,0.0006906611450416956,0.0001919647890289361,0.0003374801170360484,7.146453502788997e-05],[true,true,true,false,true,true,true,true,true,false],[true,true,true,true,true,true,true,true,true,true],[true,true,true,true,true,true,true,true,true,true],["Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Strong","Strong","Moderate"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>ASV<\/th>\n      <th>max_pos_delta<\/th>\n      <th>peak_delta_date<\/th>\n      <th>n_dates_FPV_gt_Open<\/th>\n      <th>open_median_at_peak<\/th>\n      <th>fpv_median_at_peak<\/th>\n      <th>n_FPV_ponds_support<\/th>\n      <th>delta_median_at_peak<\/th>\n      <th>pass_dates<\/th>\n      <th>pass_ponds<\/th>\n      <th>pass_robust<\/th>\n      <th>tier<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"autoWidth":true,"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7]},{"name":"ASV","targets":0},{"name":"max_pos_delta","targets":1},{"name":"peak_delta_date","targets":2},{"name":"n_dates_FPV_gt_Open","targets":3},{"name":"open_median_at_peak","targets":4},{"name":"fpv_median_at_peak","targets":5},{"name":"n_FPV_ponds_support","targets":6},{"name":"delta_median_at_peak","targets":7},{"name":"pass_dates","targets":8},{"name":"pass_ponds","targets":9},{"name":"pass_robust","targets":10},{"name":"tier","targets":11}],"order":[],"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-24c6a91f814bca73e487" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-24c6a91f814bca73e487">{"x":{"filter":"none","vertical":false,"data":[["ASV_110","ASV_313","ASV_409","ASV_363","ASV_1005","ASV_919","ASV_453","ASV_177","ASV_677","ASV_559"],[0.003374608196225171,0.001928553443070333,0.001155795064232616,0.0008909542048271878,0.0008621225342379287,0.0007681064103575837,0.0005935271363700771,0.0002877859140323533,0.0002143353977014658,7.146453502788997e-05],[172,193,172,172,172,172,234,172,193,172],[3,2,4,1,2,4,3,2,3,1],[0.005667784969006832,0.001007145719269743,0.001028519392261971,0.0009588719976240559,0.0001441614608361365,0.0002636913510942614,0.001394650230227769,0.001342414589683094,0.0005769995992178042,0.0003121098626716604],[0.009269915603818275,0.002935699162340076,0.002304873504398891,0.00163341409816645,0.001150718447423748,0.001080207155603466,0.002085311375269465,0.00153437937871203,0.0009144797162538526,0.0003835743976995504],[3,3,3,3,2,3,2,2,3,2],[0.003602130634811443,0.001928553443070333,0.001276354112136919,0.0006745421005423945,0.001006556986587611,0.0008165158045092043,0.0006906611450416956,0.0001919647890289361,0.0003374801170360484,7.146453502788997e-05],[true,true,true,false,true,true,true,true,true,false],[true,true,true,true,true,true,true,true,true,true],[true,true,true,true,true,true,true,true,true,true],["Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Strong","Strong","Moderate"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>ASV<\/th>\n      <th>max_pos_delta<\/th>\n      <th>peak_delta_date<\/th>\n      <th>n_dates_FPV_gt_Open<\/th>\n      <th>open_median_at_peak<\/th>\n      <th>fpv_median_at_peak<\/th>\n      <th>n_FPV_ponds_support<\/th>\n      <th>delta_median_at_peak<\/th>\n      <th>pass_dates<\/th>\n      <th>pass_ponds<\/th>\n      <th>pass_robust<\/th>\n      <th>tier<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"autoWidth":true,"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7]},{"name":"ASV","targets":0},{"name":"max_pos_delta","targets":1},{"name":"peak_delta_date","targets":2},{"name":"n_dates_FPV_gt_Open","targets":3},{"name":"open_median_at_peak","targets":4},{"name":"fpv_median_at_peak","targets":5},{"name":"n_FPV_ponds_support","targets":6},{"name":"delta_median_at_peak","targets":7},{"name":"pass_dates","targets":8},{"name":"pass_ponds","targets":9},{"name":"pass_robust","targets":10},{"name":"tier","targets":11}],"order":[],"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 ```
 
 
@@ -1328,7 +1622,7 @@ devtools::session_info()
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
 ##  tz       America/New_York
-##  date     2026-01-26
+##  date     2026-01-27
 ##  pandoc   3.1.1 @ /usr/lib/rstudio-server/bin/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────

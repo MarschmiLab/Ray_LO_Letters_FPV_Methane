@@ -176,7 +176,96 @@ raw_sediment24_physeq
 
 # Water 
 
-# Differential Abundance with ANCOM-BC2
+## PERMANOVA 
+
+Three steps: 
+
+1. Calculate Bray Curtis Distances
+2. Calculate the PERMANOVA 
+3. Calculate the betadisper 
+
+```{r CalcBrayCurtis-water-methanogens-and-trophs}
+### ### ### ### ### ### ### ### ###
+# FIRST, calculate Bray-Curtis PERMANOVA using phyloseq distance
+## Methanotrophs 
+water_methanotroph_bray <- phyloseq::distance(water_methanotrophs_physeq, method = "bray", binary = FALSE)
+# pull out Methanotroph Metadata 
+water_methanotroph_metadata <- 
+  water_methanotrophs_physeq%>%
+  sample_data() %>%
+  data.frame()
+
+## Methanogens
+water_methanogen_bray <- phyloseq::distance(water_methanogens_physeq, method = "bray", binary = FALSE)
+
+## OOH, an important warning message! 
+## How many samples have NO methanogens?? 
+sum(rowSums(otu_table(water_methanogens_physeq)) == 0)
+## How many DO have methanogens? 
+sum(rowSums(otu_table(water_methanogens_physeq)) > 0)
+
+### How does this compare in total counts to methanotrophs???
+methanogen_counts <- rowSums(otu_table(water_methanogens_physeq))
+methanogen_counts
+sum(methanogen_counts)
+methanotroph_counts <- rowSums(otu_table(water_methanotrophs_physeq))
+methanotroph_counts
+sum(methanotroph_counts)
+
+# pull out Methanotroph Metadata 
+water_methanogen_metadata <- 
+  water_methanogens_physeq%>%
+  sample_data() %>%
+  data.frame()
+
+
+### ### ### ### ### ### ### 
+### SECOND, time to calculate the PERMANOVA
+## Results to add to Table S7 for the water column data. 
+## Methanotrophs
+water_methanotroph_permanova <- adonis2(water_methanotroph_bray ~ solar_progress * Pond * JDate, 
+                                        data = water_methanotroph_metadata, by = "terms"); 
+# Show the results 
+water_methanotroph_permanova
+## Methanogens
+water_methanogens_permanova <- adonis2(water_methanogen_bray ~ solar_progress * Pond * JDate, 
+                                        data = water_methanogen_metadata, by = "terms"); 
+# Show the results 
+water_methanogens_permanova
+
+
+### ### ### ### ### ### ### ### 
+# THIRD, calculate the betadispersion 
+## Methanotrophs
+##### FPV 
+betadispr_water_methanotroph_solar <- betadisper(water_methanotroph_bray, water_methanotroph_metadata$solar_progress)
+permutest(betadispr_water_methanotroph_solar)
+##### Pond
+betadispr_water_methanotroph_pond <- betadisper(water_methanotroph_bray, water_methanotroph_metadata$Pond)
+permutest(betadispr_water_methanotroph_pond)
+##### Depth 
+betadispr_water_methanotroph_depth <- betadisper(water_methanotroph_bray, water_methanotroph_metadata$Depth_Class)
+permutest(betadispr_water_methanotroph_depth)
+##### Day of Year: Julian Date 
+betadispr_water_methanotroph_JDate <- betadisper(water_methanotroph_bray, water_methanotroph_metadata$JDate)
+permutest(betadispr_water_methanotroph_JDate)
+
+## Methogens
+##### FPV 
+betadispr_water_methanogen_solar <- betadisper(water_methanogen_bray, water_methanotroph_metadata$solar_progress)
+permutest(betadispr_water_methanogen_solar)
+##### Pond
+betadispr_water_methanogen_pond <- betadisper(water_methanogen_bray, water_methanotroph_metadata$Pond); 
+permutest(betadispr_water_methanogen_pond)
+##### Depth 
+betadispr_water_methanogen_depth <- betadisper(water_methanogen_bray, water_methanotroph_metadata$Depth_Class)
+permutest(betadispr_water_methanogen_depth)
+##### Day of Year: Julian Date 
+betadispr_water_methanogen_JDate <- betadisper(water_methanogen_bray, water_methanotroph_metadata$JDate)
+permutest(betadispr_water_methanogen_JDate)
+```
+
+## Differential Abundance with ANCOM-BC2
 
 ```{r ancombc2-water}
 # Remove taxa with ZERO variances 
@@ -354,7 +443,7 @@ water_ch4_trophs_enriched_plot <-
   labs(
     x = "Day of Year (DOY)",
     y = "Absolute Abundance (Cells mL<sup>-1</sup>)",
-    title = "Water Methanotroph ASVs Enriched in FPVs"
+    title = "Water Methanotroph ASVs Enriched in FPV Ponds"
   ) +
   theme_classic() +
   theme( #legend.position = c(0.75, 0.7),
@@ -412,7 +501,7 @@ water_ch4_trophs_enrichedControls_plot <-
   scale_shape_manual(values = pond_shapes) +
   labs(x = "Day of Year (DOY)",
        y = "Absolute Abundance (Cells mL<sup>-1</sup>)",
-       title = "Water Methanotroph ASVs Enriched in Controls") +
+       title = "Water Methanotroph ASVs Enriched in Open Ponds") +
   theme(legend.position = "bottom") +
   theme_classic() +
   theme( #legend.position = c(0.75, 0.7),
@@ -465,7 +554,7 @@ ggsave(figure_S5,
 
 
 
-# Sediment ASVs
+# Sediment
 
 ## Differential Abundance with ANCOM-BC2 
 
@@ -602,7 +691,7 @@ sed_ch4_trophs_enriched_plot <-
   labs(
     x = "Day of Year (DOY)",
     y = "Relative Abundance (%)",
-    title = "Sediment ASVs Enriched in FPVs") +
+    title = "Sediment ASVs Enriched in FPV Ponds") +
   theme_classic() +
   theme( #legend.position = c(0.75, 0.7),
     legend.position = "bottom",
@@ -656,7 +745,7 @@ sed_ch4_trophs_enrichedControls_plot <-
   labs(
     x = "Day of Year (DOY)",
     y = "Relative Abundance (%)",
-    title = "Sediment ASVs Enriched in FPVs") +
+    title = "Sediment ASVs Enriched in Open Ponds") +
   theme_classic() +
   theme( #legend.position = c(0.75, 0.7),
     legend.position = "bottom",
