@@ -749,8 +749,8 @@ raw_sediment24_physeq@sam_data$solar_progress <-
 #           pairwise = FALSE)               # No post-hoc pairwise tests
 
 # Save the data 
-#save(sed_ch4_diffAbundASV_FPV_output, 
-#     file = "data/03_diff_abund/sed_ch4_diffAbundASV_FPV_output.RData")
+save(sed_ch4_diffAbundASV_FPV_output, 
+     file = "data/03_diff_abund/sed_ch4_diffAbundASV_FPV_output.RData")
 
 # Load in the data 
 load("data/03_diff_abund/sed_ch4_diffAbundASV_FPV_output.RData")
@@ -775,24 +775,26 @@ sed_ch4_diffAbundASV_FPV_df <-
   mutate(
     Ref2 = ifelse(is.na(Ref2), "No FPV", Ref2), # relevel with basegroup which is no solar 
     Comparison = paste0(Ref2, " : ", Ref1)) %>% 
-  dplyr::filter(diff == 1, passed == 1, abs(lfc) > 1) %>% # 1.2 is good cut off to see effect, below we get ASVs with super low cell counts 
+  ## EDIT ME HERE! 
+  dplyr::filter(diff == 1, abs(lfc) > 0.5) %>% # NOTE: Removed passed == 1
   select(ASV = taxon, Comparison, lfc, passed)
 
 ## Show the Q-Values for the results section 
 sed_ch4_diffAbundASV_FPV_output$res %>%
   dplyr::transmute(ASV   = taxon,
-                   lfc   = lfc_solar_progressFPV,
-                   q_value     = q_solar_progressFPV,
+                   lfc   = round(lfc_solar_progressFPV, digits = 3),
+                   q_value     = round(q_solar_progressFPV, digits = 7),
                    diff  = diff_solar_progressFPV,
                    passed = passed_ss_solar_progressFPV) %>%
   dplyr::filter(passed, q_value < 0.05) %>%         # core inferential filter
   dplyr::mutate(Comparison = "FPV vs Open",
-                x_fold_change = exp(lfc),
+                x_fold_change = round(exp(lfc), digits = 3),
                 direction = ifelse(lfc > 0, "higher in FPV", "lower in FPV"),
                 q_nonSci = formatC(q_value, format = "f", digits = 7)) %>%
   dplyr::select(ASV, Comparison, lfc, x_fold_change, direction, q_value, q_nonSci) %>%
-  dplyr::arrange(-lfc)
-
+  dplyr::arrange(-lfc) %>%
+  dplyr::filter(abs(lfc) > 0.5) %>% # NOTE: Removed passed == 1
+  DT::datatable(options = list(pageLength = nrow(.), lengthChange = FALSE)) 
 
 # join by tax table
 clean_sed_ch4 <- 
@@ -801,12 +803,15 @@ clean_sed_ch4 <-
             by = "ASV"); 
 
 # Show the taxonomy
+## ALL METHANE CYCLERS 
+##### Include ones that have passed = 1 OR 0
 clean_sed_ch4 %>%
-  dplyr::select(ASV, Comparison, lfc, CH4_Cycler, Class:Species) %>%
-  DT::datatable()
+  dplyr::select(ASV, CH4_Cycler, Comparison, lfc, Class:Species) %>%
+  arrange(lfc) %>%
+  DT::datatable(options = list(pageLength = nrow(.), lengthChange = FALSE))
 ```
 
-**Important Note:** Most of the sediment ASVs are more abundant in the Controls, with the exception of ASV_4603, a *Methanoperedens_A*.
+**Important Note:** Most of the sediment ASVs are more abundant in the Controls, with the exception of ASV_4603, a *Methanoperedens_A*!
 
 
 ### Plot Diff Abund ASVs over time 
@@ -825,6 +830,8 @@ sed_ch4_asv_df_glom <-
 # Fix levels
 sed_ch4_asv_df_glom$solar_progress <- factor(sed_ch4_asv_df_glom$solar_progress,
                                                levels = c("FPV", "Open"))
+sed_ch4_asv_df_glom$CH4_Cycler <- factor(sed_ch4_asv_df_glom$CH4_Cycler,
+                                               levels = c("Methanotroph", "Methanogen"))
 
 # Rename by fixing the CH4 cycler column
 sed_ch4_asv_df_glom <- 
@@ -833,8 +840,8 @@ sed_ch4_asv_df_glom <-
   left_join(., dplyr::select(as.data.frame(sed_ch4_cyclers_physeq@tax_table), 
                              ASV, CH4_Cycler), by ="ASV")
 
-# create list of differentially abundanct asvs, updated results
-sed_ch4_methanotrophs_enrichedFPV <- 
+# create list of differentially abundant asvs, updated results
+sed_ch4_enrichedFPV <- 
   clean_sed_ch4 %>%
   dplyr::filter(lfc > 0)%>%
   pull(ASV)
@@ -842,7 +849,7 @@ sed_ch4_methanotrophs_enrichedFPV <-
 # now plot overtime: ENRICHED in FPVs
 sed_ch4_trophs_enriched_plot <- 
   sed_ch4_asv_df_glom %>% 
-  dplyr::filter(ASV %in% sed_ch4_methanotrophs_enrichedFPV) %>% 
+  dplyr::filter(ASV %in% sed_ch4_enrichedFPV) %>% 
   dplyr::mutate(ASV_Genus = paste0(CH4_Cycler, "<br>", ASV, "<br>", Genus)) %>%
   ggplot(aes(x = JDate, y = Abundance*100, color = solar_progress, shape = Pond)) +
   geom_line(aes(group = interaction(Pond)), alpha = 0.2) +
@@ -852,14 +859,17 @@ sed_ch4_trophs_enriched_plot <-
                              ymin = quantile(y, 0.25, na.rm = TRUE),
                              ymax = quantile(y, 0.75, na.rm = TRUE))},
                geom = "ribbon", alpha = 0.15, color = NA) +
+  stat_summary(aes(group = solar_progress), 
+               fun = median, geom = "line", linewidth = 1) +
   geom_point(aes(shape = Pond), size = 2) +
   facet_grid(~ASV_Genus) +
+  scale_x_continuous(limits = c(170,260), breaks = seq(150, 275, by = 25)) +
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) +
   labs(
     x = "Day of Year (DOY)",
     y = "Relative Abundance (%)",
-    title = "Sediment ASVs Enriched in FPV Ponds") +
+    title = "Sediment ASVs \n Enriched in FPV Ponds") +
   theme_classic() +
   theme( #legend.position = c(0.75, 0.7),
     legend.position = "bottom",
@@ -888,7 +898,7 @@ sed_ch4_trophs_enriched_plot
 
 ## CONTROLS 
 # And for controls
-sed_ch4_methanotrophs_enrichedControls <- 
+sed_ch4_enrichedControls <- 
   clean_sed_ch4 %>%
   dplyr::filter(lfc <0)%>%
   pull(ASV)
@@ -896,7 +906,7 @@ sed_ch4_methanotrophs_enrichedControls <-
 # now plot overtime: ENRICHED in CONTROLS 
 sed_ch4_trophs_enrichedControls_plot <- 
   sed_ch4_asv_df_glom %>% 
-  dplyr::filter(ASV %in% sed_ch4_methanotrophs_enrichedControls) %>% 
+  dplyr::filter(ASV %in% sed_ch4_enrichedControls) %>% 
   dplyr::mutate(ASV_Genus = paste0(CH4_Cycler, "<br>", ASV, "<br>", Genus)) %>%
   ggplot(aes(x = JDate, y = Abundance*100, color = solar_progress, shape = Pond)) +
   geom_line(aes(group = interaction(Pond)), alpha = 0.2) +
@@ -906,8 +916,11 @@ sed_ch4_trophs_enrichedControls_plot <-
                              ymin = quantile(y, 0.25, na.rm = TRUE),
                              ymax = quantile(y, 0.75, na.rm = TRUE))},
                geom = "ribbon", alpha = 0.15, color = NA) +
+  stat_summary(aes(group = solar_progress), 
+               fun = median, geom = "line", linewidth = 1) +
   geom_point(aes(shape = Pond), size = 2) +
   facet_wrap(~ASV_Genus, nrow = 2, scales = "free_y") +
+  scale_x_continuous(limits = c(170,260), breaks = seq(150, 275, by = 25)) +
   scale_color_manual(values = solar_colors) +
   scale_shape_manual(values = pond_shapes) +
   labs(
@@ -942,40 +955,39 @@ sed_ch4_trophs_enrichedControls_plot
 ```
 
 
-```{r sed-diffAbund-ASVs, fig.width=4.5, fig.height=7}
-#devtools::install_github("thomasp85/patchwork")
-#library(patchwork)
-
+```{r sed-diffAbund-ASVs, fig.width=7.5, fig.height=7}
 # Remove legends
-sed_enrichFPV_plot     <- sed_ch4_trophs_enriched_plot + theme(legend.position = "none")
+sed_enrichFPV_plot     <- 
+  sed_ch4_trophs_enriched_plot + theme(legend.position = "none")
 sed_enrichControl_plot <- sed_ch4_trophs_enrichedControls_plot + theme(legend.position = "bottom")
 
 # Make A half-width by pairing with a spacer
 plot_A_halfwidth <-
   sed_enrichFPV_plot + plot_spacer() +
-  plot_layout(widths = c(0.47, 0.53))   # 50% plot, 50% empty space
+  plot_layout(widths = c(0.2, 0.75))   # 50% plot, 50% empty space
 
 # Stack A over B
 sed_diffAbund_ASVs_plot <-
   (plot_A_halfwidth / sed_enrichControl_plot) +
   plot_annotation(tag_levels = "A") +
-  plot_layout(heights = c(0.4, 1))
-
-# Show
-sed_diffAbund_ASVs_plot
+  plot_layout(heights = c(0.33, 1))
 
 # Save the plot   
 ggsave(sed_diffAbund_ASVs_plot, 
-       width = 4.5, height = 7, dpi = 300,
+       width = 7.5, height = 7, dpi = 300,
        filename = "figures/bonus/sed_diffAbund_ASVs.png")
+
+# Show
+sed_diffAbund_ASVs_plot
 ```
 
+**Figure SX: Differentially abundant sediment methane-cycling ASVs under floating solar (FPV) and open-pond conditions.** (A) Sediment ASVs significantly enriched in FPV ponds and (B) sediment ASVs significantly enriched in open (no-FPV) ponds, identified using ANCOM-BC2 at the ASV level (FDR-adjusted α = 0.05) and filtered to include ASVs with absolute log₂ fold change > 0.5. For each ASV, relative abundance (%) is shown over day of year (DOY) across individual ponds. Points represent individual pond samples, with shapes indicating pond identity. Thin lines connect observations within ponds. Thick lines show the median relative abundance across ponds within each treatment, and shaded ribbons denote the interquartile range (25th–75th percentiles). Colors indicate solar treatment (FPV vs. open pond). Facet labels show methane-cycling guild (methanotroph or methanogen), ASV identifier, and lowest resolved genus. Y-axes are scaled independently to emphasize ASV-specific temporal dynamics.
 
 **What is the taxonomy of the Methanotroph ASVs in Figure SX above? **
 
 ```{r sed-diffAbund-showTaxonomy}
-sed_ch4_asv_df_glom %>% 
-  dplyr::select(CH4_Cycler, Kingdom:ASV) %>%
+clean_sed_ch4 %>% 
+  dplyr::select(ASV, CH4_Cycler, Kingdom:Species) %>%
   unique() %>%
   arrange(Phylum, Class, Order) %>%
 #  dplyr::mutate(Genus = if_else(Genus == "Methylobacter_C_601751", "Methylobacter_C", Genus)) %>%
