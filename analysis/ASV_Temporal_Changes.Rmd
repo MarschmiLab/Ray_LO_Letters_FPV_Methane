@@ -687,7 +687,7 @@ water_ch4_methanogens_enrichedControls_plot <-
 
 # Save the plot   
 ggsave(water_ch4_methanogens_enrichedControls_plot, 
-       width = 6, height = 4, dpi = 300,
+       width = 5, height = 4, dpi = 300,
        filename = "figures/bonus/water_methanogens_enrichedControls.png")
 
 # Show the plot 
