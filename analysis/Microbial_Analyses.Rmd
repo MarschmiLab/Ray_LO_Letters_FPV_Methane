@@ -1313,10 +1313,10 @@ sed_ch4_cyclers_df %>%
 # calculate stats
 # 1a. calcualte abundance
 methanogen_sed_sum <- sed_ch4_cyclers_df %>%
-  dplyr::filter(CH4_Cycler == "Methanogen") %>% 
+  #dplyr::filter(CH4_Cycler == "Methanogen") %>% 
  # group_by(solar_progress) %>% # when this is commented out then roughly 20% of community is methanogens
  # group_by(solar_progress) %>%  # when this is run then fpv has 18.9% methanogens and controls have more with 20.5%
-  group_by(solar_progress, JDate) %>% 
+  group_by(solar_progress, CH4_Cycler) %>% 
   dplyr::summarize(sd_meth = sd(rel_abundance),
                    mean_meth = mean(rel_abundance))
 methanogen_sed_sum
