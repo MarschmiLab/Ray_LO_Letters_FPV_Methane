@@ -174,6 +174,171 @@ raw_sediment24_physeq <-
 raw_sediment24_physeq
 ```
 
+# Class-Level Methanotrophs: Alphas versus Gammas  
+
+## Figure S5
+
+**Water**
+
+```{r water-alphas-vs-gammas, fig.width = 4, fig.height = 6}
+# Make a dataframe that is collapsed at the Class level 
+water_methanotroph_class_df_glom <- 
+  water_ch4_cyclers_physeq %>% 
+  subset_taxa(CH4_Cycler == "Methanotroph") %>%
+  tax_glom(taxrank = "Class") %>% 
+  psmelt() %>% 
+  dplyr::mutate(solar_progress = recode(solar_progress, "Solar" = "FPV", "No FPV" = "Open"),
+                Depth_Class = case_when(Depth_Class == "S" ~ "Surface Water",
+                                        Depth_Class == "B" ~ "Bottom Water"),
+                Depth_Class = factor(Depth_Class, levels = c("Surface Water", "Bottom Water"))) %>%
+  dplyr::select(-c(input:Date_Collected, Deployment_ID:Freezer_Temp_NegDegrees, 
+                   D_Number:Integrated_Depths_m, Max_Depth:lag, Order:CH4_Cycler))
+
+# Plot it 
+class_level_methanotroph_water_plot <- 
+  water_methanotroph_class_df_glom %>% 
+  ggplot(aes(x = JDate, y = Abundance, 
+             color = solar_progress, shape = Pond)) +
+  geom_line(aes(group = interaction(Pond, Depth_Class)), alpha = 0.2) +
+  stat_summary(aes(group = solar_progress, fill = solar_progress),
+               fun.data = function(y) 
+                 {data.frame(y = median(y, na.rm = TRUE), 
+                             ymin = quantile(y, 0.25, na.rm = TRUE),
+                             ymax = quantile(y, 0.75, na.rm = TRUE))},
+               geom = "ribbon", alpha = 0.15, color = NA) +
+  stat_summary(aes(group = solar_progress), 
+               fun = median, geom = "line", linewidth = 1) +
+  geom_point(aes(shape = Pond), size = 2) +
+  facet_grid(Class~Depth_Class, scales = "free_y") +
+  scale_y_continuous(labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
+  scale_x_continuous(limits = c(170,260), breaks = seq(150, 275, by = 25)) +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  guides(color = guide_legend(ncol = 1),
+         fill  = guide_legend(ncol = 1),
+         shape = guide_legend(ncol = 3)) + 
+  labs(x = "Day of Year (DOY)",
+       y = "Absolute Abundance (Cells mL<sup>-1</sup>)",
+       color = "Treatment", fill  = "Treatment",
+       title = "Water \n Methanotrophs: \n Class-Level") +
+  theme(legend.position = "bottom") +
+  theme_classic() +
+  theme( #legend.position = c(0.75, 0.7),
+    legend.position = "bottom",
+        legend.spacing = unit(0, "cm"),
+        plot.title = element_text(hjust = 0.5),
+        panel.background =  element_rect(color = 'black', size = 1),
+        panel.grid = element_blank(),
+        legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
+        legend.key = element_rect(fill = "transparent", color = NA),
+        legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
+        legend.box.just = "center",
+        #strip.background = element_rect(colour = NA, fill = 'transparent'),
+        plot.background = element_rect(fill = "transparent", color="transparent"),
+        legend.key.size = unit(0.2, "cm"),
+        legend.spacing.x = unit(0.2, "cm"),
+       legend.margin = margin(t = -5, unit = "pt"),
+        strip.text = element_markdown(size = 8),
+       axis.title.y = element_markdown(size = 8, colour = "black"),
+       axis.title.x = element_markdown(size = 8, colour = "black"),
+       axis.text.y = element_text(size = 8, colour = "black"),
+       legend.title = element_text(size = 9, colour = "black"),
+      legend.text = element_text(size = 8, colour = "black")); 
+```
+
+**Sediment**
+
+```{r sed-alphas-vs-gammas, fig.width = 4, fig.height = 6}
+# Make a dataframe that is collapsed at the Class level 
+sed_methanotroph_class_df_glom <- 
+  sed_ch4_cyclers_physeq %>% 
+  subset_taxa(CH4_Cycler == "Methanotroph") %>%
+  tax_glom(taxrank = "Class") %>% 
+  psmelt() %>% 
+  dplyr::mutate(solar_progress = recode(solar_progress, "Solar" = "FPV", "No FPV" = "Open"),
+                Depth_Class = case_when(Depth_Class == "S" ~ "Surface Water",
+                                        Depth_Class == "B" ~ "Bottom Water"),
+                Depth_Class = factor(Depth_Class, levels = c("Surface Water", "Bottom Water"))) %>%
+  dplyr::select(-c(input:Date_Collected, Deployment_ID:Freezer_Temp_NegDegrees, 
+                   D_Number:Integrated_Depths_m, Max_Depth:lag, Order:CH4_Cycler))
+
+
+# look
+unique(sed_methanotroph_class_df_glom$Class)
+
+# Plot it 
+class_level_methanotroph_sed_plot <- 
+  sed_methanotroph_class_df_glom %>% 
+  ggplot(aes(x = JDate, y = Abundance*100, 
+             color = solar_progress, shape = Pond)) +
+  geom_line(aes(group = interaction(Pond)), alpha = 0.2) +
+  stat_summary(aes(group = solar_progress, fill = solar_progress),
+               fun.data = function(y) 
+                 {data.frame(y = median(y, na.rm = TRUE), 
+                             ymin = quantile(y, 0.25, na.rm = TRUE),
+                             ymax = quantile(y, 0.75, na.rm = TRUE))},
+               geom = "ribbon", alpha = 0.15, color = NA) +
+  stat_summary(aes(group = solar_progress), 
+               fun = median, geom = "line", linewidth = 1) +
+  geom_point(aes(shape = Pond), size = 2) +
+  facet_grid(Class~Depth_Class, scales = "free_y") +
+  scale_x_continuous(limits = c(170,260), breaks = seq(150, 275, by = 25)) +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  guides(color = guide_legend(ncol = 1),
+         fill  = guide_legend(ncol = 1),
+         shape = guide_legend(ncol = 3)) + 
+  labs(x = "Day of Year (DOY)",
+       y = "Relative Abundance (%)",
+       color = "Treatment", fill  = "Treatment",
+       title = "Sediment \n Methanotrophs: \n Class-Level") +
+  theme(legend.position = "bottom") +
+  theme_classic() +
+  theme( #legend.position = c(0.75, 0.7),
+    legend.position = "bottom",
+        legend.spacing = unit(0, "cm"),
+        plot.title = element_text(hjust = 0.5),
+        panel.background =  element_rect(color = 'black', size = 1),
+        panel.grid = element_blank(),
+        legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
+        legend.key = element_rect(fill = "transparent", color = NA),
+        legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
+        legend.box.just = "center",
+        #strip.background = element_rect(colour = NA, fill = 'transparent'),
+        plot.background = element_rect(fill = "transparent", color="transparent"),
+        legend.key.size = unit(0.2, "cm"),
+        legend.spacing.x = unit(0.2, "cm"),
+       legend.margin = margin(t = -5, unit = "pt"),
+        strip.text = element_markdown(size = 8),
+       axis.title.y = element_markdown(size = 8, colour = "black"),
+       axis.title.x = element_markdown(size = 8, colour = "black"),
+       axis.text.y = element_text(size = 8, colour = "black"),
+       legend.title = element_text(size = 9, colour = "black"),
+      legend.text = element_text(size = 8, colour = "black")); 
+```
+
+
+**Combined** 
+```{r Fig-S5-combined-alphas-gammas, fig.width = 6, fig.height = 8}
+final_alphas_gammas_plot <- 
+  class_level_methanotroph_water_plot + 
+  class_level_methanotroph_sed_plot + 
+  plot_annotation(tag_levels = "A") + 
+  plot_layout(guides = "collect",
+              widths = c(0.65, 0.35)) &
+  theme(legend.position = "bottom")
+
+# Save the plot   
+ggsave(final_alphas_gammas_plot, 
+       width = 6, height = 8, dpi = 300,
+       filename = "figures/Fig_S5.png")
+
+final_alphas_gammas_plot
+```
+
+**Fig. S5: Class-level seasonal dynamics of methanotrophs in the water column and sediments.** (A) Water-column methanotroph abundance (cells mL⁻¹) aggregated at the Class level for surface and bottom waters. (B) Sediment methanotroph relative abundance (%) aggregated at the Class level. Classes shown represent physiologically distinct methanotroph groups: Gammaproteobacteria (Type I aerobic methanotrophs), Alphaproteobacteria (Type II aerobic methanotrophs), and Methylomirabilia (Type III anaerobic, nitrite-dependent bacterial methanotrophs).
+
+
 # Water 
 
 ## PERMANOVA 
@@ -184,8 +349,32 @@ Three steps:
 2. Calculate the PERMANOVA 
 3. Calculate the betadisper 
 
-```{r CalcBrayCurtis-water-methanogens-and-trophs}
-### ### ### ### ### ### ### ### ###
+```{r CalcBrayCurtis-water-methanogens-and-trophs, warning = TRUE}
+# All Water column! 
+water_bray <- phyloseq::distance(water_ch4_cyclers_physeq, 
+                                 method = "bray", binary = FALSE)
+# Metadata 
+water_metadata <- 
+  water_ch4_cyclers_physeq %>%
+  sample_data() %>%
+  data.frame()
+
+# PERMANOVA 
+water_permanova <- 
+  adonis2(water_bray ~ solar_progress * Pond * JDate * Depth_Class, 
+          data = water_metadata, by = "terms"); water_permanova
+# Show the results 
+water_permanova2 <- 
+  adonis2(water_bray ~ solar_progress * Pond * JDate + Depth_Class, 
+          data = water_metadata, by = "terms"); water_permanova2
+
+# Fill in the betadisper
+betadispr_water_depth <- 
+  betadisper(water_bray, water_metadata$Depth_Class)
+permutest(betadispr_water_depth)
+
+
+## ### ### ### ### ### ### ### ###
 # FIRST, calculate Bray-Curtis PERMANOVA using phyloseq distance
 ## Methanotrophs 
 water_methanotroph_bray <- phyloseq::distance(water_methanotrophs_physeq, method = "bray", binary = FALSE)
@@ -196,7 +385,8 @@ water_methanotroph_metadata <-
   data.frame()
 
 ## Methanogens
-water_methanogen_bray <- phyloseq::distance(water_methanogens_physeq, method = "bray", binary = FALSE)
+water_methanogen_bray <- 
+  phyloseq::distance(water_methanogens_physeq, method = "bray", binary = FALSE)
 
 ## OOH, an important warning message! 
 ## How many samples have NO methanogens?? 
@@ -207,31 +397,74 @@ sum(rowSums(otu_table(water_methanogens_physeq)) > 0)
 ### How does this compare in total counts to methanotrophs???
 methanogen_counts <- rowSums(otu_table(water_methanogens_physeq))
 methanogen_counts
-sum(methanogen_counts)
+mean(methanogen_counts) #mean
+sd(methanogen_counts) # sd
+median(methanogen_counts) #median
+sum(methanogen_counts) # total abundance 
+
 methanotroph_counts <- rowSums(otu_table(water_methanotrophs_physeq))
 methanotroph_counts
-sum(methanotroph_counts)
+mean(methanotroph_counts) #mean
+sd(methanotroph_counts) # standard deviation
+median(methanotroph_counts) #median
+sum(methanotroph_counts) # total abundance 
 
-# pull out Methanotroph Metadata 
+# pull out Methanogen Metadata 
 water_methanogen_metadata <- 
   water_methanogens_physeq%>%
   sample_data() %>%
   data.frame()
 
-
 ### ### ### ### ### ### ### 
 ### SECOND, time to calculate the PERMANOVA
 ## Results to add to Table S7 for the water column data. 
 ## Methanotrophs
-water_methanotroph_permanova <- adonis2(water_methanotroph_bray ~ solar_progress * Pond * JDate, 
+water_methanotroph_permanova <- adonis2(water_methanotroph_bray ~ solar_progress * Pond * JDate * Depth_Class, 
                                         data = water_methanotroph_metadata, by = "terms"); 
 # Show the results 
 water_methanotroph_permanova
+
+# Depth added
+water_methanotroph_permanova2 <- adonis2(water_methanotroph_bray ~ solar_progress * Pond * JDate + Depth_Class, 
+                                        data = water_methanotroph_metadata, by = "terms"); 
+# Show the results 
+water_methanotroph_permanova2
+
 ## Methanogens
-water_methanogens_permanova <- adonis2(water_methanogen_bray ~ solar_progress * Pond * JDate, 
-                                        data = water_methanogen_metadata, by = "terms"); 
+### First we must pull out the samples that do not have methanogens 
+samps_no_methanogens <- names(methanogen_counts)[methanogen_counts == 0]
+length(samps_no_methanogens) # how many samples? 
+
+# new phyloseq object 
+nsamples(water_methanogens_physeq)
+samps_no_methanogens_physeq <- 
+  water_methanogens_physeq %>%
+  subset_samples(!DNA_ID %in% samps_no_methanogens) %>%
+  prune_taxa(taxa_sums(.) > 0, .) 
+nsamples(samps_no_methanogens_physeq)
+
+# Calculate bray-curtis 
+water_methanogen_bray2 <- 
+  phyloseq::distance(samps_no_methanogens_physeq, 
+                     method = "bray", binary = FALSE)
+# pull out metadata 
+water_methanogen_metadata2 <- 
+  samps_no_methanogens_physeq%>%
+  sample_data() %>%
+  data.frame()
+
+water_methanogens_permanova <- 
+  adonis2(water_methanogen_bray2 ~ solar_progress * Pond * JDate * Depth_Class, 
+          data = water_methanogen_metadata2, by = "terms"); 
 # Show the results 
 water_methanogens_permanova
+
+#### ADDitive with depth 
+water_methanogens_permanova2 <- 
+  adonis2(water_methanogen_bray2 ~ solar_progress * Pond * JDate + Depth_Class, 
+          data = water_methanogen_metadata2, by = "terms"); 
+# Show the results 
+water_methanogens_permanova2
 
 
 ### ### ### ### ### ### ### ### 
@@ -582,7 +815,7 @@ ggsave(figure_4,
 figure_4
 ```
 
-**Figure 4. Blooming water-column methanotroph ASVs under floating solar infrastructure** Methanotroph ASVs identified as differentially abundant between FPV and open ponds using ANCOM-BC2 are shown as absolute abundance (cells mL⁻¹) across the sampling season. (A) Methanotroph ASVs that bloom under FPV infrastructure and (B) methanotroph ASVs enriched in open ponds. Panels are faceted by ASV and water-column depth (surface vs bottom). Points represent individual pond observations, lines connect repeated measurements through time within each pond–depth combination, and thick lines and shaded ribbons indicate treatment medians and interquartile ranges (25th–75th percentiles) at each date. FPV-enriched ASVs are dominated by members of the family Methylomonadaceae, with a single FPV-enriched Methylococcaceae ASV (*Methyloparacoccus*, ASV_32), whereas ASVs enriched in open ponds belong exclusively to Methylococcaceae. Taxonomic assignments are shown at the genus and species level, except ASV_13, which is classified within Methylomonadaceae, and ASV_828, which is classified within Methylococcaceae. For visualization, two low-abundance FPV-enriched ASVs (ASV_2028, ASV_346) and one open-pond ASV with minimal separation in absolute abundance (ASV_1019) were excluded.
+**Figure 4. Methanotroph blooms associated with floating solar infrastructure are dominated by Methylomonadaceae.** Methanotroph ASVs identified as differentially abundant using time-averaged ANCOM-BC2 analyses are shown as absolute abundance (cells mL⁻¹) across the sampling season. (A) ASVs exhibiting bloom-like increases under FPV infrastructure and (B) ASVs enriched in open ponds. FPV-associated ASVs are dominated by Methylomonadaceae, with a single Methylococcaceae ASV (*Methyloparacoccus*, ASV_32), whereas ASVs enriched in open ponds belong exclusively to Methylococcaceae. Taxonomic assignments are shown at the lowest resolved rank. For clarity, two low-abundance FPV-enriched ASVs (ASV_2028, ASV_346) and one open-pond ASV with minimal separation (ASV_1019) were omitted.
 
 **Note 16S rRNA copy Number:** We considered whether variation in 16S rRNA operon copy number among methanotroph taxa could account for the high absolute abundances observed under FPV infrastructure. However, reported rrn copy numbers for dominant methanotroph lineages in our dataset (including *Methylomonas*, *Methylobacter*, *Methyloparacoccus*, *Methyloterricola*, and *Methylococcus*) typically range from one to six copies, implying at most a several-fold difference in apparent abundance. In contrast, FPV-associated methanotroph ASVs in the water column exhibit increases of one to two orders of magnitude relative to open ponds (10⁵–10⁶ vs. 10³–10⁴ cells mL⁻¹), far exceeding what could be explained by rrn copy number alone. Moreover, enrichment patterns are strongly structured at the family level, with FPV-associated blooms dominated by Methylomonadaceae, while ASVs enriched in open ponds belong exclusively to Methylococcaceae, arguing against a nonspecific copy-number artifact. Together, these observations indicate that Figure 4 reflects true population-level responses to FPV infrastructure rather than methodological inflation due to rRNA gene copy number.
 
@@ -599,11 +832,11 @@ figure_4
 ```
 
 
-## Figure SX
+## Figure S6
 
 #### Methanogens
 
-```{r water-diffAbund-Open-methanogens}
+```{r Fig-S6-water-diffAbund-Open-methanogens}
 ########################### CONTROLS/OPEN: 
 ########################### METHANOGENS
 # And for controls
@@ -688,15 +921,15 @@ water_ch4_methanogens_enrichedControls_plot <-
 # Save the plot   
 ggsave(water_ch4_methanogens_enrichedControls_plot, 
        width = 5, height = 4, dpi = 300,
-       filename = "figures/bonus/water_methanogens_enrichedControls.png")
+       filename = "figures/Fig_S6.png")
 
 # Show the plot 
 water_ch4_methanogens_enrichedControls_plot
 ```
 
-**Figure SX**
+**Fig. S6. Time-averaged differential abundance of water-column methanogen ASVs under open-pond conditions.** Absolute abundances (cells mL⁻¹) of water-column methanogen ASVs identified as enriched in open ponds using time-averaged ANCOM-BC2 analyses are shown across the sampling season.
 
-**What is the taxonomy of the Water Methanogen ASVs in Figure SX above?? **
+**What is the taxonomy of the Water Methanogen ASVs in Figure S6 above?? **
 
 ```{r water-methanogens-showTaxonomy}
 water_ch4_asv_df_glom %>% 
@@ -708,85 +941,6 @@ water_ch4_asv_df_glom %>%
   DT::datatable(options = list(pageLength = nrow(.), lengthChange = FALSE))
 ```
 
-## Alphas versus Gammas 
-
-```{r water-alphas-vs-gammas, fig.width = 4, fig.height = 6}
-# Make a dataframe that is collapsed at the Class level 
-water_methanotroph_class_df_glom <- 
-  water_ch4_cyclers_physeq %>% 
-  subset_taxa(CH4_Cycler == "Methanotroph") %>%
-  tax_glom(taxrank = "Class") %>% 
-  psmelt() %>% 
-  dplyr::mutate(solar_progress = recode(solar_progress, "Solar" = "FPV", "No FPV" = "Open"),
-                Depth_Class = case_when(Depth_Class == "S" ~ "Surface Water",
-                                        Depth_Class == "B" ~ "Bottom Water"),
-                Depth_Class = factor(Depth_Class, levels = c("Surface Water", "Bottom Water"))) %>%
-  dplyr::select(-c(input:Date_Collected, Deployment_ID:Freezer_Temp_NegDegrees, 
-                   D_Number:Integrated_Depths_m, Max_Depth:lag, Order:CH4_Cycler))
-
-
-# look
-colnames(water_methanotroph_class_df_glom)
-
-# Plot it 
-class_level_methanotroph_water_plot <- 
-  water_methanotroph_class_df_glom %>% 
-  ggplot(aes(x = JDate, y = Abundance, 
-             color = solar_progress, shape = Pond)) +
-  geom_line(aes(group = interaction(Pond, Depth_Class)), alpha = 0.2) +
-  stat_summary(aes(group = solar_progress, fill = solar_progress),
-               fun.data = function(y) 
-                 {data.frame(y = median(y, na.rm = TRUE), 
-                             ymin = quantile(y, 0.25, na.rm = TRUE),
-                             ymax = quantile(y, 0.75, na.rm = TRUE))},
-               geom = "ribbon", alpha = 0.15, color = NA) +
-  stat_summary(aes(group = solar_progress), 
-               fun = median, geom = "line", linewidth = 1) +
-  geom_point(aes(shape = Pond), size = 2) +
-  facet_grid(Class~Depth_Class, scales = "free_y") +
-  scale_y_continuous(labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
-  scale_x_continuous(limits = c(170,260), breaks = seq(150, 275, by = 25)) +
-  scale_color_manual(values = solar_colors) +
-  scale_shape_manual(values = pond_shapes) +
-  guides(color = guide_legend(ncol = 1),
-         fill  = guide_legend(ncol = 1),
-         shape = guide_legend(ncol = 3)) + 
-  labs(x = "Day of Year (DOY)",
-       y = "Absolute Abundance (Cells mL<sup>-1</sup>)",
-       color = "Treatment", fill  = "Treatment",
-       title = "Water Methanotrophs: Class-Level") +
-  theme(legend.position = "bottom") +
-  theme_classic() +
-  theme( #legend.position = c(0.75, 0.7),
-    legend.position = "bottom",
-        legend.spacing = unit(0, "cm"),
-        plot.title = element_text(hjust = 0.5),
-        panel.background =  element_rect(color = 'black', size = 1),
-        panel.grid = element_blank(),
-        legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
-        legend.key = element_rect(fill = "transparent", color = NA),
-        legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
-        legend.box.just = "center",
-        #strip.background = element_rect(colour = NA, fill = 'transparent'),
-        plot.background = element_rect(fill = "transparent", color="transparent"),
-        legend.key.size = unit(0.2, "cm"),
-        legend.spacing.x = unit(0.2, "cm"),
-       legend.margin = margin(t = -5, unit = "pt"),
-        strip.text = element_markdown(size = 8),
-       axis.title.y = element_markdown(size = 8, colour = "black"),
-       axis.title.x = element_markdown(size = 8, colour = "black"),
-       axis.text.y = element_text(size = 8, colour = "black"),
-       legend.title = element_text(size = 9, colour = "black"),
-      legend.text = element_text(size = 8, colour = "black")); 
-
-
-# Save the plot   
-ggsave(class_level_methanotroph_water_plot, 
-       width = 4, height = 6, dpi = 300,
-       filename = "figures/bonus/class_level_methanotroph_water.png")
-
-class_level_methanotroph_water_plot
-```
 
 # Sediment
 
@@ -822,7 +976,7 @@ raw_sediment24_physeq@sam_data$solar_progress <-
 load("data/03_diff_abund/sed_ch4_diffAbundASV_FPV_output.RData")
 ```
 
-## Clean up DiffAbundance data 
+**Clean up ANCOM-BC2 data** 
 
 ```{r clean-diffAbund-sediment}
 # plot ASV differential abundance
@@ -860,7 +1014,7 @@ clean_sed_ch4 %>%
 
 ### Plot Diff Abund ASVs over time 
 
-#### Sediment Methanotroph ASVs
+**Sediment Methanotroph ASVs**
 
 ```{r sed-diffAbund-FPV}
 # plot differentially abundant ASVs overtime 
@@ -946,7 +1100,7 @@ sed_ch4_trophs_enriched_plot
 
 
 #### Methanotrophs
-```{r sed-diffAbund-Open-methanotrophs}
+```{r sed-diffAbund-Open-methanotrophs, fig.width=10, fig.height=4.5}
 ## CONTROLS 
 # And for controls
 sed_ch4_methanotrophs_enrichedControls <- 
@@ -1007,7 +1161,7 @@ sed_ch4_trophs_enrichedControls_plot
 ```
 
 #### Methanogens
-```{r sed-diffAbund-Open-methanogen}
+```{r sed-diffAbund-Open-methanogen, fig.width=10, fig.height=7}
 ## CONTROLS 
 # And for controls
 sed_ch4_methanogens_enrichedControls <- 
@@ -1072,7 +1226,8 @@ sed_ch4_methanogens_enrichedControls_plot <-
 sed_ch4_methanogens_enrichedControls_plot
 ```
 
-```{r sed-diffAbund-ASVs, fig.width=7.5, fig.height=7}
+## Figure S7
+```{r Fig-S7-sed-diffAbund-ASVs, fig.width=12, fig.height=12}
 # Remove legends
 sed_enrichFPV_plot <- 
   sed_ch4_trophs_enriched_plot + theme(legend.position = "none")
@@ -1095,15 +1250,15 @@ sed_diffAbund_ASVs_plot <-
 # Save the plot   
 ggsave(sed_diffAbund_ASVs_plot, 
        width = 12, height = 12, dpi = 300,
-       filename = "figures/bonus/sed_diffAbund_ASVs.png")
+       filename = "figures/Fig_S7.png")
 
 # Show
 sed_diffAbund_ASVs_plot
 ```
 
-**Figure SX: Differentially abundant sediment methane-cycling ASVs under floating solar (FPV) and open-pond conditions.** (A) Sediment ASVs significantly enriched in FPV ponds and (B) sediment ASVs significantly enriched in open (no-FPV) ponds, identified using ANCOM-BC2 at the ASV level (FDR-adjusted α = 0.05) and filtered to include ASVs with absolute log₂ fold change > 0.5. For each ASV, relative abundance (%) is shown over day of year (DOY) across individual ponds. Points represent individual pond samples, with shapes indicating pond identity. Thin lines connect observations within ponds. Thick lines show the median relative abundance across ponds within each treatment, and shaded ribbons denote the interquartile range (25th–75th percentiles). Colors indicate solar treatment (FPV vs. open pond). Facet labels show methane-cycling guild (methanotroph or methanogen), ASV identifier, and lowest resolved genus. Y-axes are scaled independently to emphasize ASV-specific temporal dynamics.
+**Fig. S7. Time-averaged differential abundance of sediment methane-cycling ASVs under FPV and open-pond conditions.** Sediment methane-cycling ASVs identified as differentially abundant using time-averaged ANCOM-BC2 analyses. (A) ASVs enriched in FPV ponds, (B) methanotroph ASVs enriched in open ponds, and (C) methanogen ASVs enriched in open ponds. Relative abundance (%) of each ASV is shown across day of year (DOY). ASVs lacking genus-level taxonomic resolution are labeled at the family level in facet titles (ASV_340, ASV_2783, ASV_4541, ASV_2366, ASV_634).
 
-**What is the taxonomy of the Methanotroph ASVs in Figure SX above? **
+**What is the taxonomy of the Methanotroph ASVs in Figure S7 above? **
 
 ```{r sed-diffAbund-showTaxonomy}
 clean_sed_ch4 %>% 
@@ -1339,7 +1494,7 @@ sed_methanogen_ASV_plot
 ```
 
 
-**Figure 5. Seasonal FPV-associated divergence of sediment methanogen ASVs.** Sediment methanogen ASVs showing strong, time-dependent divergence between FPV and open ponds are shown as relative abundance (%) across the sampling season. To identify FPV-associated seasonal patterns not captured by a constant treatment effect, methanogen ASVs were screened using a manual, seasonally explicit approach focused on abundant taxa (mean relative abundance > 0.05%). FPV–Open separation was quantified at each sampling date using median abundances, and ASVs were retained if peak FPV enrichment was supported across multiple sampling dates and/or multiple FPV ponds (see Supplemental Methods). Panels are faceted by ASV and annotated with the day of year (DOY) at which maximum FPV enrichment occurred. Points represent individual pond observations, thin lines connect repeated measurements within ponds, and thick lines and shaded ribbons indicate treatment medians and interquartile ranges (25th–75th percentiles) at each date. ASVs span multiple methanogenic phyla and classes, including genera within hydrogenotrophic (*Methanobacterium*), acetoclastic (*Methanothrix*), and methylotrophic (*Methanoregula*, *Methanosarcina*) groups.
+**Fig. 5: FPV-associated divergence of sediment methanogens reveals seasonally explicit cross-genus functional redundancy.** Sediment methanogen ASVs showing time-dependent divergence between FPV and open ponds are shown as relative abundance (%) across the sampling season. ASVs were identified using a seasonally explicit (time-resolved) screening approach targeting abundant taxa (mean relative abundance > 0.05%) and quantifying FPV–Open separation at individual sampling dates using median abundances; ASVs were retained when peak FPV enrichment was supported across multiple dates and/or FPV ponds (see Supplemental Methods). ASVs span diverse methanogenic lineages, including hydrogenotrophic (*Methanobacterium*), acetoclastic (*Methanothrix*), and methylotrophic (*Methanoregula*, *Methanosarcina*) taxa.
 
 **What is the taxonomy of the Methanogen ASVs in Figure 5?? **
 
@@ -1357,7 +1512,7 @@ sed_methanogen_asvs_df %>%
 ```
 
 
-### Check moderate/fair ASVs
+**Check moderate/fair ASVs**
 
 ```{r moderateToFair-sed-methanogens, fig.width = 10, fig.height = 5}
 # Gut check on the moderate to fair ASVs for good measure. 
@@ -1642,8 +1797,6 @@ sed_methanotroph_asvs <-
   pull(ASV) 
 ```
 
-
-
 ```{r select-sed-methanotrophs-ASVs}
 # STEP 1: FPV–Open separation by ASV × date (median across samples)
 asv_date_medians_methanotroph_df <-
@@ -1717,7 +1870,10 @@ datatable(asv_effect_time_robust_methanotroph_df,
           rownames = FALSE)
 ```
 
-```{r plot-sed-methotroph, fig.width = 8, fig.height = 5}
+
+### Figure S8
+
+```{r Fig-S8-sed-methotrophs-time, fig.width = 8, fig.height = 5}
 # Pull top time-divergent ASVs and remove the weak/noisy or moderate
 top_asvs_time_methanotroph <- 
   asv_effect_time_robust_methanotroph_df %>%
@@ -1786,13 +1942,13 @@ sed_methanotroph_ASV_plot <-
 # Save the plot   
 ggsave(sed_methanotroph_ASV_plot, 
        width = 8, height = 5, dpi = 300,
-       filename = "figures/bonus/sed_methanotroph_ASV_time.png")
+       filename = "figures/Fig_S8.png")
 
 # Show the plot 
 sed_methanotroph_ASV_plot
 ```
 
-**Figure SX. Seasonal FPV-associated variation in sediment methanotroph ASVs.** Sediment methanotroph ASVs are shown as relative abundance (%) across the sampling season. To visualize potential time-dependent FPV–Open divergence not captured by a constant treatment effect, we screened abundant methanotroph ASVs (mean relative abundance > 0.05%) and quantified FPV–Open differences at each sampling date using median abundances. ASVs shown are those exhibiting positive peak FPV enrichment supported across multiple sampling dates and/or multiple FPV ponds (see Supplemental Methods). Panels are faceted by ASV and annotated with the day of year (DOY) at which maximum FPV enrichment occurs. Points represent individual pond observations, thin lines connect repeated measures within ponds, and thick lines and shaded ribbons indicate treatment medians and interquartile ranges (25th–75th percentiles) at each date. Taxa represented include Gammaproteobacteria (Type I; genus: *Methylobacter_C*), Alphaproteobacteria (Type II; genus: *Methylocystis*), and anaerobic methanotrophs (Type III; order Methylomirabilales, family/genus 2-02-FULL-66-22), reflecting physiologically distinct methane oxidation strategies in sediments. This figure is provided for visualization; community-level tests did not detect a significant FPV × time effect for sediment methanotrophs.
+**Fig. S8. Seasonally explicit enrichment of sediment methanotroph ASVs under FPV conditions.** Relative abundance (%) of selected sediment methanotroph ASVs across the sampling season, highlighting ASVs with peak FPV-associated enrichment identified using a seasonally explicit (time-resolved) screening approach rather than time-averaged differential abundance testing. Taxa include Gammaproteobacteria (Type I; *Methylobacter_C*), Alphaproteobacteria (Type II; *Methylocystis*), and anaerobic nitrite-dependent methanotrophs (Type III; *Methylomirabilales*, 2-02-FULL-66-22). Community-level analyses did not detect a significant `FPV × time` effect for sediment methanotrophs.
 
 **What is the taxonomy of the Methanotroph ASVs in Figure SX above? **
 

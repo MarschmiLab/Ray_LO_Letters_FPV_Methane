@@ -1,7 +1,7 @@
 ---
 title: "Water Column and Sediment Methanogens & Methanotrophs in FPV Ponds"
 author: "Sophia Aredas & Mar Schmidt"
-date: "26 January, 2026"
+date: "29 January, 2026"
 output:
   html_document:
     code_folding: show
@@ -2125,6 +2125,25 @@ methanotroph_bottom_box
 ![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-8.png)<!-- -->
 
 ``` r
+#### Sediment Summary Stats 
+sed_ch4_cyclers_df %>%
+  group_by(solar_progress, CH4_Cycler) %>% 
+  dplyr::summarize(sd_meth = sd(rel_abundance),
+                   mean_meth = mean(rel_abundance))
+```
+
+```
+## # A tibble: 4 × 4
+## # Groups:   solar_progress [2]
+##   solar_progress CH4_Cycler   sd_meth mean_meth
+##   <fct>          <chr>          <dbl>     <dbl>
+## 1 FPV            Methanogen    0.0534    0.189 
+## 2 FPV            Methanotroph  0.0241    0.0598
+## 3 Open           Methanogen    0.0456    0.205 
+## 4 Open           Methanotroph  0.0253    0.0663
+```
+
+``` r
 ##### sediment methanogen #####
 # calculate stats
 # 1a. calcualte abundance
@@ -2225,7 +2244,7 @@ emmeans::emmeans(sed_methanogen_model, pairwise ~ solar_progress) # 0.667
 ``` r
 # plot sediment methanogens
 methanogen_sed <- methanogen_sed_sum %>% 
-  ggplot(aes(x = JDate, y = mean_meth, fill = solar_progress, color = solar_progress)) +
+  ggplot(aes(x = JDate, y = mean_meth*100, fill = solar_progress, color = solar_progress)) +
   geom_line()+
   geom_point()+
   theme_classic()+
@@ -2235,9 +2254,8 @@ methanogen_sed <- methanogen_sed_sum %>%
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = solar_colors)+
   scale_y_continuous(
-    limits = c(.08, .3),
-    breaks = c(0.1, .2, .30),
-    labels = c("0.10", "0.20", "0.30"))+
+    limits = c(.08*100, .3*100),
+    breaks = c(0.1*100, .2*100, .30*100))+
     #labels = label_number(scale_cut = cut_short_scale())) +
   labs(y= "Sediment Methanogen<br> Abundance (%)", x = "Day of Year")+
   theme(axis.text.x =  element_text(size = 8,colour = "black"),
@@ -2253,20 +2271,14 @@ methanogen_sed
 ``` r
 # 3. box plot
 methanogen_sed_box <- methanogen_sed_data %>% 
-  ggplot(aes(x = solar_progress, y = rel_abundance, color = solar_progress)) +
+  ggplot(aes(x = solar_progress, y = rel_abundance*100, color = solar_progress)) +
   geom_boxplot(outlier.shape = NA, color = "black") +
   geom_jitter(aes(color = solar_progress, fill = solar_progress), width = 0.2, size = 2, shape = 21) +
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = c("black", "black"))+
   scale_y_continuous(
-    limits = c(.08, .3),
-    breaks = c(0.1, .2, .30),
-    labels = c("0.10", "0.20", "0.30"))+
-  # scale_y_continuous(
-  #   #limits = c(.13, .3),
-  #   breaks = breaks_extended(n = 4),
-  #   #breaks = c(.15, .2, .25, .30),
-  #   labels = label_number(scale_cut = cut_short_scale(), accuracy = 0.01)) +
+    limits = c(.08*100, .3*100),
+    breaks = c(0.1*100, .2*100, .30*100))+
   theme_classic()+
   theme(axis.text.x = element_text(size = 8,colour = "black"),
         axis.title.x = element_blank(),
@@ -2275,13 +2287,6 @@ methanogen_sed_box <- methanogen_sed_data %>%
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
         legend.position = "none") +
-  # stat_compare_means(method = "wilcox.test",
-  #                    #comparisons = list(c("FPV", "Open")),
-  #                    label = "p.format",
-  #                    size = 3,
-  #                    label.y.npc = 0.9,
-  #                    fontface = "italic")
-  # label.y = c(8000, 100000, 500000, 400000, 400000) # get pvalue
  annotate("text", x = 2, y = .3, label = "p = 0.667", size = 2.822,  fontface = "italic")
 methanogen_sed_box
 ```
@@ -2391,11 +2396,12 @@ emmeans::lsmeans(sed_methanotroph_model, pairwise ~ solar_progress) #0.4401
 ``` r
 # 2. plot sed methanotrophs overtime 
 methanotroph_sed<- methanotroph_sed_sum %>% 
-  ggplot(aes(x = JDate, y = mean_meth, fill = solar_progress, color = solar_progress)) +
+  ggplot(aes(x = JDate, y = mean_meth*100, fill = solar_progress, color = solar_progress)) +
   geom_line()+
   geom_point()+
   theme_classic()+
-  geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_errorbar(aes(x = JDate, ymin = mean_meth*100 - sd_meth*100, 
+                    ymax = mean_meth*100 + sd_meth*100), width = 0, color = "black")+
   geom_point(size = 3, shape = 16)+
   geom_point(size = 3, shape = 1, color = "black")+
   labs(y= "Sediment Methanotroph<br>Abundance (%)", x = "Day of Year")+
@@ -2406,8 +2412,8 @@ methanotroph_sed<- methanotroph_sed_sum %>%
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = solar_colors)+
   scale_y_continuous(
-    limits = c(0.02, .15),
-    breaks = c(0.05, 0.10, 0.15),
+    limits = c(0.02*100, .15*100),
+    breaks = c(0.05*100, 0.10*100, 0.15*100),
     labels = label_number(scale_cut = cut_short_scale())) +
   theme(legend.position = "none")
 methanotroph_sed
@@ -2418,14 +2424,14 @@ methanotroph_sed
 ``` r
 # box plot
 methanotroph_sed_box <- methanotroph_sed_data %>% 
-  ggplot(aes(x = solar_progress, y = rel_abundance, color = solar_progress)) +
+  ggplot(aes(x = solar_progress, y = rel_abundance*100, color = solar_progress)) +
   geom_boxplot(outlier.shape = NA, color = "black") +
   geom_jitter(aes(color = solar_progress, fill = solar_progress), width = 0.2, size = 2, shape = 21) +
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = c("black", "black"))+
   scale_y_continuous(
-    limits = c(0.02, .15),
-    breaks = c(0.05, 0.10, 0.15),
+    limits = c(0.02*100, .15*100),
+    breaks = c(0.05*100, 0.10*100, 0.15*100),
     labels = label_number(scale_cut = cut_short_scale())) +
   theme_classic()+
   theme(axis.text.x = element_text(size = 8, colour = "black"),
@@ -3498,7 +3504,15 @@ diffAbund_boxplots <- diff_abund_df %>%
 # Save the plot   
 ggsave(diffAbund_boxplots, width = 4.5, height = 4.5, dpi = 300,
         filename = "figures/Fig_4/Fig_4.png")
+```
 
+```
+## Error in `ggsave()`:
+## ! Cannot find directory 'figures/Fig_4'.
+## ℹ Please supply an existing directory or use `create.dir = TRUE`.
+```
+
+``` r
 ##### ASV_13 Methylococcales #####
 #1. Run stats
 # 1a. calculate abundances
@@ -4225,8 +4239,15 @@ fig4
 # Save the plot   
 ggsave(fig4, width = 6.5, height = 4.5, dpi = 300,
         filename = "figures/Fig_4/Fig_4.png")
+```
 
+```
+## Error in `ggsave()`:
+## ! Cannot find directory 'figures/Fig_4'.
+## ℹ Please supply an existing directory or use `create.dir = TRUE`.
+```
 
+``` r
 #or
 library(ggplot2)
 library(patchwork)
@@ -5559,7 +5580,7 @@ permutest(betadispr_sed_methanogens_JDate) # not significant p = 0.44
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     3 0.006703 0.0022343 1.0343    999  0.413
+## Groups     3 0.006703 0.0022343 1.0343    999  0.414
 ## Residuals 40 0.086412 0.0021603
 ```
 
@@ -5592,7 +5613,7 @@ permutest(betadispr_sed_methanotrophs_pond) # not significant p = 0.515
 ## 
 ## Response: Distances
 ##           Df  Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.03100 0.0062006 0.7229    999  0.601
+## Groups     5 0.03100 0.0062006 0.7229    999  0.603
 ## Residuals 38 0.32593 0.0085771
 ```
 
@@ -5608,7 +5629,7 @@ permutest(betadispr_sed_methanotrophs_solar) # not significant p = 0.682
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     1 0.000028 0.0000282 0.0043    999  0.937
+## Groups     1 0.000028 0.0000282 0.0043    999  0.936
 ## Residuals 42 0.274034 0.0065246
 ```
 
@@ -6136,7 +6157,7 @@ devtools::session_info()
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
 ##  tz       America/New_York
-##  date     2026-01-26
+##  date     2026-01-29
 ##  pandoc   3.1.1 @ /usr/lib/rstudio-server/bin/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────

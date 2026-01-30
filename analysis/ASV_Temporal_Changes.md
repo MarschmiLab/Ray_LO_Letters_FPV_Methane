@@ -1,7 +1,7 @@
 ---
 title: "ASV-level Temporal Changes of Methanogens and Methanotrophs in FPV and Control Ponds"
 author: "Mar Schmidt"
-date: "29 January, 2026"
+date: "30 January, 2026"
 output:
   html_document:
     code_folding: show
@@ -285,6 +285,182 @@ raw_sediment24_physeq
 ## taxa are rows
 ```
 
+# Class-Level Methanotrophs: Alphas versus Gammas  
+
+## Figure S5
+
+**Water**
+
+
+``` r
+# Make a dataframe that is collapsed at the Class level 
+water_methanotroph_class_df_glom <- 
+  water_ch4_cyclers_physeq %>% 
+  subset_taxa(CH4_Cycler == "Methanotroph") %>%
+  tax_glom(taxrank = "Class") %>% 
+  psmelt() %>% 
+  dplyr::mutate(solar_progress = recode(solar_progress, "Solar" = "FPV", "No FPV" = "Open"),
+                Depth_Class = case_when(Depth_Class == "S" ~ "Surface Water",
+                                        Depth_Class == "B" ~ "Bottom Water"),
+                Depth_Class = factor(Depth_Class, levels = c("Surface Water", "Bottom Water"))) %>%
+  dplyr::select(-c(input:Date_Collected, Deployment_ID:Freezer_Temp_NegDegrees, 
+                   D_Number:Integrated_Depths_m, Max_Depth:lag, Order:CH4_Cycler))
+
+# Plot it 
+class_level_methanotroph_water_plot <- 
+  water_methanotroph_class_df_glom %>% 
+  ggplot(aes(x = JDate, y = Abundance, 
+             color = solar_progress, shape = Pond)) +
+  geom_line(aes(group = interaction(Pond, Depth_Class)), alpha = 0.2) +
+  stat_summary(aes(group = solar_progress, fill = solar_progress),
+               fun.data = function(y) 
+                 {data.frame(y = median(y, na.rm = TRUE), 
+                             ymin = quantile(y, 0.25, na.rm = TRUE),
+                             ymax = quantile(y, 0.75, na.rm = TRUE))},
+               geom = "ribbon", alpha = 0.15, color = NA) +
+  stat_summary(aes(group = solar_progress), 
+               fun = median, geom = "line", linewidth = 1) +
+  geom_point(aes(shape = Pond), size = 2) +
+  facet_grid(Class~Depth_Class, scales = "free_y") +
+  scale_y_continuous(labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
+  scale_x_continuous(limits = c(170,260), breaks = seq(150, 275, by = 25)) +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  guides(color = guide_legend(ncol = 1),
+         fill  = guide_legend(ncol = 1),
+         shape = guide_legend(ncol = 3)) + 
+  labs(x = "Day of Year (DOY)",
+       y = "Absolute Abundance (Cells mL<sup>-1</sup>)",
+       color = "Treatment", fill  = "Treatment",
+       title = "Water \n Methanotrophs: \n Class-Level") +
+  theme(legend.position = "bottom") +
+  theme_classic() +
+  theme( #legend.position = c(0.75, 0.7),
+    legend.position = "bottom",
+        legend.spacing = unit(0, "cm"),
+        plot.title = element_text(hjust = 0.5),
+        panel.background =  element_rect(color = 'black', size = 1),
+        panel.grid = element_blank(),
+        legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
+        legend.key = element_rect(fill = "transparent", color = NA),
+        legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
+        legend.box.just = "center",
+        #strip.background = element_rect(colour = NA, fill = 'transparent'),
+        plot.background = element_rect(fill = "transparent", color="transparent"),
+        legend.key.size = unit(0.2, "cm"),
+        legend.spacing.x = unit(0.2, "cm"),
+       legend.margin = margin(t = -5, unit = "pt"),
+        strip.text = element_markdown(size = 8),
+       axis.title.y = element_markdown(size = 8, colour = "black"),
+       axis.title.x = element_markdown(size = 8, colour = "black"),
+       axis.text.y = element_text(size = 8, colour = "black"),
+       legend.title = element_text(size = 9, colour = "black"),
+      legend.text = element_text(size = 8, colour = "black")); 
+```
+
+**Sediment**
+
+
+``` r
+# Make a dataframe that is collapsed at the Class level 
+sed_methanotroph_class_df_glom <- 
+  sed_ch4_cyclers_physeq %>% 
+  subset_taxa(CH4_Cycler == "Methanotroph") %>%
+  tax_glom(taxrank = "Class") %>% 
+  psmelt() %>% 
+  dplyr::mutate(solar_progress = recode(solar_progress, "Solar" = "FPV", "No FPV" = "Open"),
+                Depth_Class = case_when(Depth_Class == "S" ~ "Surface Water",
+                                        Depth_Class == "B" ~ "Bottom Water"),
+                Depth_Class = factor(Depth_Class, levels = c("Surface Water", "Bottom Water"))) %>%
+  dplyr::select(-c(input:Date_Collected, Deployment_ID:Freezer_Temp_NegDegrees, 
+                   D_Number:Integrated_Depths_m, Max_Depth:lag, Order:CH4_Cycler))
+
+
+# look
+unique(sed_methanotroph_class_df_glom$Class)
+```
+
+```
+## [1] "Gammaproteobacteria" "Alphaproteobacteria" "Methylomirabilia"    "Methanosarcinia"
+```
+
+``` r
+# Plot it 
+class_level_methanotroph_sed_plot <- 
+  sed_methanotroph_class_df_glom %>% 
+  ggplot(aes(x = JDate, y = Abundance*100, 
+             color = solar_progress, shape = Pond)) +
+  geom_line(aes(group = interaction(Pond)), alpha = 0.2) +
+  stat_summary(aes(group = solar_progress, fill = solar_progress),
+               fun.data = function(y) 
+                 {data.frame(y = median(y, na.rm = TRUE), 
+                             ymin = quantile(y, 0.25, na.rm = TRUE),
+                             ymax = quantile(y, 0.75, na.rm = TRUE))},
+               geom = "ribbon", alpha = 0.15, color = NA) +
+  stat_summary(aes(group = solar_progress), 
+               fun = median, geom = "line", linewidth = 1) +
+  geom_point(aes(shape = Pond), size = 2) +
+  facet_grid(Class~Depth_Class, scales = "free_y") +
+  scale_x_continuous(limits = c(170,260), breaks = seq(150, 275, by = 25)) +
+  scale_color_manual(values = solar_colors) +
+  scale_shape_manual(values = pond_shapes) +
+  guides(color = guide_legend(ncol = 1),
+         fill  = guide_legend(ncol = 1),
+         shape = guide_legend(ncol = 3)) + 
+  labs(x = "Day of Year (DOY)",
+       y = "Relative Abundance (%)",
+       color = "Treatment", fill  = "Treatment",
+       title = "Sediment \n Methanotrophs: \n Class-Level") +
+  theme(legend.position = "bottom") +
+  theme_classic() +
+  theme( #legend.position = c(0.75, 0.7),
+    legend.position = "bottom",
+        legend.spacing = unit(0, "cm"),
+        plot.title = element_text(hjust = 0.5),
+        panel.background =  element_rect(color = 'black', size = 1),
+        panel.grid = element_blank(),
+        legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
+        legend.key = element_rect(fill = "transparent", color = NA),
+        legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
+        legend.box.just = "center",
+        #strip.background = element_rect(colour = NA, fill = 'transparent'),
+        plot.background = element_rect(fill = "transparent", color="transparent"),
+        legend.key.size = unit(0.2, "cm"),
+        legend.spacing.x = unit(0.2, "cm"),
+       legend.margin = margin(t = -5, unit = "pt"),
+        strip.text = element_markdown(size = 8),
+       axis.title.y = element_markdown(size = 8, colour = "black"),
+       axis.title.x = element_markdown(size = 8, colour = "black"),
+       axis.text.y = element_text(size = 8, colour = "black"),
+       legend.title = element_text(size = 9, colour = "black"),
+      legend.text = element_text(size = 8, colour = "black")); 
+```
+
+
+**Combined** 
+
+``` r
+final_alphas_gammas_plot <- 
+  class_level_methanotroph_water_plot + 
+  class_level_methanotroph_sed_plot + 
+  plot_annotation(tag_levels = "A") + 
+  plot_layout(guides = "collect",
+              widths = c(0.65, 0.35)) &
+  theme(legend.position = "bottom")
+
+# Save the plot   
+ggsave(final_alphas_gammas_plot, 
+       width = 6, height = 8, dpi = 300,
+       filename = "figures/Fig_S5.png")
+
+final_alphas_gammas_plot
+```
+
+![](ASV_Temporal_Changes_files/figure-html/Fig-S5-combined-alphas-gammas-1.png)<!-- -->
+
+**Fig. S5: Class-level seasonal dynamics of methanotrophs in the water column and sediments.** (A) Water-column methanotroph abundance (cells mL⁻¹) aggregated at the Class level for surface and bottom waters. (B) Sediment methanotroph relative abundance (%) aggregated at the Class level. Classes shown represent physiologically distinct methanotroph groups: Gammaproteobacteria (Type I aerobic methanotrophs), Alphaproteobacteria (Type II aerobic methanotrophs), and Methylomirabilia (Type III anaerobic, nitrite-dependent bacterial methanotrophs).
+
+
 # Water 
 
 ## PERMANOVA 
@@ -297,7 +473,94 @@ Three steps:
 
 
 ``` r
-### ### ### ### ### ### ### ### ###
+# All Water column! 
+water_bray <- phyloseq::distance(water_ch4_cyclers_physeq, 
+                                 method = "bray", binary = FALSE)
+# Metadata 
+water_metadata <- 
+  water_ch4_cyclers_physeq %>%
+  sample_data() %>%
+  data.frame()
+
+# PERMANOVA 
+water_permanova <- 
+  adonis2(water_bray ~ solar_progress * Pond * JDate * Depth_Class, 
+          data = water_metadata, by = "terms"); water_permanova
+```
+
+```
+## Permutation test for adonis under reduced model
+## Terms added sequentially (first to last)
+## Permutation: free
+## Number of permutations: 999
+## 
+## adonis2(formula = water_bray ~ solar_progress * Pond * JDate * Depth_Class, data = water_metadata, by = "terms")
+##                                  Df SumOfSqs      R2      F Pr(>F)    
+## solar_progress                    1   1.7010 0.12801 9.0498  0.001 ***
+## Pond                              4   2.0581 0.15488 2.7375  0.001 ***
+## JDate                             1   1.1474 0.08635 6.1043  0.001 ***
+## Depth_Class                       1   0.3635 0.02736 1.9341  0.048 *  
+## solar_progress:JDate              1   0.7829 0.05892 4.1654  0.002 ** 
+## Pond:JDate                        4   1.0979 0.08262 1.4602  0.048 *  
+## solar_progress:Depth_Class        1   0.1806 0.01359 0.9607  0.465    
+## Pond:Depth_Class                  4   0.4876 0.03669 0.6486  0.963    
+## JDate:Depth_Class                 1   0.3894 0.02930 2.0718  0.029 *  
+## solar_progress:JDate:Depth_Class  1   0.1739 0.01309 0.9254  0.485    
+## Pond:JDate:Depth_Class            4   0.3948 0.02971 0.5251  0.998    
+## Residual                         24   4.5111 0.33948                  
+## Total                            47  13.2883 1.00000                  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+``` r
+# Show the results 
+water_permanova2 <- 
+  adonis2(water_bray ~ solar_progress * Pond * JDate + Depth_Class, 
+          data = water_metadata, by = "terms"); water_permanova2
+```
+
+```
+## Permutation test for adonis under reduced model
+## Terms added sequentially (first to last)
+## Permutation: free
+## Number of permutations: 999
+## 
+## adonis2(formula = water_bray ~ solar_progress * Pond * JDate + Depth_Class, data = water_metadata, by = "terms")
+##                      Df SumOfSqs      R2      F Pr(>F)    
+## solar_progress        1   1.7010 0.12801 9.7004  0.001 ***
+## Pond                  4   2.0581 0.15488 2.9343  0.001 ***
+## JDate                 1   1.1474 0.08635 6.5432  0.001 ***
+## Depth_Class           1   0.3635 0.02736 2.0732  0.029 *  
+## solar_progress:JDate  1   0.7829 0.05892 4.4649  0.001 ***
+## Pond:JDate            4   1.0979 0.08262 1.5652  0.015 *  
+## Residual             35   6.1374 0.46187                  
+## Total                47  13.2883 1.00000                  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+``` r
+# Fill in the betadisper
+betadispr_water_depth <- 
+  betadisper(water_bray, water_metadata$Depth_Class)
+permutest(betadispr_water_depth)
+```
+
+```
+## 
+## Permutation test for homogeneity of multivariate dispersions
+## Permutation: free
+## Number of permutations: 999
+## 
+## Response: Distances
+##           Df  Sum Sq   Mean Sq      F N.Perm Pr(>F)
+## Groups     1 0.00863 0.0086305 0.6155    999  0.439
+## Residuals 46 0.64501 0.0140220
+```
+
+``` r
+## ### ### ### ### ### ### ### ###
 # FIRST, calculate Bray-Curtis PERMANOVA using phyloseq distance
 ## Methanotrophs 
 water_methanotroph_bray <- phyloseq::distance(water_methanotrophs_physeq, method = "bray", binary = FALSE)
@@ -308,8 +571,20 @@ water_methanotroph_metadata <-
   data.frame()
 
 ## Methanogens
-water_methanogen_bray <- phyloseq::distance(water_methanogens_physeq, method = "bray", binary = FALSE)
+water_methanogen_bray <- 
+  phyloseq::distance(water_methanogens_physeq, method = "bray", binary = FALSE)
+```
 
+```
+## Warning in vegdist(structure(c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, : you have empty rows: their dissimilarities may be
+##                  meaningless in method "bray"
+```
+
+```
+## Warning in vegdist(structure(c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, : missing values in results
+```
+
+``` r
 ## OOH, an important warning message! 
 ## How many samples have NO methanogens?? 
 sum(rowSums(otu_table(water_methanogens_physeq)) == 0)
@@ -342,7 +617,31 @@ methanogen_counts
 ```
 
 ``` r
-sum(methanogen_counts)
+mean(methanogen_counts) #mean
+```
+
+```
+## [1] 8219.708
+```
+
+``` r
+sd(methanogen_counts) # sd
+```
+
+```
+## [1] 16936.43
+```
+
+``` r
+median(methanogen_counts) #median
+```
+
+```
+## [1] 2305
+```
+
+``` r
+sum(methanogen_counts) # total abundance 
 ```
 
 ```
@@ -362,7 +661,31 @@ methanotroph_counts
 ```
 
 ``` r
-sum(methanotroph_counts)
+mean(methanotroph_counts) #mean
+```
+
+```
+## [1] 300292.8
+```
+
+``` r
+sd(methanotroph_counts) # standard deviation
+```
+
+```
+## [1] 294604.1
+```
+
+``` r
+median(methanotroph_counts) #median
+```
+
+```
+## [1] 198270
+```
+
+``` r
+sum(methanotroph_counts) # total abundance 
 ```
 
 ```
@@ -370,18 +693,17 @@ sum(methanotroph_counts)
 ```
 
 ``` r
-# pull out Methanotroph Metadata 
+# pull out Methanogen Metadata 
 water_methanogen_metadata <- 
   water_methanogens_physeq%>%
   sample_data() %>%
   data.frame()
 
-
 ### ### ### ### ### ### ### 
 ### SECOND, time to calculate the PERMANOVA
 ## Results to add to Table S7 for the water column data. 
 ## Methanotrophs
-water_methanotroph_permanova <- adonis2(water_methanotroph_bray ~ solar_progress * Pond * JDate, 
+water_methanotroph_permanova <- adonis2(water_methanotroph_bray ~ solar_progress * Pond * JDate * Depth_Class, 
                                         data = water_methanotroph_metadata, by = "terms"); 
 # Show the results 
 water_methanotroph_permanova
@@ -393,36 +715,155 @@ water_methanotroph_permanova
 ## Permutation: free
 ## Number of permutations: 999
 ## 
-## adonis2(formula = water_methanotroph_bray ~ solar_progress * Pond * JDate, data = water_methanotroph_metadata, by = "terms")
-##                      Df SumOfSqs      R2      F Pr(>F)    
-## solar_progress        1   1.7286 0.13228 9.9873  0.001 ***
-## Pond                  4   2.0848 0.15955 3.0114  0.001 ***
-## JDate                 1   1.1437 0.08752 6.6079  0.001 ***
-## solar_progress:JDate  1   0.8020 0.06137 4.6337  0.001 ***
-## Pond:JDate            4   1.0772 0.08244 1.5560  0.032 *  
-## Residual             36   6.2308 0.47683                  
-## Total                47  13.0671 1.00000                  
+## adonis2(formula = water_methanotroph_bray ~ solar_progress * Pond * JDate * Depth_Class, data = water_methanotroph_metadata, by = "terms")
+##                                  Df SumOfSqs      R2      F Pr(>F)    
+## solar_progress                    1   1.7286 0.13228 9.4226  0.001 ***
+## Pond                              4   2.0848 0.15955 2.8412  0.001 ***
+## JDate                             1   1.1437 0.08752 6.2343  0.001 ***
+## Depth_Class                       1   0.2922 0.02236 1.5926  0.104    
+## solar_progress:JDate              1   0.8020 0.06137 4.3717  0.001 ***
+## Pond:JDate                        4   1.0772 0.08244 1.4680  0.067 .  
+## solar_progress:Depth_Class        1   0.1755 0.01343 0.9564  0.458    
+## Pond:Depth_Class                  4   0.4309 0.03297 0.5872  0.987    
+## JDate:Depth_Class                 1   0.3681 0.02817 2.0065  0.046 *  
+## solar_progress:JDate:Depth_Class  1   0.1765 0.01351 0.9623  0.437    
+## Pond:JDate:Depth_Class            4   0.3849 0.02945 0.5245  0.996    
+## Residual                         24   4.4028 0.33694                  
+## Total                            47  13.0671 1.00000                  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+``` r
+# Depth added
+water_methanotroph_permanova2 <- adonis2(water_methanotroph_bray ~ solar_progress * Pond * JDate + Depth_Class, 
+                                        data = water_methanotroph_metadata, by = "terms"); 
+# Show the results 
+water_methanotroph_permanova2
+```
+
+```
+## Permutation test for adonis under reduced model
+## Terms added sequentially (first to last)
+## Permutation: free
+## Number of permutations: 999
+## 
+## adonis2(formula = water_methanotroph_bray ~ solar_progress * Pond * JDate + Depth_Class, data = water_methanotroph_metadata, by = "terms")
+##                      Df SumOfSqs      R2       F Pr(>F)    
+## solar_progress        1   1.7286 0.13228 10.1875  0.001 ***
+## Pond                  4   2.0848 0.15955  3.0718  0.001 ***
+## JDate                 1   1.1437 0.08752  6.7404  0.001 ***
+## Depth_Class           1   0.2922 0.02236  1.7219  0.073 .  
+## solar_progress:JDate  1   0.8020 0.06137  4.7266  0.001 ***
+## Pond:JDate            4   1.0772 0.08244  1.5872  0.032 *  
+## Residual             35   5.9386 0.45447                   
+## Total                47  13.0671 1.00000                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
 
 ``` r
 ## Methanogens
-water_methanogens_permanova <- adonis2(water_methanogen_bray ~ solar_progress * Pond * JDate, 
-                                        data = water_methanogen_metadata, by = "terms"); 
+### First we must pull out the samples that do not have methanogens 
+samps_no_methanogens <- names(methanogen_counts)[methanogen_counts == 0]
+length(samps_no_methanogens) # how many samples? 
 ```
 
 ```
-## Error in if (any(lhs < -TOL)) stop("dissimilarities must be non-negative"): missing value where TRUE/FALSE needed
+## [1] 5
 ```
 
 ``` r
+# new phyloseq object 
+nsamples(water_methanogens_physeq)
+```
+
+```
+## [1] 48
+```
+
+``` r
+samps_no_methanogens_physeq <- 
+  water_methanogens_physeq %>%
+  subset_samples(!DNA_ID %in% samps_no_methanogens) %>%
+  prune_taxa(taxa_sums(.) > 0, .) 
+nsamples(samps_no_methanogens_physeq)
+```
+
+```
+## [1] 43
+```
+
+``` r
+# Calculate bray-curtis 
+water_methanogen_bray2 <- 
+  phyloseq::distance(samps_no_methanogens_physeq, 
+                     method = "bray", binary = FALSE)
+# pull out metadata 
+water_methanogen_metadata2 <- 
+  samps_no_methanogens_physeq%>%
+  sample_data() %>%
+  data.frame()
+
+water_methanogens_permanova <- 
+  adonis2(water_methanogen_bray2 ~ solar_progress * Pond * JDate * Depth_Class, 
+          data = water_methanogen_metadata2, by = "terms"); 
 # Show the results 
 water_methanogens_permanova
 ```
 
 ```
-## Error: object 'water_methanogens_permanova' not found
+## Permutation test for adonis under reduced model
+## Terms added sequentially (first to last)
+## Permutation: free
+## Number of permutations: 999
+## 
+## adonis2(formula = water_methanogen_bray2 ~ solar_progress * Pond * JDate * Depth_Class, data = water_methanogen_metadata2, by = "terms")
+##                                  Df SumOfSqs      R2      F Pr(>F)   
+## solar_progress                    1   0.8141 0.04702 2.1640  0.012 * 
+## Pond                              4   1.7031 0.09836 1.1317  0.254   
+## JDate                             1   0.7113 0.04108 1.8907  0.030 * 
+## Depth_Class                       1   1.1282 0.06516 2.9989  0.002 **
+## solar_progress:JDate              1   0.3260 0.01883 0.8664  0.599   
+## Pond:JDate                        4   1.5187 0.08771 1.0092  0.445   
+## solar_progress:Depth_Class        1   0.5584 0.03225 1.4841  0.104   
+## Pond:Depth_Class                  4   1.3443 0.07764 0.8933  0.696   
+## JDate:Depth_Class                 1   0.3961 0.02288 1.0529  0.391   
+## solar_progress:JDate:Depth_Class  1   0.2399 0.01386 0.6377  0.888   
+## Pond:JDate:Depth_Class            4   1.4261 0.08237 0.9477  0.583   
+## Residual                         19   7.1481 0.41285                 
+## Total                            42  17.3144 1.00000                 
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+``` r
+#### ADDitive with depth 
+water_methanogens_permanova2 <- 
+  adonis2(water_methanogen_bray2 ~ solar_progress * Pond * JDate + Depth_Class, 
+          data = water_methanogen_metadata2, by = "terms"); 
+# Show the results 
+water_methanogens_permanova2
+```
+
+```
+## Permutation test for adonis under reduced model
+## Terms added sequentially (first to last)
+## Permutation: free
+## Number of permutations: 999
+## 
+## adonis2(formula = water_methanogen_bray2 ~ solar_progress * Pond * JDate + Depth_Class, data = water_methanogen_metadata2, by = "terms")
+##                      Df SumOfSqs      R2      F Pr(>F)    
+## solar_progress        1   0.8141 0.04702 2.1978  0.011 *  
+## Pond                  4   1.7031 0.09836 1.1494  0.223    
+## JDate                 1   0.7113 0.04108 1.9202  0.024 *  
+## Depth_Class           1   1.1282 0.06516 3.0458  0.001 ***
+## solar_progress:JDate  1   0.3260 0.01883 0.8800  0.538    
+## Pond:JDate            4   1.5187 0.08771 1.0249  0.430    
+## Residual             30  11.1129 0.64183                  
+## Total                42  17.3144 1.00000                  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
 
 ``` r
@@ -462,7 +903,7 @@ permutest(betadispr_water_methanotroph_pond)
 ## 
 ## Response: Distances
 ##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.09255 0.018511 0.9979    999  0.445
+## Groups     5 0.09255 0.018511 0.9979    999   0.43
 ## Residuals 42 0.77906 0.018549
 ```
 
@@ -480,7 +921,7 @@ permutest(betadispr_water_methanotroph_depth)
 ## 
 ## Response: Distances
 ##           Df  Sum Sq  Mean Sq    F N.Perm Pr(>F)
-## Groups     1 0.01116 0.011156 0.81    999  0.323
+## Groups     1 0.01116 0.011156 0.81    999  0.371
 ## Residuals 46 0.63353 0.013772
 ```
 
@@ -497,9 +938,9 @@ permutest(betadispr_water_methanotroph_JDate)
 ## Number of permutations: 999
 ## 
 ## Response: Distances
-##           Df  Sum Sq  Mean Sq     F N.Perm Pr(>F)    
-## Groups     3 0.23694 0.078979 5.531    999  0.001 ***
-## Residuals 44 0.62829 0.014279                        
+##           Df  Sum Sq  Mean Sq     F N.Perm Pr(>F)   
+## Groups     3 0.23694 0.078979 5.531    999  0.002 **
+## Residuals 44 0.62829 0.014279                       
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -519,7 +960,7 @@ permutest(betadispr_water_methanogen_solar)
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq     F N.Perm Pr(>F)  
-## Groups     1 0.020615 0.0206149 2.943    999  0.093 .
+## Groups     1 0.020615 0.0206149 2.943    999  0.088 .
 ## Residuals 42 0.294196 0.0070047                      
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
@@ -539,7 +980,7 @@ permutest(betadispr_water_methanogen_pond)
 ## 
 ## Response: Distances
 ##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.09006 0.018013 1.2109    999  0.322
+## Groups     5 0.09006 0.018013 1.2109    999  0.313
 ## Residuals 38 0.56524 0.014875
 ```
 
@@ -557,7 +998,7 @@ permutest(betadispr_water_methanogen_depth)
 ## 
 ## Response: Distances
 ##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)   
-## Groups     1 0.07985 0.079846 8.6029    999  0.005 **
+## Groups     1 0.07985 0.079846 8.6029    999  0.003 **
 ## Residuals 42 0.38982 0.009281                        
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
@@ -577,7 +1018,7 @@ permutest(betadispr_water_methanogen_JDate)
 ## 
 ## Response: Distances
 ##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)
-## Groups     3 0.05417 0.018055 1.1876    999  0.315
+## Groups     3 0.05417 0.018055 1.1876    999  0.327
 ## Residuals 40 0.60810 0.015203
 ```
 
@@ -662,8 +1103,8 @@ clean_water_ch4 %>%
 ```
 
 ```{=html}
-<div class="datatables html-widget html-fill-item" id="htmlwidget-2cbecdc42115fc9ac757" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-2cbecdc42115fc9ac757">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17"],["ASV_1479","ASV_976","ASV_1367","ASV_828","ASV_671","ASV_6126","ASV_1019","ASV_822","ASV_340","ASV_4242","ASV_346","ASV_2028","ASV_44","ASV_141","ASV_13","ASV_119","ASV_32"],["Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanogen","Methanotroph","Methanotroph","Methanogen","Methanogen","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph"],[-1.176314631878122,-1.146256601411654,-1.107302284674842,-1.091773594371864,-0.9778036004026425,-0.9662026113602171,-0.8563009646945294,-0.7994761568704331,-0.7950715985864061,-0.7009837261984228,0.6864853689906509,0.8342433064053301,1.148250684813773,1.37656912370484,1.394332776061662,1.93711271146895,2.477128647783737],[0.0006915201028281429,0.0007838935589707286,0.001664823153448618,0.00504693926440078,0.004135858631283748,0.03104576095112204,0.02170616708647295,0.0206201378959548,0.02025604822915698,0.03412160793118135,0.0312156055594115,0.03104576095112204,0.0206201378959548,0.0007838935589707286,0.007980509425469415,8.665285197130837e-05,6.070849053974485e-07],["stable","stable","stable","stable","sensitive","stable","sensitive","sensitive","sensitive","sensitive","sensitive","sensitive","stable","stable","stable","sensitive","stable"],["Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Methanobacteria","Gammaproteobacteria","Gammaproteobacteria","Methanomicrobia","Methanomicrobia","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria"],["Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methanobacteriales","Methylococcales","Methylococcales","Methanomicrobiales","Methanomicrobiales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales"],["Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methanobacteriaceae","Methylococcaceae","Methylococcaceae","Methanospirillaceae_2121","Methanospirillaceae_2121","Methylomonadaceae","Methylomonadaceae","Methylomonadaceae","Methylomonadaceae","Methylomonadaceae","Methylomonadaceae","Methylococcaceae"],["Methyloterricola","Methyloterricola","Methyloterricola",null,"Methyloterricola","Methanobrevibacter_D","Methyloterricola","Methylococcus",null,"Methanoregula",null,"Methylovulum","Methylomonas","Methylobacter_C_601751",null,"Methylomonas","Methyloparacoccus"],["oryzae","oryzae","oryzae",null,"oryzae","curvatus","oryzae","capsulatus",null,"sp002502245",null,null,"albis",null,null,"albis",null]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>ASV<\/th>\n      <th>CH4_Cycler<\/th>\n      <th>lfc<\/th>\n      <th>q_value<\/th>\n      <th>stability<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":17,"lengthChange":false,"columnDefs":[{"className":"dt-right","targets":[3,4]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"ASV","targets":1},{"name":"CH4_Cycler","targets":2},{"name":"lfc","targets":3},{"name":"q_value","targets":4},{"name":"stability","targets":5},{"name":"Class","targets":6},{"name":"Order","targets":7},{"name":"Family","targets":8},{"name":"Genus","targets":9},{"name":"Species","targets":10}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-01c1e64a8582278a2edf" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-01c1e64a8582278a2edf">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17"],["ASV_1479","ASV_976","ASV_1367","ASV_828","ASV_671","ASV_6126","ASV_1019","ASV_822","ASV_340","ASV_4242","ASV_346","ASV_2028","ASV_44","ASV_141","ASV_13","ASV_119","ASV_32"],["Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanogen","Methanotroph","Methanotroph","Methanogen","Methanogen","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph"],[-1.176314631878122,-1.146256601411654,-1.107302284674842,-1.091773594371864,-0.9778036004026425,-0.9662026113602171,-0.8563009646945294,-0.7994761568704331,-0.7950715985864061,-0.7009837261984228,0.6864853689906509,0.8342433064053301,1.148250684813773,1.37656912370484,1.394332776061662,1.93711271146895,2.477128647783737],[0.0006915201028281429,0.0007838935589707286,0.001664823153448618,0.00504693926440078,0.004135858631283748,0.03104576095112204,0.02170616708647295,0.0206201378959548,0.02025604822915698,0.03412160793118135,0.0312156055594115,0.03104576095112204,0.0206201378959548,0.0007838935589707286,0.007980509425469415,8.665285197130837e-05,6.070849053974485e-07],["stable","stable","stable","stable","sensitive","stable","sensitive","sensitive","sensitive","sensitive","sensitive","sensitive","stable","stable","stable","sensitive","stable"],["Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Methanobacteria","Gammaproteobacteria","Gammaproteobacteria","Methanomicrobia","Methanomicrobia","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria"],["Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methanobacteriales","Methylococcales","Methylococcales","Methanomicrobiales","Methanomicrobiales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales"],["Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methanobacteriaceae","Methylococcaceae","Methylococcaceae","Methanospirillaceae_2121","Methanospirillaceae_2121","Methylomonadaceae","Methylomonadaceae","Methylomonadaceae","Methylomonadaceae","Methylomonadaceae","Methylomonadaceae","Methylococcaceae"],["Methyloterricola","Methyloterricola","Methyloterricola",null,"Methyloterricola","Methanobrevibacter_D","Methyloterricola","Methylococcus",null,"Methanoregula",null,"Methylovulum","Methylomonas","Methylobacter_C_601751",null,"Methylomonas","Methyloparacoccus"],["oryzae","oryzae","oryzae",null,"oryzae","curvatus","oryzae","capsulatus",null,"sp002502245",null,null,"albis",null,null,"albis",null]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>ASV<\/th>\n      <th>CH4_Cycler<\/th>\n      <th>lfc<\/th>\n      <th>q_value<\/th>\n      <th>stability<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":17,"lengthChange":false,"columnDefs":[{"className":"dt-right","targets":[3,4]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"ASV","targets":1},{"name":"CH4_Cycler","targets":2},{"name":"lfc","targets":3},{"name":"q_value","targets":4},{"name":"stability","targets":5},{"name":"Class","targets":6},{"name":"Order","targets":7},{"name":"Family","targets":8},{"name":"Genus","targets":9},{"name":"Species","targets":10}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 ```
 
 
@@ -1001,7 +1442,7 @@ figure_4
 
 ![](ASV_Temporal_Changes_files/figure-html/Fig-4-1.png)<!-- -->
 
-**Figure 4. Blooming water-column methanotroph ASVs under floating solar infrastructure** Methanotroph ASVs identified as differentially abundant between FPV and open ponds using ANCOM-BC2 are shown as absolute abundance (cells mL⁻¹) across the sampling season. (A) Methanotroph ASVs that bloom under FPV infrastructure and (B) methanotroph ASVs enriched in open ponds. Panels are faceted by ASV and water-column depth (surface vs bottom). Points represent individual pond observations, lines connect repeated measurements through time within each pond–depth combination, and thick lines and shaded ribbons indicate treatment medians and interquartile ranges (25th–75th percentiles) at each date. FPV-enriched ASVs are dominated by members of the family Methylomonadaceae, with a single FPV-enriched Methylococcaceae ASV (*Methyloparacoccus*, ASV_32), whereas ASVs enriched in open ponds belong exclusively to Methylococcaceae. Taxonomic assignments are shown at the genus and species level, except ASV_13, which is classified within Methylomonadaceae, and ASV_828, which is classified within Methylococcaceae. For visualization, two low-abundance FPV-enriched ASVs (ASV_2028, ASV_346) and one open-pond ASV with minimal separation in absolute abundance (ASV_1019) were excluded.
+**Figure 4. Methanotroph blooms associated with floating solar infrastructure are dominated by Methylomonadaceae.** Methanotroph ASVs identified as differentially abundant using time-averaged ANCOM-BC2 analyses are shown as absolute abundance (cells mL⁻¹) across the sampling season. (A) ASVs exhibiting bloom-like increases under FPV infrastructure and (B) ASVs enriched in open ponds. FPV-associated ASVs are dominated by Methylomonadaceae, with a single Methylococcaceae ASV (*Methyloparacoccus*, ASV_32), whereas ASVs enriched in open ponds belong exclusively to Methylococcaceae. Taxonomic assignments are shown at the lowest resolved rank. For clarity, two low-abundance FPV-enriched ASVs (ASV_2028, ASV_346) and one open-pond ASV with minimal separation (ASV_1019) were omitted.
 
 **Note 16S rRNA copy Number:** We considered whether variation in 16S rRNA operon copy number among methanotroph taxa could account for the high absolute abundances observed under FPV infrastructure. However, reported rrn copy numbers for dominant methanotroph lineages in our dataset (including *Methylomonas*, *Methylobacter*, *Methyloparacoccus*, *Methyloterricola*, and *Methylococcus*) typically range from one to six copies, implying at most a several-fold difference in apparent abundance. In contrast, FPV-associated methanotroph ASVs in the water column exhibit increases of one to two orders of magnitude relative to open ponds (10⁵–10⁶ vs. 10³–10⁴ cells mL⁻¹), far exceeding what could be explained by rrn copy number alone. Moreover, enrichment patterns are strongly structured at the family level, with FPV-associated blooms dominated by Methylomonadaceae, while ASVs enriched in open ponds belong exclusively to Methylococcaceae, arguing against a nonspecific copy-number artifact. Together, these observations indicate that Figure 4 reflects true population-level responses to FPV infrastructure rather than methodological inflation due to rRNA gene copy number.
 
@@ -1019,12 +1460,12 @@ figure_4
 ```
 
 ```{=html}
-<div class="datatables html-widget html-fill-item" id="htmlwidget-2e2d592f723f7efa69e3" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-2e2d592f723f7efa69e3">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10","11"],["Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria"],["Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota"],["Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria"],["Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales"],["Methylomonadaceae","Methylomonadaceae","Methylococcaceae","Methylomonadaceae","Methylomonadaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae"],["Methylomonas",null,"Methyloparacoccus","Methylomonas","Methylobacter_C",null,"Methyloterricola","Methyloterricola","Methylococcus","Methyloterricola","Methyloterricola"],["albis",null,null,"albis",null,null,"oryzae","oryzae","capsulatus","oryzae","oryzae"],["ASV_44","ASV_13","ASV_32","ASV_119","ASV_141","ASV_828","ASV_1367","ASV_671","ASV_822","ASV_976","ASV_1479"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Kingdom<\/th>\n      <th>Phylum<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n      <th>ASV<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":11,"lengthChange":false,"columnDefs":[{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"Kingdom","targets":1},{"name":"Phylum","targets":2},{"name":"Class","targets":3},{"name":"Order","targets":4},{"name":"Family","targets":5},{"name":"Genus","targets":6},{"name":"Species","targets":7},{"name":"ASV","targets":8}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-d8aaad75bdfe03763d7b" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-d8aaad75bdfe03763d7b">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10","11"],["Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria"],["Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota"],["Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria"],["Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales"],["Methylomonadaceae","Methylomonadaceae","Methylococcaceae","Methylomonadaceae","Methylomonadaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae"],["Methylomonas",null,"Methyloparacoccus","Methylomonas","Methylobacter_C",null,"Methyloterricola","Methyloterricola","Methylococcus","Methyloterricola","Methyloterricola"],["albis",null,null,"albis",null,null,"oryzae","oryzae","capsulatus","oryzae","oryzae"],["ASV_44","ASV_13","ASV_32","ASV_119","ASV_141","ASV_828","ASV_1367","ASV_671","ASV_822","ASV_976","ASV_1479"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Kingdom<\/th>\n      <th>Phylum<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n      <th>ASV<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":11,"lengthChange":false,"columnDefs":[{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"Kingdom","targets":1},{"name":"Phylum","targets":2},{"name":"Class","targets":3},{"name":"Order","targets":4},{"name":"Family","targets":5},{"name":"Genus","targets":6},{"name":"Species","targets":7},{"name":"ASV","targets":8}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 ```
 
 
-## Figure SX
+## Figure S6
 
 #### Methanogens
 
@@ -1141,17 +1582,17 @@ water_ch4_methanogens_enrichedControls_plot <-
 # Save the plot   
 ggsave(water_ch4_methanogens_enrichedControls_plot, 
        width = 5, height = 4, dpi = 300,
-       filename = "figures/bonus/water_methanogens_enrichedControls.png")
+       filename = "figures/Fig_S6.png")
 
 # Show the plot 
 water_ch4_methanogens_enrichedControls_plot
 ```
 
-![](ASV_Temporal_Changes_files/figure-html/water-diffAbund-Open-methanogens-1.png)<!-- -->
+![](ASV_Temporal_Changes_files/figure-html/Fig-S6-water-diffAbund-Open-methanogens-1.png)<!-- -->
 
-**Figure SX**
+**Fig. S6. Time-averaged differential abundance of water-column methanogen ASVs under open-pond conditions.** Absolute abundances (cells mL⁻¹) of water-column methanogen ASVs identified as enriched in open ponds using time-averaged ANCOM-BC2 analyses are shown across the sampling season.
 
-**What is the taxonomy of the Water Methanogen ASVs in Figure SX above?? **
+**What is the taxonomy of the Water Methanogen ASVs in Figure S6 above?? **
 
 
 ``` r
@@ -1165,99 +1606,10 @@ water_ch4_asv_df_glom %>%
 ```
 
 ```{=html}
-<div class="datatables html-widget html-fill-item" id="htmlwidget-ea50fa3f17003b8bfed9" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-ea50fa3f17003b8bfed9">{"x":{"filter":"none","vertical":false,"data":[["1","2","3"],["Archaea","Archaea","Archaea"],["Halobacteriota","Halobacteriota","Methanobacteriota_A_1229"],["Methanomicrobia","Methanomicrobia","Methanobacteria"],["Methanomicrobiales","Methanomicrobiales","Methanobacteriales"],["Methanospirillaceae","Methanospirillaceae","Methanobacteriaceae"],[null,"Methanoregula","Methanobrevibacter_D"],[null,"sp002502245","curvatus"],["ASV_340","ASV_4242","ASV_6126"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Kingdom<\/th>\n      <th>Phylum<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n      <th>ASV<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":3,"lengthChange":false,"columnDefs":[{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"Kingdom","targets":1},{"name":"Phylum","targets":2},{"name":"Class","targets":3},{"name":"Order","targets":4},{"name":"Family","targets":5},{"name":"Genus","targets":6},{"name":"Species","targets":7},{"name":"ASV","targets":8}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-9f2f67d2a1a95f829fbc" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-9f2f67d2a1a95f829fbc">{"x":{"filter":"none","vertical":false,"data":[["1","2","3"],["Archaea","Archaea","Archaea"],["Halobacteriota","Halobacteriota","Methanobacteriota_A_1229"],["Methanomicrobia","Methanomicrobia","Methanobacteria"],["Methanomicrobiales","Methanomicrobiales","Methanobacteriales"],["Methanospirillaceae","Methanospirillaceae","Methanobacteriaceae"],[null,"Methanoregula","Methanobrevibacter_D"],[null,"sp002502245","curvatus"],["ASV_340","ASV_4242","ASV_6126"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Kingdom<\/th>\n      <th>Phylum<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n      <th>ASV<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":3,"lengthChange":false,"columnDefs":[{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"Kingdom","targets":1},{"name":"Phylum","targets":2},{"name":"Class","targets":3},{"name":"Order","targets":4},{"name":"Family","targets":5},{"name":"Genus","targets":6},{"name":"Species","targets":7},{"name":"ASV","targets":8}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 ```
 
-## Alphas versus Gammas 
-
-
-``` r
-# Make a dataframe that is collapsed at the Class level 
-water_methanotroph_class_df_glom <- 
-  water_ch4_cyclers_physeq %>% 
-  subset_taxa(CH4_Cycler == "Methanotroph") %>%
-  tax_glom(taxrank = "Class") %>% 
-  psmelt() %>% 
-  dplyr::mutate(solar_progress = recode(solar_progress, "Solar" = "FPV", "No FPV" = "Open"),
-                Depth_Class = case_when(Depth_Class == "S" ~ "Surface Water",
-                                        Depth_Class == "B" ~ "Bottom Water"),
-                Depth_Class = factor(Depth_Class, levels = c("Surface Water", "Bottom Water"))) %>%
-  dplyr::select(-c(input:Date_Collected, Deployment_ID:Freezer_Temp_NegDegrees, 
-                   D_Number:Integrated_Depths_m, Max_Depth:lag, Order:CH4_Cycler))
-
-
-# look
-colnames(water_methanotroph_class_df_glom)
-```
-
-```
-##  [1] "OTU"               "Sample"            "Abundance"         "DNA_ID"            "Pond"              "Date"              "Depth_Class"       "water_extracted"   "SampleType"        "Year"              "Sample_or_Control" "solar_progress"   
-## [13] "JDate"             "avg_cells_per_ml"  "Month"             "Treatment_Depth"   "Kingdom"           "Phylum"            "Class"
-```
-
-``` r
-# Plot it 
-class_level_methanotroph_water_plot <- 
-  water_methanotroph_class_df_glom %>% 
-  ggplot(aes(x = JDate, y = Abundance, 
-             color = solar_progress, shape = Pond)) +
-  geom_line(aes(group = interaction(Pond, Depth_Class)), alpha = 0.2) +
-  stat_summary(aes(group = solar_progress, fill = solar_progress),
-               fun.data = function(y) 
-                 {data.frame(y = median(y, na.rm = TRUE), 
-                             ymin = quantile(y, 0.25, na.rm = TRUE),
-                             ymax = quantile(y, 0.75, na.rm = TRUE))},
-               geom = "ribbon", alpha = 0.15, color = NA) +
-  stat_summary(aes(group = solar_progress), 
-               fun = median, geom = "line", linewidth = 1) +
-  geom_point(aes(shape = Pond), size = 2) +
-  facet_grid(Class~Depth_Class, scales = "free_y") +
-  scale_y_continuous(labels = label_number(scale_cut = cut_short_scale(), accuracy = 1)) +
-  scale_x_continuous(limits = c(170,260), breaks = seq(150, 275, by = 25)) +
-  scale_color_manual(values = solar_colors) +
-  scale_shape_manual(values = pond_shapes) +
-  guides(color = guide_legend(ncol = 1),
-         fill  = guide_legend(ncol = 1),
-         shape = guide_legend(ncol = 3)) + 
-  labs(x = "Day of Year (DOY)",
-       y = "Absolute Abundance (Cells mL<sup>-1</sup>)",
-       color = "Treatment", fill  = "Treatment",
-       title = "Water Methanotrophs: Class-Level") +
-  theme(legend.position = "bottom") +
-  theme_classic() +
-  theme( #legend.position = c(0.75, 0.7),
-    legend.position = "bottom",
-        legend.spacing = unit(0, "cm"),
-        plot.title = element_text(hjust = 0.5),
-        panel.background =  element_rect(color = 'black', size = 1),
-        panel.grid = element_blank(),
-        legend.background = element_rect(fill = "transparent", color = NA), # remove legend box
-        legend.key = element_rect(fill = "transparent", color = NA),
-        legend.box.background = element_rect(fill='transparent', color = "transparent"), #transparent legend panel
-        legend.box.just = "center",
-        #strip.background = element_rect(colour = NA, fill = 'transparent'),
-        plot.background = element_rect(fill = "transparent", color="transparent"),
-        legend.key.size = unit(0.2, "cm"),
-        legend.spacing.x = unit(0.2, "cm"),
-       legend.margin = margin(t = -5, unit = "pt"),
-        strip.text = element_markdown(size = 8),
-       axis.title.y = element_markdown(size = 8, colour = "black"),
-       axis.title.x = element_markdown(size = 8, colour = "black"),
-       axis.text.y = element_text(size = 8, colour = "black"),
-       legend.title = element_text(size = 9, colour = "black"),
-      legend.text = element_text(size = 8, colour = "black")); 
-
-
-# Save the plot   
-ggsave(class_level_methanotroph_water_plot, 
-       width = 4, height = 6, dpi = 300,
-       filename = "figures/bonus/class_level_methanotroph_water.png")
-
-class_level_methanotroph_water_plot
-```
-
-![](ASV_Temporal_Changes_files/figure-html/water-alphas-vs-gammas-1.png)<!-- -->
 
 # Sediment
 
@@ -1294,7 +1646,7 @@ raw_sediment24_physeq@sam_data$solar_progress <-
 load("data/03_diff_abund/sed_ch4_diffAbundASV_FPV_output.RData")
 ```
 
-## Clean up DiffAbundance data 
+**Clean up ANCOM-BC2 data** 
 
 
 ``` r
@@ -1329,8 +1681,8 @@ clean_sed_ch4 %>%
 ```
 
 ```{=html}
-<div class="datatables html-widget html-fill-item" id="htmlwidget-24c6a91f814bca73e487" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-24c6a91f814bca73e487">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9"],["ASV_2783","ASV_3112","ASV_884","ASV_2572","ASV_634","ASV_1900","ASV_656","ASV_2366","ASV_806"],["Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen"],[-2.334647790141712,-0.9002446682541978,-0.7948844320844339,-0.6626683833175451,-0.643986329662661,-0.5795350807705089,-0.5361214714035706,-0.5291199121485836,-0.5007997304610554],[0.003449566785560089,0.004820783790960796,0.02350293628180973,0.02457154851632804,0.008686162557955551,0.03547232975644225,0.02657321705334383,0.03186287680226504,0.03521506967140069],["sensitive","sensitive","sensitive","sensitive","sensitive","sensitive","sensitive","sensitive","sensitive"],["Methanomicrobia","Methanomicrobia","Methanocellia","Methanosarcinia","Methanobacteria","Methanosarcinia","Methanobacteria","Methanobacteria","Methanosarcinia"],["Methanomicrobiales","Methanomicrobiales","Methanocellales","Methanosarcinales_A_2632","Methanobacteriales","Methanotrichales","Methanobacteriales","Methanobacteriales","Methanosarcinales_A_2632"],["Methanomicrobiaceae","Methanospirillaceae_2121","Methanocellaceae","Methanosarcinaceae","Methanobacteriaceae","Methanotrichaceae","Methanobacteriaceae","Methanobacteriaceae","Methanosarcinaceae"],[null,"Methanoregula","Methanocella_A","Methanosarcina_2619","Methanobacterium_A","Methanothrix_B","Methanobacterium_A","Methanobacterium_A","Methanosarcina_2619"],[null,"sp002502245","arvoryzae","barkeri_B",null,"soehngenii",null,null,"sp000979455"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>ASV<\/th>\n      <th>CH4_Cycler<\/th>\n      <th>lfc<\/th>\n      <th>q_value<\/th>\n      <th>stability<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":9,"lengthChange":false,"columnDefs":[{"className":"dt-right","targets":[3,4]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"ASV","targets":1},{"name":"CH4_Cycler","targets":2},{"name":"lfc","targets":3},{"name":"q_value","targets":4},{"name":"stability","targets":5},{"name":"Class","targets":6},{"name":"Order","targets":7},{"name":"Family","targets":8},{"name":"Genus","targets":9},{"name":"Species","targets":10}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-273e07c611bf8ad57958" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-273e07c611bf8ad57958">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9"],["ASV_2783","ASV_3112","ASV_884","ASV_2572","ASV_634","ASV_1900","ASV_656","ASV_2366","ASV_806"],["Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen"],[-2.334647790141712,-0.9002446682541978,-0.7948844320844339,-0.6626683833175451,-0.643986329662661,-0.5795350807705089,-0.5361214714035706,-0.5291199121485836,-0.5007997304610554],[0.003449566785560089,0.004820783790960796,0.02350293628180973,0.02457154851632804,0.008686162557955551,0.03547232975644225,0.02657321705334383,0.03186287680226504,0.03521506967140069],["sensitive","sensitive","sensitive","sensitive","sensitive","sensitive","sensitive","sensitive","sensitive"],["Methanomicrobia","Methanomicrobia","Methanocellia","Methanosarcinia","Methanobacteria","Methanosarcinia","Methanobacteria","Methanobacteria","Methanosarcinia"],["Methanomicrobiales","Methanomicrobiales","Methanocellales","Methanosarcinales_A_2632","Methanobacteriales","Methanotrichales","Methanobacteriales","Methanobacteriales","Methanosarcinales_A_2632"],["Methanomicrobiaceae","Methanospirillaceae_2121","Methanocellaceae","Methanosarcinaceae","Methanobacteriaceae","Methanotrichaceae","Methanobacteriaceae","Methanobacteriaceae","Methanosarcinaceae"],[null,"Methanoregula","Methanocella_A","Methanosarcina_2619","Methanobacterium_A","Methanothrix_B","Methanobacterium_A","Methanobacterium_A","Methanosarcina_2619"],[null,"sp002502245","arvoryzae","barkeri_B",null,"soehngenii",null,null,"sp000979455"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>ASV<\/th>\n      <th>CH4_Cycler<\/th>\n      <th>lfc<\/th>\n      <th>q_value<\/th>\n      <th>stability<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":9,"lengthChange":false,"columnDefs":[{"className":"dt-right","targets":[3,4]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"ASV","targets":1},{"name":"CH4_Cycler","targets":2},{"name":"lfc","targets":3},{"name":"q_value","targets":4},{"name":"stability","targets":5},{"name":"Class","targets":6},{"name":"Order","targets":7},{"name":"Family","targets":8},{"name":"Genus","targets":9},{"name":"Species","targets":10}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 ```
 
 **Important Note:** Most of the sediment ASVs are more abundant in the Controls, with the exception of ASV_4603, a *Methanoperedens_A*!
@@ -1338,7 +1690,7 @@ clean_sed_ch4 %>%
 
 ### Plot Diff Abund ASVs over time 
 
-#### Sediment Methanotroph ASVs
+**Sediment Methanotroph ASVs**
 
 
 ``` r
@@ -1559,6 +1911,7 @@ sed_ch4_methanogens_enrichedControls_plot
 
 ![](ASV_Temporal_Changes_files/figure-html/sed-diffAbund-Open-methanogen-1.png)<!-- -->
 
+## Figure S7
 
 ``` r
 # Remove legends
@@ -1583,17 +1936,17 @@ sed_diffAbund_ASVs_plot <-
 # Save the plot   
 ggsave(sed_diffAbund_ASVs_plot, 
        width = 12, height = 12, dpi = 300,
-       filename = "figures/bonus/sed_diffAbund_ASVs.png")
+       filename = "figures/Fig_S7.png")
 
 # Show
 sed_diffAbund_ASVs_plot
 ```
 
-![](ASV_Temporal_Changes_files/figure-html/sed-diffAbund-ASVs-1.png)<!-- -->
+![](ASV_Temporal_Changes_files/figure-html/Fig-S7-sed-diffAbund-ASVs-1.png)<!-- -->
 
-**Figure SX: Differentially abundant sediment methane-cycling ASVs under floating solar (FPV) and open-pond conditions.** (A) Sediment ASVs significantly enriched in FPV ponds and (B) sediment ASVs significantly enriched in open (no-FPV) ponds, identified using ANCOM-BC2 at the ASV level (FDR-adjusted α = 0.05) and filtered to include ASVs with absolute log₂ fold change > 0.5. For each ASV, relative abundance (%) is shown over day of year (DOY) across individual ponds. Points represent individual pond samples, with shapes indicating pond identity. Thin lines connect observations within ponds. Thick lines show the median relative abundance across ponds within each treatment, and shaded ribbons denote the interquartile range (25th–75th percentiles). Colors indicate solar treatment (FPV vs. open pond). Facet labels show methane-cycling guild (methanotroph or methanogen), ASV identifier, and lowest resolved genus. Y-axes are scaled independently to emphasize ASV-specific temporal dynamics.
+**Fig. S7. Time-averaged differential abundance of sediment methane-cycling ASVs under FPV and open-pond conditions.** Sediment methane-cycling ASVs identified as differentially abundant using time-averaged ANCOM-BC2 analyses. (A) ASVs enriched in FPV ponds, (B) methanotroph ASVs enriched in open ponds, and (C) methanogen ASVs enriched in open ponds. Relative abundance (%) of each ASV is shown across day of year (DOY). ASVs lacking genus-level taxonomic resolution are labeled at the family level in facet titles (ASV_340, ASV_2783, ASV_4541, ASV_2366, ASV_634).
 
-**What is the taxonomy of the Methanotroph ASVs in Figure SX above? **
+**What is the taxonomy of the Methanotroph ASVs in Figure S7 above? **
 
 
 ``` r
@@ -1606,8 +1959,8 @@ clean_sed_ch4 %>%
 ```
 
 ```{=html}
-<div class="datatables html-widget html-fill-item" id="htmlwidget-e4e6697c33fd90a74e69" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-e4e6697c33fd90a74e69">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33"],["ASV_884","ASV_2783","ASV_1957","ASV_340","ASV_2746","ASV_1069","ASV_3112","ASV_2572","ASV_806","ASV_4603","ASV_1900","ASV_431","ASV_656","ASV_2366","ASV_510","ASV_634","ASV_2676","ASV_5977","ASV_231","ASV_2213","ASV_785","ASV_4747","ASV_208","ASV_184","ASV_4541","ASV_4868","ASV_1433","ASV_4211","ASV_2740","ASV_4272","ASV_4057","ASV_822","ASV_645"],["Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanotroph","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanogen"],["Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Archaea"],["Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Methanobacteriota_A_1229","Methanobacteriota_A_1229","Methanobacteriota_A_1229","Methanobacteriota_A_1229","Methanobacteriota_A_1229","Methanobacteriota_A_1229","Methanobacteriota_A_1229","Methylomirabilota","Methylomirabilota","Methylomirabilota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Thermoplasmatota"],["Methanocellia","Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanosarcinia","Methanosarcinia","Methanosarcinia","Methanosarcinia","Methanosarcinia","Methanobacteria","Methanobacteria","Methanobacteria","Methanobacteria","Methanobacteria","Methanobacteria","Methanobacteria","Methylomirabilia","Methylomirabilia","Methylomirabilia","Alphaproteobacteria","Alphaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Thermoplasmata_1773"],["Methanocellales","Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanosarcinales_A_2632","Methanosarcinales_A_2632","Methanosarcinales_A_2632","Methanotrichales","Methanotrichales","Methanobacteriales","Methanobacteriales","Methanobacteriales","Methanobacteriales","Methanobacteriales","Methanobacteriales","Methanobacteriales","Methylomirabilales","Methylomirabilales","Methylomirabilales","Rhizobiales_505101","Rhizobiales_505101","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methanomassiliicoccales"],["Methanocellaceae","Methanomicrobiaceae","Methanospirillaceae_2121","Methanospirillaceae_2121","Methanospirillaceae_2121","Methanospirillaceae_2121","Methanospirillaceae_2121","Methanosarcinaceae","Methanosarcinaceae","Methanoperedenaceae","Methanotrichaceae","Methanotrichaceae","Methanobacteriaceae","Methanobacteriaceae","Methanobacteriaceae","Methanobacteriaceae","Methanobacteriaceae","Methanobacteriaceae","Methanobacteriaceae","2-02-FULL-66-22","2-02-FULL-66-22","2-02-FULL-66-22","Beijerinckiaceae","Beijerinckiaceae","Methylomonadaceae","Methylomonadaceae","Methylomonadaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methanomassiliicoccaceae"],["Methanocella_A",null,"Methanolinea_A",null,"UBA288","Methanoregula","Methanoregula","Methanosarcina_2619","Methanosarcina_2619","Methanoperedens_A","Methanothrix_B","Methanothrix_B","Methanobacterium_A","Methanobacterium_A","Methanobacterium_A","Methanobacterium_A","Methanobacterium_A","Methanobacterium_D_1054","Methanobacterium_B_963","2-02-FULL-66-22","2-02-FULL-66-22","2-02-FULL-66-22","Methylocystis","Methylocystis",null,"UBA4132","Methylobacter_C_601751","Methyloterricola","Methyloparacoccus",null,"Methyloterricola","Methylococcus","Methanomassiliicoccus_A_1624"],["arvoryzae",null,null,null,"sp004332335","formicica","sp002502245","barkeri_B","sp000979455","sp002487355","soehngenii","sp002256595",null,null,null,null,"subterraneum","arcticum","lacus","sp001771285","sp001771285","sp001771285",null,null,null,"sp002134785",null,"oryzae","murrellii",null,"oryzae","capsulatus","luminyensis"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>ASV<\/th>\n      <th>CH4_Cycler<\/th>\n      <th>Kingdom<\/th>\n      <th>Phylum<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":33,"lengthChange":false,"columnDefs":[{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"ASV","targets":1},{"name":"CH4_Cycler","targets":2},{"name":"Kingdom","targets":3},{"name":"Phylum","targets":4},{"name":"Class","targets":5},{"name":"Order","targets":6},{"name":"Family","targets":7},{"name":"Genus","targets":8},{"name":"Species","targets":9}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-d987f72c15606eb475a4" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-d987f72c15606eb475a4">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33"],["ASV_884","ASV_2783","ASV_1957","ASV_340","ASV_2746","ASV_1069","ASV_3112","ASV_2572","ASV_806","ASV_4603","ASV_1900","ASV_431","ASV_656","ASV_2366","ASV_510","ASV_634","ASV_2676","ASV_5977","ASV_231","ASV_2213","ASV_785","ASV_4747","ASV_208","ASV_184","ASV_4541","ASV_4868","ASV_1433","ASV_4211","ASV_2740","ASV_4272","ASV_4057","ASV_822","ASV_645"],["Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanotroph","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanogen","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanotroph","Methanogen"],["Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Archaea"],["Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Methanobacteriota_A_1229","Methanobacteriota_A_1229","Methanobacteriota_A_1229","Methanobacteriota_A_1229","Methanobacteriota_A_1229","Methanobacteriota_A_1229","Methanobacteriota_A_1229","Methylomirabilota","Methylomirabilota","Methylomirabilota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Thermoplasmatota"],["Methanocellia","Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanosarcinia","Methanosarcinia","Methanosarcinia","Methanosarcinia","Methanosarcinia","Methanobacteria","Methanobacteria","Methanobacteria","Methanobacteria","Methanobacteria","Methanobacteria","Methanobacteria","Methylomirabilia","Methylomirabilia","Methylomirabilia","Alphaproteobacteria","Alphaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Thermoplasmata_1773"],["Methanocellales","Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanosarcinales_A_2632","Methanosarcinales_A_2632","Methanosarcinales_A_2632","Methanotrichales","Methanotrichales","Methanobacteriales","Methanobacteriales","Methanobacteriales","Methanobacteriales","Methanobacteriales","Methanobacteriales","Methanobacteriales","Methylomirabilales","Methylomirabilales","Methylomirabilales","Rhizobiales_505101","Rhizobiales_505101","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methylococcales","Methanomassiliicoccales"],["Methanocellaceae","Methanomicrobiaceae","Methanospirillaceae_2121","Methanospirillaceae_2121","Methanospirillaceae_2121","Methanospirillaceae_2121","Methanospirillaceae_2121","Methanosarcinaceae","Methanosarcinaceae","Methanoperedenaceae","Methanotrichaceae","Methanotrichaceae","Methanobacteriaceae","Methanobacteriaceae","Methanobacteriaceae","Methanobacteriaceae","Methanobacteriaceae","Methanobacteriaceae","Methanobacteriaceae","2-02-FULL-66-22","2-02-FULL-66-22","2-02-FULL-66-22","Beijerinckiaceae","Beijerinckiaceae","Methylomonadaceae","Methylomonadaceae","Methylomonadaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methylococcaceae","Methanomassiliicoccaceae"],["Methanocella_A",null,"Methanolinea_A",null,"UBA288","Methanoregula","Methanoregula","Methanosarcina_2619","Methanosarcina_2619","Methanoperedens_A","Methanothrix_B","Methanothrix_B","Methanobacterium_A","Methanobacterium_A","Methanobacterium_A","Methanobacterium_A","Methanobacterium_A","Methanobacterium_D_1054","Methanobacterium_B_963","2-02-FULL-66-22","2-02-FULL-66-22","2-02-FULL-66-22","Methylocystis","Methylocystis",null,"UBA4132","Methylobacter_C_601751","Methyloterricola","Methyloparacoccus",null,"Methyloterricola","Methylococcus","Methanomassiliicoccus_A_1624"],["arvoryzae",null,null,null,"sp004332335","formicica","sp002502245","barkeri_B","sp000979455","sp002487355","soehngenii","sp002256595",null,null,null,null,"subterraneum","arcticum","lacus","sp001771285","sp001771285","sp001771285",null,null,null,"sp002134785",null,"oryzae","murrellii",null,"oryzae","capsulatus","luminyensis"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>ASV<\/th>\n      <th>CH4_Cycler<\/th>\n      <th>Kingdom<\/th>\n      <th>Phylum<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":33,"lengthChange":false,"columnDefs":[{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"ASV","targets":1},{"name":"CH4_Cycler","targets":2},{"name":"Kingdom","targets":3},{"name":"Phylum","targets":4},{"name":"Class","targets":5},{"name":"Order","targets":6},{"name":"Family","targets":7},{"name":"Genus","targets":8},{"name":"Species","targets":9}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 ```
 
 
@@ -1730,8 +2083,8 @@ datatable(asv_effect_time_robust_methanogen_df,
 ```
 
 ```{=html}
-<div class="datatables html-widget html-fill-item" id="htmlwidget-b2e1f50f1041e5874a48" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-b2e1f50f1041e5874a48">{"x":{"filter":"none","vertical":false,"data":[["ASV_568","ASV_262","ASV_102","ASV_286","ASV_321","ASV_203","ASV_302","ASV_54","ASV_415","ASV_712","ASV_352","ASV_806","ASV_165","ASV_406","ASV_786","ASV_400","ASV_495","ASV_580","ASV_340","ASV_683","ASV_674","ASV_642","ASV_831","ASV_499","ASV_662","ASV_434","ASV_656","ASV_444","ASV_517"],[0.005725815699031163,0.005515798183228954,0.004050438039435019,0.004037589591291399,0.002698022410791751,0.002386986002827533,0.001772893958266892,0.00113902401108271,0.001101810629999988,0.000914366720337732,0.0008842538077371543,0.0008182611262996181,0.0007899294028170669,0.0007190998510160526,0.0006489551387553511,0.0006216532400210403,0.0005827673642660059,0.0005240299108241023,0.0005145069434129295,0.0005038219352054506,0.0004168456577829487,0.000408336926745982,0.0003327624554129041,0.0002657061491875936,0.0001924268213955387,0.0001909520230508664,0.0001662265095623314,0.0001301933236221647,9.709346791442045e-05],[193,193,234,193,193,193,193,193,234,193,234,193,193,255,193,172,193,255,193,172,193,172,234,172,255,172,234,193,193],[2,4,3,3,1,2,2,1,4,3,1,2,2,2,1,2,2,3,1,1,2,4,3,2,2,1,1,1,1],[0,0.001610631920948052,0.007022595318595357,0.0004807497852533149,0.0006717180891629029,0.0003351687814220733,0.0005740116266905481,0.008634052081392434,0.0003119151590767311,0,0.001668095772287855,0,0.0007451637274069167,0.001317943054419624,0.0002405465216972963,0.00093503830322395,0.0008370985728333728,0.0007726482518833301,0.00203293896753525,0,0.001243691857829521,0.0005522866682421564,0.0004328505516021233,0.0009806702128753978,0.0008376495698947013,0.0004794670337649483,0.0003806804663335713,0.001793781185136933,0.0004087106498864089],[0.005725815699031163,0.006931028238761478,0.01101357113319791,0.00476507670149737,0.003152717982877298,0.00269487485237122,0.00234690558495744,0.00962561805655605,0.001439142457532375,0.000914366720337732,0.002649180339910844,0.0007454773956771447,0.00165222113717662,0.001723312589755864,0.0004099151234567901,0.001774704014691415,0.001419865937099379,0.001075406604148432,0.002719479487360549,0.000503553467869159,0.00166053751561247,0.0009593095638772064,0.0008627685177251348,0.001150744882067858,0.001053135471517472,0.0008873520073457077,0.0004316092557843876,0.002093720409516994,0.0004572337323757028],[3,3,2,3,3,3,3,3,2,2,2,3,3,3,2,2,2,2,2,3,2,2,2,3,3,2,2,2,3],[0.005725815699031163,0.005320396317813426,0.003990975814602557,0.004284326916244055,0.002480999893714395,0.002359706070949147,0.001772893958266892,0.0009915659751636163,0.001127227298455644,0.000914366720337732,0.0009810845676229887,0.0007454773956771447,0.0009070574097697038,0.00040536953533624,0.0001693686017594938,0.0008396657114674654,0.0005827673642660059,0.000302758352265102,0.0006865405198252989,0.000503553467869159,0.0004168456577829487,0.00040702289563505,0.0004299179661230115,0.00017007466919246,0.0002154859016227711,0.0004078849735807594,5.092878945081635e-05,0.0002999392243800611,4.85230824892939e-05],[true,true,true,true,false,true,true,false,true,true,false,true,true,true,false,true,true,true,false,false,true,true,true,true,true,false,false,false,false],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],["Strong","Strong","Strong","Strong","Moderate","Strong","Strong","Moderate","Strong","Strong","Moderate","Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Moderate","Moderate","Strong","Strong","Strong","Strong","Strong","Moderate","Moderate","Moderate","Moderate"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>ASV<\/th>\n      <th>max_pos_delta<\/th>\n      <th>peak_delta_date<\/th>\n      <th>n_dates_FPV_gt_Open<\/th>\n      <th>open_median_at_peak<\/th>\n      <th>fpv_median_at_peak<\/th>\n      <th>n_FPV_ponds_support<\/th>\n      <th>delta_median_at_peak<\/th>\n      <th>pass_dates<\/th>\n      <th>pass_ponds<\/th>\n      <th>pass_robust<\/th>\n      <th>tier<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"autoWidth":true,"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7]},{"name":"ASV","targets":0},{"name":"max_pos_delta","targets":1},{"name":"peak_delta_date","targets":2},{"name":"n_dates_FPV_gt_Open","targets":3},{"name":"open_median_at_peak","targets":4},{"name":"fpv_median_at_peak","targets":5},{"name":"n_FPV_ponds_support","targets":6},{"name":"delta_median_at_peak","targets":7},{"name":"pass_dates","targets":8},{"name":"pass_ponds","targets":9},{"name":"pass_robust","targets":10},{"name":"tier","targets":11}],"order":[],"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-c758309ecc8057e47aca" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-c758309ecc8057e47aca">{"x":{"filter":"none","vertical":false,"data":[["ASV_568","ASV_262","ASV_102","ASV_286","ASV_321","ASV_203","ASV_302","ASV_54","ASV_415","ASV_712","ASV_352","ASV_806","ASV_165","ASV_406","ASV_786","ASV_400","ASV_495","ASV_580","ASV_340","ASV_683","ASV_674","ASV_642","ASV_831","ASV_499","ASV_662","ASV_434","ASV_656","ASV_444","ASV_517"],[0.005725815699031163,0.005515798183228954,0.004050438039435019,0.004037589591291399,0.002698022410791751,0.002386986002827533,0.001772893958266892,0.00113902401108271,0.001101810629999988,0.000914366720337732,0.0008842538077371543,0.0008182611262996181,0.0007899294028170669,0.0007190998510160526,0.0006489551387553511,0.0006216532400210403,0.0005827673642660059,0.0005240299108241023,0.0005145069434129295,0.0005038219352054506,0.0004168456577829487,0.000408336926745982,0.0003327624554129041,0.0002657061491875936,0.0001924268213955387,0.0001909520230508664,0.0001662265095623314,0.0001301933236221647,9.709346791442045e-05],[193,193,234,193,193,193,193,193,234,193,234,193,193,255,193,172,193,255,193,172,193,172,234,172,255,172,234,193,193],[2,4,3,3,1,2,2,1,4,3,1,2,2,2,1,2,2,3,1,1,2,4,3,2,2,1,1,1,1],[0,0.001610631920948052,0.007022595318595357,0.0004807497852533149,0.0006717180891629029,0.0003351687814220733,0.0005740116266905481,0.008634052081392434,0.0003119151590767311,0,0.001668095772287855,0,0.0007451637274069167,0.001317943054419624,0.0002405465216972963,0.00093503830322395,0.0008370985728333728,0.0007726482518833301,0.00203293896753525,0,0.001243691857829521,0.0005522866682421564,0.0004328505516021233,0.0009806702128753978,0.0008376495698947013,0.0004794670337649483,0.0003806804663335713,0.001793781185136933,0.0004087106498864089],[0.005725815699031163,0.006931028238761478,0.01101357113319791,0.00476507670149737,0.003152717982877298,0.00269487485237122,0.00234690558495744,0.00962561805655605,0.001439142457532375,0.000914366720337732,0.002649180339910844,0.0007454773956771447,0.00165222113717662,0.001723312589755864,0.0004099151234567901,0.001774704014691415,0.001419865937099379,0.001075406604148432,0.002719479487360549,0.000503553467869159,0.00166053751561247,0.0009593095638772064,0.0008627685177251348,0.001150744882067858,0.001053135471517472,0.0008873520073457077,0.0004316092557843876,0.002093720409516994,0.0004572337323757028],[3,3,2,3,3,3,3,3,2,2,2,3,3,3,2,2,2,2,2,3,2,2,2,3,3,2,2,2,3],[0.005725815699031163,0.005320396317813426,0.003990975814602557,0.004284326916244055,0.002480999893714395,0.002359706070949147,0.001772893958266892,0.0009915659751636163,0.001127227298455644,0.000914366720337732,0.0009810845676229887,0.0007454773956771447,0.0009070574097697038,0.00040536953533624,0.0001693686017594938,0.0008396657114674654,0.0005827673642660059,0.000302758352265102,0.0006865405198252989,0.000503553467869159,0.0004168456577829487,0.00040702289563505,0.0004299179661230115,0.00017007466919246,0.0002154859016227711,0.0004078849735807594,5.092878945081635e-05,0.0002999392243800611,4.85230824892939e-05],[true,true,true,true,false,true,true,false,true,true,false,true,true,true,false,true,true,true,false,false,true,true,true,true,true,false,false,false,false],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],["Strong","Strong","Strong","Strong","Moderate","Strong","Strong","Moderate","Strong","Strong","Moderate","Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Moderate","Moderate","Strong","Strong","Strong","Strong","Strong","Moderate","Moderate","Moderate","Moderate"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>ASV<\/th>\n      <th>max_pos_delta<\/th>\n      <th>peak_delta_date<\/th>\n      <th>n_dates_FPV_gt_Open<\/th>\n      <th>open_median_at_peak<\/th>\n      <th>fpv_median_at_peak<\/th>\n      <th>n_FPV_ponds_support<\/th>\n      <th>delta_median_at_peak<\/th>\n      <th>pass_dates<\/th>\n      <th>pass_ponds<\/th>\n      <th>pass_robust<\/th>\n      <th>tier<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"autoWidth":true,"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7]},{"name":"ASV","targets":0},{"name":"max_pos_delta","targets":1},{"name":"peak_delta_date","targets":2},{"name":"n_dates_FPV_gt_Open","targets":3},{"name":"open_median_at_peak","targets":4},{"name":"fpv_median_at_peak","targets":5},{"name":"n_FPV_ponds_support","targets":6},{"name":"delta_median_at_peak","targets":7},{"name":"pass_dates","targets":8},{"name":"pass_ponds","targets":9},{"name":"pass_robust","targets":10},{"name":"tier","targets":11}],"order":[],"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 ```
 
 The table above provides an audit trail for why each ASV was retained, including the date of peak FPV enrichment and whether that peak is supported across multiple sampling dates and/or across ponds.
@@ -1863,7 +2216,7 @@ sed_methanogen_ASV_plot
 ![](ASV_Temporal_Changes_files/figure-html/Fig-5-sed-methanogens-1.png)<!-- -->
 
 
-**Figure 5. Seasonal FPV-associated divergence of sediment methanogen ASVs.** Sediment methanogen ASVs showing strong, time-dependent divergence between FPV and open ponds are shown as relative abundance (%) across the sampling season. To identify FPV-associated seasonal patterns not captured by a constant treatment effect, methanogen ASVs were screened using a manual, seasonally explicit approach focused on abundant taxa (mean relative abundance > 0.05%). FPV–Open separation was quantified at each sampling date using median abundances, and ASVs were retained if peak FPV enrichment was supported across multiple sampling dates and/or multiple FPV ponds (see Supplemental Methods). Panels are faceted by ASV and annotated with the day of year (DOY) at which maximum FPV enrichment occurred. Points represent individual pond observations, thin lines connect repeated measurements within ponds, and thick lines and shaded ribbons indicate treatment medians and interquartile ranges (25th–75th percentiles) at each date. ASVs span multiple methanogenic phyla and classes, including genera within hydrogenotrophic (*Methanobacterium*), acetoclastic (*Methanothrix*), and methylotrophic (*Methanoregula*, *Methanosarcina*) groups.
+**Fig. 5: FPV-associated divergence of sediment methanogens reveals seasonally explicit cross-genus functional redundancy.** Sediment methanogen ASVs showing time-dependent divergence between FPV and open ponds are shown as relative abundance (%) across the sampling season. ASVs were identified using a seasonally explicit (time-resolved) screening approach targeting abundant taxa (mean relative abundance > 0.05%) and quantifying FPV–Open separation at individual sampling dates using median abundances; ASVs were retained when peak FPV enrichment was supported across multiple dates and/or FPV ponds (see Supplemental Methods). ASVs span diverse methanogenic lineages, including hydrogenotrophic (*Methanobacterium*), acetoclastic (*Methanothrix*), and methylotrophic (*Methanoregula*, *Methanosarcina*) taxa.
 
 **What is the taxonomy of the Methanogen ASVs in Figure 5?? **
 
@@ -1882,12 +2235,12 @@ sed_methanogen_asvs_df %>%
 ```
 
 ```{=html}
-<div class="datatables html-widget html-fill-item" id="htmlwidget-682a7ff043f3be0f8542" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-682a7ff043f3be0f8542">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18"],["Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea"],["Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Methanobacteriota_A_1229","Methanobacteriota_A_1229","Methanobacteriota_A_1229","Methanobacteriota_A_1229"],["Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanosarcinia","Methanosarcinia","Methanosarcinia","Methanosarcinia","Methanosarcinia","Methanosarcinia","Methanobacteria","Methanobacteria","Methanobacteria","Methanobacteria"],["Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanosarcinales_A_2632","Methanotrichales","Methanotrichales","Methanotrichales","Methanotrichales","Methanotrichales","Methanobacteriales","Methanobacteriales","Methanobacteriales","Methanobacteriales"],["Methanospirillaceae_2121","Methanospirillaceae_2121","Methanospirillaceae_2121","Methanospirillaceae_2121","Methanospirillaceae_2121","Methanospirillaceae_2121","Methanomicrobiaceae","Methanospirillaceae_2121","Methanosarcinaceae","Methanotrichaceae","Methanotrichaceae","Methanotrichaceae","Methanotrichaceae","Methanotrichaceae","Methanobacteriaceae","Methanobacteriaceae","Methanobacteriaceae","Methanobacteriaceae"],["Methanoregula","Methanoregula","Methanolinea_A","Methanolinea_A","Methanolinea_A","Methanolinea_A",null,"Methanoregula","Methanosarcina","Methanothrix_B","Methanothrix_B","Methanothrix_B","Methanothrix_B","Methanothrix_B","Methanobacterium_F","Methanobacterium_A","Methanobacterium_A","Methanobacterium_D"],["formicica","formicica",null,null,null,null,null,"formicica","sp000979455","sp002256595","sp002256595","sp002256595","soehngenii","sp002256595","flexile","petrolearium",null,"sp002505765"],["ASV_102","ASV_286","ASV_302","ASV_712","ASV_495","ASV_831","ASV_580","ASV_662","ASV_806","ASV_262","ASV_568","ASV_203","ASV_415","ASV_674","ASV_165","ASV_400","ASV_642","ASV_499"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Kingdom<\/th>\n      <th>Phylum<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n      <th>ASV<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":18,"lengthChange":false,"columnDefs":[{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"Kingdom","targets":1},{"name":"Phylum","targets":2},{"name":"Class","targets":3},{"name":"Order","targets":4},{"name":"Family","targets":5},{"name":"Genus","targets":6},{"name":"Species","targets":7},{"name":"ASV","targets":8}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-20b4e45dc2ee6ec50202" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-20b4e45dc2ee6ec50202">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18"],["Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea","Archaea"],["Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Halobacteriota","Methanobacteriota_A_1229","Methanobacteriota_A_1229","Methanobacteriota_A_1229","Methanobacteriota_A_1229"],["Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanomicrobia","Methanosarcinia","Methanosarcinia","Methanosarcinia","Methanosarcinia","Methanosarcinia","Methanosarcinia","Methanobacteria","Methanobacteria","Methanobacteria","Methanobacteria"],["Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanomicrobiales","Methanosarcinales_A_2632","Methanotrichales","Methanotrichales","Methanotrichales","Methanotrichales","Methanotrichales","Methanobacteriales","Methanobacteriales","Methanobacteriales","Methanobacteriales"],["Methanospirillaceae_2121","Methanospirillaceae_2121","Methanospirillaceae_2121","Methanospirillaceae_2121","Methanospirillaceae_2121","Methanospirillaceae_2121","Methanomicrobiaceae","Methanospirillaceae_2121","Methanosarcinaceae","Methanotrichaceae","Methanotrichaceae","Methanotrichaceae","Methanotrichaceae","Methanotrichaceae","Methanobacteriaceae","Methanobacteriaceae","Methanobacteriaceae","Methanobacteriaceae"],["Methanoregula","Methanoregula","Methanolinea_A","Methanolinea_A","Methanolinea_A","Methanolinea_A",null,"Methanoregula","Methanosarcina","Methanothrix_B","Methanothrix_B","Methanothrix_B","Methanothrix_B","Methanothrix_B","Methanobacterium_F","Methanobacterium_A","Methanobacterium_A","Methanobacterium_D"],["formicica","formicica",null,null,null,null,null,"formicica","sp000979455","sp002256595","sp002256595","sp002256595","soehngenii","sp002256595","flexile","petrolearium",null,"sp002505765"],["ASV_102","ASV_286","ASV_302","ASV_712","ASV_495","ASV_831","ASV_580","ASV_662","ASV_806","ASV_262","ASV_568","ASV_203","ASV_415","ASV_674","ASV_165","ASV_400","ASV_642","ASV_499"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Kingdom<\/th>\n      <th>Phylum<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n      <th>ASV<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":18,"lengthChange":false,"columnDefs":[{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"Kingdom","targets":1},{"name":"Phylum","targets":2},{"name":"Class","targets":3},{"name":"Order","targets":4},{"name":"Family","targets":5},{"name":"Genus","targets":6},{"name":"Species","targets":7},{"name":"ASV","targets":8}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 ```
 
 
-### Check moderate/fair ASVs
+**Check moderate/fair ASVs**
 
 
 ``` r
@@ -2056,8 +2409,8 @@ datatable(open_asv_effect_time_robust_methanogen_df,
 ```
 
 ```{=html}
-<div class="datatables html-widget html-fill-item" id="htmlwidget-e3efd17e75d35e7533f9" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-e3efd17e75d35e7533f9">{"x":{"filter":"none","vertical":false,"data":[["ASV_14","ASV_231","ASV_510","ASV_54","ASV_203","ASV_431","ASV_340","ASV_645","ASV_400","ASV_495","ASV_683","ASV_434","ASV_650","ASV_656","ASV_165","ASV_517","ASV_634","ASV_674","ASV_321","ASV_444","ASV_572","ASV_884","ASV_831","ASV_352","ASV_592","ASV_499","ASV_662","ASV_580","ASV_786","ASV_406","ASV_806","ASV_302","ASV_615","ASV_286","ASV_102","ASV_712"],[0.01182289602309498,0.003337217091552168,0.002350420654054354,0.002120987918197099,0.00189535353928083,0.001419749247555846,0.001413211307823732,0.001337810309209265,0.001328147234607722,0.001061170207190909,0.001032835441593065,0.0009924798019185174,0.0009117520034550602,0.000885586123756022,0.0008583194262193894,0.0008128915028929374,0.000677880905022303,0.0006677707896467698,0.0006362471177649692,0.0006257518183667054,0.0005288778477791992,0.0005271546161382926,0.0004803771718944575,0.000479566218089842,0.0004773571578579708,0.0004257884503595303,0.0003825521631126751,0.0003620123341734661,0.000361772583895695,0.000338488368114725,0.0003081794190555176,0.0002899357164420288,0.0001926411096127914,0.0001775283173606136,7.83510337834881e-05,1.145504691701005e-06],[193,234,193,172,172,193,234,234,255,255,193,193,255,193,234,255,255,255,234,234,255,172,193,172,193,193,172,193,234,172,234,172,234,255,193,172],[4,4,4,3,2,4,3,4,2,2,1,3,3,3,2,3,3,2,3,3,4,4,1,3,4,2,2,1,3,2,2,2,2,1,1,1],[0.04058191715300499,0.004422951433061317,0.002932857658143914,0.01248979036257124,0.004803646866397597,0.002043459633575332,0.001659531755945357,0.001394946202741098,0.001269107105263008,0.001509211643335609,0.002235896850933169,0.002692685599873467,0.0009579560476319915,0.00160247486586626,0.004446362602662393,0.001078263017150197,0.00130384392505312,0.001110681862082287,0.002196768877653477,0.001130138670151842,0.001317603453777084,0.0008405542124205904,0.0009857726596753545,0.002061459965565915,0.001151220897210957,0.001745943450732035,0.0007670851841180767,0.001583101299454911,0.0008412689357200962,0.001441190047575266,0.0008844699041873114,0.002301503831977593,0.0001926411096127914,0.001408573152189378,0.002989635308561556,0.0003844305622296973],[0.02875902112991002,0.000874658177373915,0.0002641310089804543,0.009767970262205597,0.002733266439311961,0.0005294292846648715,0.0005394036954312748,0.0002280542744061377,0,0.0006212834690329785,0.001131380609226621,0.001724392017833374,0.0001432254368375824,0.000505395487780897,0.003380254793176198,0,0.0007205967212559972,0.0002393489707994256,0.001689994911307164,0.0005392793863391911,0.001200340299404512,0.0001917775963559213,0.000505395487780897,0.001270179265788597,0.0006738637393529863,0.001197494456828732,0.0005512150697406892,0.001101786675495871,0.0005270707524066042,0.001102701679460541,0.0005871167804754879,0.001968189362221987,0,0.001368868804797424,0.002911284274778068,0.0002395898222243519],[3,3,3,3,2,3,3,3,3,2,2,3,2,3,3,3,3,2,2,3,2,3,2,3,2,3,3,3,3,2,2,2,2,2,2,2],[0.01182289602309498,0.003548293255687402,0.00266872664916346,0.002721820100365644,0.002070380427085636,0.00151403034891046,0.001120128060514082,0.00116689192833496,0.001269107105263008,0.0008879281743026308,0.001104516241706548,0.0009682935820400926,0.0008147306107944091,0.001097079378085363,0.001066107809486194,0.001078263017150197,0.0005832472037971225,0.0008713328912828614,0.0005067739663463127,0.0005908592838126506,0.0001172631543725723,0.0006487766160646691,0.0004803771718944575,0.0007912806997773178,0.0004773571578579708,0.000548448993903303,0.0002158701143773875,0.0004813146239590401,0.000314198183313492,0.000338488368114725,0.0002973531237118235,0.0003333144697556054,0.0001926411096127914,3.970434739195483e-05,7.83510337834881e-05,0.0001448407400053454],[true,true,true,true,true,true,true,true,true,true,false,true,true,true,true,true,true,true,true,true,true,true,false,true,true,true,true,false,true,true,true,true,true,false,false,false],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],["Strong","Strong","Strong","Strong","Strong","Strong","Strong","Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Strong","Strong","Strong","Strong","Strong","Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Strong","Strong","Moderate","Moderate","Moderate"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>ASV<\/th>\n      <th>max_pos_delta<\/th>\n      <th>peak_delta_date<\/th>\n      <th>n_dates_Open_gt_FPV<\/th>\n      <th>open_median_at_peak<\/th>\n      <th>fpv_median_at_peak<\/th>\n      <th>n_Open_ponds_support<\/th>\n      <th>delta_median_at_peak<\/th>\n      <th>pass_dates<\/th>\n      <th>pass_ponds<\/th>\n      <th>pass_robust<\/th>\n      <th>tier<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"autoWidth":true,"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7]},{"name":"ASV","targets":0},{"name":"max_pos_delta","targets":1},{"name":"peak_delta_date","targets":2},{"name":"n_dates_Open_gt_FPV","targets":3},{"name":"open_median_at_peak","targets":4},{"name":"fpv_median_at_peak","targets":5},{"name":"n_Open_ponds_support","targets":6},{"name":"delta_median_at_peak","targets":7},{"name":"pass_dates","targets":8},{"name":"pass_ponds","targets":9},{"name":"pass_robust","targets":10},{"name":"tier","targets":11}],"order":[],"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-31abba09b18d79ae80e7" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-31abba09b18d79ae80e7">{"x":{"filter":"none","vertical":false,"data":[["ASV_14","ASV_231","ASV_510","ASV_54","ASV_203","ASV_431","ASV_340","ASV_645","ASV_400","ASV_495","ASV_683","ASV_434","ASV_650","ASV_656","ASV_165","ASV_517","ASV_634","ASV_674","ASV_321","ASV_444","ASV_572","ASV_884","ASV_831","ASV_352","ASV_592","ASV_499","ASV_662","ASV_580","ASV_786","ASV_406","ASV_806","ASV_302","ASV_615","ASV_286","ASV_102","ASV_712"],[0.01182289602309498,0.003337217091552168,0.002350420654054354,0.002120987918197099,0.00189535353928083,0.001419749247555846,0.001413211307823732,0.001337810309209265,0.001328147234607722,0.001061170207190909,0.001032835441593065,0.0009924798019185174,0.0009117520034550602,0.000885586123756022,0.0008583194262193894,0.0008128915028929374,0.000677880905022303,0.0006677707896467698,0.0006362471177649692,0.0006257518183667054,0.0005288778477791992,0.0005271546161382926,0.0004803771718944575,0.000479566218089842,0.0004773571578579708,0.0004257884503595303,0.0003825521631126751,0.0003620123341734661,0.000361772583895695,0.000338488368114725,0.0003081794190555176,0.0002899357164420288,0.0001926411096127914,0.0001775283173606136,7.83510337834881e-05,1.145504691701005e-06],[193,234,193,172,172,193,234,234,255,255,193,193,255,193,234,255,255,255,234,234,255,172,193,172,193,193,172,193,234,172,234,172,234,255,193,172],[4,4,4,3,2,4,3,4,2,2,1,3,3,3,2,3,3,2,3,3,4,4,1,3,4,2,2,1,3,2,2,2,2,1,1,1],[0.04058191715300499,0.004422951433061317,0.002932857658143914,0.01248979036257124,0.004803646866397597,0.002043459633575332,0.001659531755945357,0.001394946202741098,0.001269107105263008,0.001509211643335609,0.002235896850933169,0.002692685599873467,0.0009579560476319915,0.00160247486586626,0.004446362602662393,0.001078263017150197,0.00130384392505312,0.001110681862082287,0.002196768877653477,0.001130138670151842,0.001317603453777084,0.0008405542124205904,0.0009857726596753545,0.002061459965565915,0.001151220897210957,0.001745943450732035,0.0007670851841180767,0.001583101299454911,0.0008412689357200962,0.001441190047575266,0.0008844699041873114,0.002301503831977593,0.0001926411096127914,0.001408573152189378,0.002989635308561556,0.0003844305622296973],[0.02875902112991002,0.000874658177373915,0.0002641310089804543,0.009767970262205597,0.002733266439311961,0.0005294292846648715,0.0005394036954312748,0.0002280542744061377,0,0.0006212834690329785,0.001131380609226621,0.001724392017833374,0.0001432254368375824,0.000505395487780897,0.003380254793176198,0,0.0007205967212559972,0.0002393489707994256,0.001689994911307164,0.0005392793863391911,0.001200340299404512,0.0001917775963559213,0.000505395487780897,0.001270179265788597,0.0006738637393529863,0.001197494456828732,0.0005512150697406892,0.001101786675495871,0.0005270707524066042,0.001102701679460541,0.0005871167804754879,0.001968189362221987,0,0.001368868804797424,0.002911284274778068,0.0002395898222243519],[3,3,3,3,2,3,3,3,3,2,2,3,2,3,3,3,3,2,2,3,2,3,2,3,2,3,3,3,3,2,2,2,2,2,2,2],[0.01182289602309498,0.003548293255687402,0.00266872664916346,0.002721820100365644,0.002070380427085636,0.00151403034891046,0.001120128060514082,0.00116689192833496,0.001269107105263008,0.0008879281743026308,0.001104516241706548,0.0009682935820400926,0.0008147306107944091,0.001097079378085363,0.001066107809486194,0.001078263017150197,0.0005832472037971225,0.0008713328912828614,0.0005067739663463127,0.0005908592838126506,0.0001172631543725723,0.0006487766160646691,0.0004803771718944575,0.0007912806997773178,0.0004773571578579708,0.000548448993903303,0.0002158701143773875,0.0004813146239590401,0.000314198183313492,0.000338488368114725,0.0002973531237118235,0.0003333144697556054,0.0001926411096127914,3.970434739195483e-05,7.83510337834881e-05,0.0001448407400053454],[true,true,true,true,true,true,true,true,true,true,false,true,true,true,true,true,true,true,true,true,true,true,false,true,true,true,true,false,true,true,true,true,true,false,false,false],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],["Strong","Strong","Strong","Strong","Strong","Strong","Strong","Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Strong","Strong","Strong","Strong","Strong","Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Strong","Strong","Moderate","Moderate","Moderate"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>ASV<\/th>\n      <th>max_pos_delta<\/th>\n      <th>peak_delta_date<\/th>\n      <th>n_dates_Open_gt_FPV<\/th>\n      <th>open_median_at_peak<\/th>\n      <th>fpv_median_at_peak<\/th>\n      <th>n_Open_ponds_support<\/th>\n      <th>delta_median_at_peak<\/th>\n      <th>pass_dates<\/th>\n      <th>pass_ponds<\/th>\n      <th>pass_robust<\/th>\n      <th>tier<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"autoWidth":true,"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7]},{"name":"ASV","targets":0},{"name":"max_pos_delta","targets":1},{"name":"peak_delta_date","targets":2},{"name":"n_dates_Open_gt_FPV","targets":3},{"name":"open_median_at_peak","targets":4},{"name":"fpv_median_at_peak","targets":5},{"name":"n_Open_ponds_support","targets":6},{"name":"delta_median_at_peak","targets":7},{"name":"pass_dates","targets":8},{"name":"pass_ponds","targets":9},{"name":"pass_robust","targets":10},{"name":"tier","targets":11}],"order":[],"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 ```
 
 
@@ -2216,8 +2569,6 @@ sed_methanotroph_asvs <-
 ```
 
 
-
-
 ``` r
 # STEP 1: FPV–Open separation by ASV × date (median across samples)
 asv_date_medians_methanotroph_df <-
@@ -2292,9 +2643,12 @@ datatable(asv_effect_time_robust_methanotroph_df,
 ```
 
 ```{=html}
-<div class="datatables html-widget html-fill-item" id="htmlwidget-b0f1e34f842b4a7d4354" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-b0f1e34f842b4a7d4354">{"x":{"filter":"none","vertical":false,"data":[["ASV_110","ASV_313","ASV_409","ASV_363","ASV_1005","ASV_919","ASV_453","ASV_177","ASV_677","ASV_559"],[0.003374608196225171,0.001928553443070333,0.001155795064232616,0.0008909542048271878,0.0008621225342379287,0.0007681064103575837,0.0005935271363700771,0.0002877859140323533,0.0002143353977014658,7.146453502788997e-05],[172,193,172,172,172,172,234,172,193,172],[3,2,4,1,2,4,3,2,3,1],[0.005667784969006832,0.001007145719269743,0.001028519392261971,0.0009588719976240559,0.0001441614608361365,0.0002636913510942614,0.001394650230227769,0.001342414589683094,0.0005769995992178042,0.0003121098626716604],[0.009269915603818275,0.002935699162340076,0.002304873504398891,0.00163341409816645,0.001150718447423748,0.001080207155603466,0.002085311375269465,0.00153437937871203,0.0009144797162538526,0.0003835743976995504],[3,3,3,3,2,3,2,2,3,2],[0.003602130634811443,0.001928553443070333,0.001276354112136919,0.0006745421005423945,0.001006556986587611,0.0008165158045092043,0.0006906611450416956,0.0001919647890289361,0.0003374801170360484,7.146453502788997e-05],[true,true,true,false,true,true,true,true,true,false],[true,true,true,true,true,true,true,true,true,true],[true,true,true,true,true,true,true,true,true,true],["Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Strong","Strong","Moderate"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>ASV<\/th>\n      <th>max_pos_delta<\/th>\n      <th>peak_delta_date<\/th>\n      <th>n_dates_FPV_gt_Open<\/th>\n      <th>open_median_at_peak<\/th>\n      <th>fpv_median_at_peak<\/th>\n      <th>n_FPV_ponds_support<\/th>\n      <th>delta_median_at_peak<\/th>\n      <th>pass_dates<\/th>\n      <th>pass_ponds<\/th>\n      <th>pass_robust<\/th>\n      <th>tier<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"autoWidth":true,"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7]},{"name":"ASV","targets":0},{"name":"max_pos_delta","targets":1},{"name":"peak_delta_date","targets":2},{"name":"n_dates_FPV_gt_Open","targets":3},{"name":"open_median_at_peak","targets":4},{"name":"fpv_median_at_peak","targets":5},{"name":"n_FPV_ponds_support","targets":6},{"name":"delta_median_at_peak","targets":7},{"name":"pass_dates","targets":8},{"name":"pass_ponds","targets":9},{"name":"pass_robust","targets":10},{"name":"tier","targets":11}],"order":[],"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-ed96aac2b37f725d7092" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-ed96aac2b37f725d7092">{"x":{"filter":"none","vertical":false,"data":[["ASV_110","ASV_313","ASV_409","ASV_363","ASV_1005","ASV_919","ASV_453","ASV_177","ASV_677","ASV_559"],[0.003374608196225171,0.001928553443070333,0.001155795064232616,0.0008909542048271878,0.0008621225342379287,0.0007681064103575837,0.0005935271363700771,0.0002877859140323533,0.0002143353977014658,7.146453502788997e-05],[172,193,172,172,172,172,234,172,193,172],[3,2,4,1,2,4,3,2,3,1],[0.005667784969006832,0.001007145719269743,0.001028519392261971,0.0009588719976240559,0.0001441614608361365,0.0002636913510942614,0.001394650230227769,0.001342414589683094,0.0005769995992178042,0.0003121098626716604],[0.009269915603818275,0.002935699162340076,0.002304873504398891,0.00163341409816645,0.001150718447423748,0.001080207155603466,0.002085311375269465,0.00153437937871203,0.0009144797162538526,0.0003835743976995504],[3,3,3,3,2,3,2,2,3,2],[0.003602130634811443,0.001928553443070333,0.001276354112136919,0.0006745421005423945,0.001006556986587611,0.0008165158045092043,0.0006906611450416956,0.0001919647890289361,0.0003374801170360484,7.146453502788997e-05],[true,true,true,false,true,true,true,true,true,false],[true,true,true,true,true,true,true,true,true,true],[true,true,true,true,true,true,true,true,true,true],["Strong","Strong","Strong","Moderate","Strong","Strong","Strong","Strong","Strong","Moderate"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>ASV<\/th>\n      <th>max_pos_delta<\/th>\n      <th>peak_delta_date<\/th>\n      <th>n_dates_FPV_gt_Open<\/th>\n      <th>open_median_at_peak<\/th>\n      <th>fpv_median_at_peak<\/th>\n      <th>n_FPV_ponds_support<\/th>\n      <th>delta_median_at_peak<\/th>\n      <th>pass_dates<\/th>\n      <th>pass_ponds<\/th>\n      <th>pass_robust<\/th>\n      <th>tier<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"autoWidth":true,"scrollX":true,"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7]},{"name":"ASV","targets":0},{"name":"max_pos_delta","targets":1},{"name":"peak_delta_date","targets":2},{"name":"n_dates_FPV_gt_Open","targets":3},{"name":"open_median_at_peak","targets":4},{"name":"fpv_median_at_peak","targets":5},{"name":"n_FPV_ponds_support","targets":6},{"name":"delta_median_at_peak","targets":7},{"name":"pass_dates","targets":8},{"name":"pass_ponds","targets":9},{"name":"pass_robust","targets":10},{"name":"tier","targets":11}],"order":[],"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 ```
+
+
+### Figure S8
 
 
 ``` r
@@ -2372,15 +2726,15 @@ sed_methanotroph_ASV_plot <-
 # Save the plot   
 ggsave(sed_methanotroph_ASV_plot, 
        width = 8, height = 5, dpi = 300,
-       filename = "figures/bonus/sed_methanotroph_ASV_time.png")
+       filename = "figures/Fig_S8.png")
 
 # Show the plot 
 sed_methanotroph_ASV_plot
 ```
 
-![](ASV_Temporal_Changes_files/figure-html/plot-sed-methotroph-1.png)<!-- -->
+![](ASV_Temporal_Changes_files/figure-html/Fig-S8-sed-methotrophs-time-1.png)<!-- -->
 
-**Figure SX. Seasonal FPV-associated variation in sediment methanotroph ASVs.** Sediment methanotroph ASVs are shown as relative abundance (%) across the sampling season. To visualize potential time-dependent FPV–Open divergence not captured by a constant treatment effect, we screened abundant methanotroph ASVs (mean relative abundance > 0.05%) and quantified FPV–Open differences at each sampling date using median abundances. ASVs shown are those exhibiting positive peak FPV enrichment supported across multiple sampling dates and/or multiple FPV ponds (see Supplemental Methods). Panels are faceted by ASV and annotated with the day of year (DOY) at which maximum FPV enrichment occurs. Points represent individual pond observations, thin lines connect repeated measures within ponds, and thick lines and shaded ribbons indicate treatment medians and interquartile ranges (25th–75th percentiles) at each date. Taxa represented include Gammaproteobacteria (Type I; genus: *Methylobacter_C*), Alphaproteobacteria (Type II; genus: *Methylocystis*), and anaerobic methanotrophs (Type III; order Methylomirabilales, family/genus 2-02-FULL-66-22), reflecting physiologically distinct methane oxidation strategies in sediments. This figure is provided for visualization; community-level tests did not detect a significant FPV × time effect for sediment methanotrophs.
+**Fig. S8. Seasonally explicit enrichment of sediment methanotroph ASVs under FPV conditions.** Relative abundance (%) of selected sediment methanotroph ASVs across the sampling season, highlighting ASVs with peak FPV-associated enrichment identified using a seasonally explicit (time-resolved) screening approach rather than time-averaged differential abundance testing. Taxa include Gammaproteobacteria (Type I; *Methylobacter_C*), Alphaproteobacteria (Type II; *Methylocystis*), and anaerobic nitrite-dependent methanotrophs (Type III; *Methylomirabilales*, 2-02-FULL-66-22). Community-level analyses did not detect a significant `FPV × time` effect for sediment methanotrophs.
 
 **What is the taxonomy of the Methanotroph ASVs in Figure SX above? **
 
@@ -2395,8 +2749,8 @@ sed_methanotroph_asvs_df %>%
 ```
 
 ```{=html}
-<div class="datatables html-widget html-fill-item" id="htmlwidget-bc467560f91b5f0c8b87" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-bc467560f91b5f0c8b87">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8"],["Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria"],["Methylomirabilota","Methylomirabilota","Methylomirabilota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota"],["Methylomirabilia","Methylomirabilia","Methylomirabilia","Alphaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria"],["Methylomirabilales","Methylomirabilales","Methylomirabilales","Rhizobiales_505101","Methylococcales","Methylococcales","Methylococcales","Methylococcales"],["2-02-FULL-66-22","2-02-FULL-66-22","2-02-FULL-66-22","Beijerinckiaceae","Methylomonadaceae","Methylomonadaceae","Methylomonadaceae","Methylomonadaceae"],["2-02-FULL-66-22","2-02-FULL-66-22","2-02-FULL-66-22","Methylocystis","Methylobacter_C","Methylobacter_C","Methylobacter_C","Methylobacter_C"],["sp001771285","sp001771285",null,null,"sp002862125","sp002862125",null,null],["ASV_313","ASV_453","ASV_677","ASV_177","ASV_110","ASV_409","ASV_1005","ASV_919"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Kingdom<\/th>\n      <th>Phylum<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n      <th>ASV<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":8,"lengthChange":false,"columnDefs":[{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"Kingdom","targets":1},{"name":"Phylum","targets":2},{"name":"Class","targets":3},{"name":"Order","targets":4},{"name":"Family","targets":5},{"name":"Genus","targets":6},{"name":"Species","targets":7},{"name":"ASV","targets":8}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div class="datatables html-widget html-fill-item" id="htmlwidget-daa3657379abbb5ea8d8" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-daa3657379abbb5ea8d8">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8"],["Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria","Bacteria"],["Methylomirabilota","Methylomirabilota","Methylomirabilota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota","Pseudomonadota"],["Methylomirabilia","Methylomirabilia","Methylomirabilia","Alphaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria","Gammaproteobacteria"],["Methylomirabilales","Methylomirabilales","Methylomirabilales","Rhizobiales_505101","Methylococcales","Methylococcales","Methylococcales","Methylococcales"],["2-02-FULL-66-22","2-02-FULL-66-22","2-02-FULL-66-22","Beijerinckiaceae","Methylomonadaceae","Methylomonadaceae","Methylomonadaceae","Methylomonadaceae"],["2-02-FULL-66-22","2-02-FULL-66-22","2-02-FULL-66-22","Methylocystis","Methylobacter_C","Methylobacter_C","Methylobacter_C","Methylobacter_C"],["sp001771285","sp001771285",null,null,"sp002862125","sp002862125",null,null],["ASV_313","ASV_453","ASV_677","ASV_177","ASV_110","ASV_409","ASV_1005","ASV_919"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Kingdom<\/th>\n      <th>Phylum<\/th>\n      <th>Class<\/th>\n      <th>Order<\/th>\n      <th>Family<\/th>\n      <th>Genus<\/th>\n      <th>Species<\/th>\n      <th>ASV<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":8,"lengthChange":false,"columnDefs":[{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"Kingdom","targets":1},{"name":"Phylum","targets":2},{"name":"Class","targets":3},{"name":"Order","targets":4},{"name":"Family","targets":5},{"name":"Genus","targets":6},{"name":"Species","targets":7},{"name":"ASV","targets":8}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 ```
 
 
@@ -2418,7 +2772,7 @@ devtools::session_info()
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
 ##  tz       America/New_York
-##  date     2026-01-29
+##  date     2026-01-30
 ##  pandoc   3.1.1 @ /usr/lib/rstudio-server/bin/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────

@@ -1303,6 +1303,12 @@ methanotroph_bottom_box <- methanotroph_bottom_data %>%
 methanotroph_bottom_box
 
 
+#### Sediment Summary Stats 
+sed_ch4_cyclers_df %>%
+  group_by(solar_progress, CH4_Cycler) %>% 
+  dplyr::summarize(sd_meth = sd(rel_abundance),
+                   mean_meth = mean(rel_abundance))
+
 ##### sediment methanogen #####
 # calculate stats
 # 1a. calcualte abundance
@@ -1327,7 +1333,7 @@ emmeans::emmeans(sed_methanogen_model, pairwise ~ solar_progress) # 0.667
 
 # plot sediment methanogens
 methanogen_sed <- methanogen_sed_sum %>% 
-  ggplot(aes(x = JDate, y = mean_meth, fill = solar_progress, color = solar_progress)) +
+  ggplot(aes(x = JDate, y = mean_meth*100, fill = solar_progress, color = solar_progress)) +
   geom_line()+
   geom_point()+
   theme_classic()+
@@ -1337,9 +1343,8 @@ methanogen_sed <- methanogen_sed_sum %>%
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = solar_colors)+
   scale_y_continuous(
-    limits = c(.08, .3),
-    breaks = c(0.1, .2, .30),
-    labels = c("0.10", "0.20", "0.30"))+
+    limits = c(.08*100, .3*100),
+    breaks = c(0.1*100, .2*100, .30*100))+
     #labels = label_number(scale_cut = cut_short_scale())) +
   labs(y= "Sediment Methanogen<br> Abundance (%)", x = "Day of Year")+
   theme(axis.text.x =  element_text(size = 8,colour = "black"),
@@ -1352,20 +1357,14 @@ methanogen_sed
 
 # 3. box plot
 methanogen_sed_box <- methanogen_sed_data %>% 
-  ggplot(aes(x = solar_progress, y = rel_abundance, color = solar_progress)) +
+  ggplot(aes(x = solar_progress, y = rel_abundance*100, color = solar_progress)) +
   geom_boxplot(outlier.shape = NA, color = "black") +
   geom_jitter(aes(color = solar_progress, fill = solar_progress), width = 0.2, size = 2, shape = 21) +
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = c("black", "black"))+
   scale_y_continuous(
-    limits = c(.08, .3),
-    breaks = c(0.1, .2, .30),
-    labels = c("0.10", "0.20", "0.30"))+
-  # scale_y_continuous(
-  #   #limits = c(.13, .3),
-  #   breaks = breaks_extended(n = 4),
-  #   #breaks = c(.15, .2, .25, .30),
-  #   labels = label_number(scale_cut = cut_short_scale(), accuracy = 0.01)) +
+    limits = c(.08*100, .3*100),
+    breaks = c(0.1*100, .2*100, .30*100))+
   theme_classic()+
   theme(axis.text.x = element_text(size = 8,colour = "black"),
         axis.title.x = element_blank(),
@@ -1374,13 +1373,6 @@ methanogen_sed_box <- methanogen_sed_data %>%
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
         legend.position = "none") +
-  # stat_compare_means(method = "wilcox.test",
-  #                    #comparisons = list(c("FPV", "Open")),
-  #                    label = "p.format",
-  #                    size = 3,
-  #                    label.y.npc = 0.9,
-  #                    fontface = "italic")
-  # label.y = c(8000, 100000, 500000, 400000, 400000) # get pvalue
  annotate("text", x = 2, y = .3, label = "p = 0.667", size = 2.822,  fontface = "italic")
 methanogen_sed_box
 
@@ -1410,11 +1402,12 @@ emmeans::lsmeans(sed_methanotroph_model, pairwise ~ solar_progress) #0.4401
 
 # 2. plot sed methanotrophs overtime 
 methanotroph_sed<- methanotroph_sed_sum %>% 
-  ggplot(aes(x = JDate, y = mean_meth, fill = solar_progress, color = solar_progress)) +
+  ggplot(aes(x = JDate, y = mean_meth*100, fill = solar_progress, color = solar_progress)) +
   geom_line()+
   geom_point()+
   theme_classic()+
-  geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_errorbar(aes(x = JDate, ymin = mean_meth*100 - sd_meth*100, 
+                    ymax = mean_meth*100 + sd_meth*100), width = 0, color = "black")+
   geom_point(size = 3, shape = 16)+
   geom_point(size = 3, shape = 1, color = "black")+
   labs(y= "Sediment Methanotroph<br>Abundance (%)", x = "Day of Year")+
@@ -1425,8 +1418,8 @@ methanotroph_sed<- methanotroph_sed_sum %>%
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = solar_colors)+
   scale_y_continuous(
-    limits = c(0.02, .15),
-    breaks = c(0.05, 0.10, 0.15),
+    limits = c(0.02*100, .15*100),
+    breaks = c(0.05*100, 0.10*100, 0.15*100),
     labels = label_number(scale_cut = cut_short_scale())) +
   theme(legend.position = "none")
 methanotroph_sed
@@ -1434,14 +1427,14 @@ methanotroph_sed
 
 # box plot
 methanotroph_sed_box <- methanotroph_sed_data %>% 
-  ggplot(aes(x = solar_progress, y = rel_abundance, color = solar_progress)) +
+  ggplot(aes(x = solar_progress, y = rel_abundance*100, color = solar_progress)) +
   geom_boxplot(outlier.shape = NA, color = "black") +
   geom_jitter(aes(color = solar_progress, fill = solar_progress), width = 0.2, size = 2, shape = 21) +
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = c("black", "black"))+
   scale_y_continuous(
-    limits = c(0.02, .15),
-    breaks = c(0.05, 0.10, 0.15),
+    limits = c(0.02*100, .15*100),
+    breaks = c(0.05*100, 0.10*100, 0.15*100),
     labels = label_number(scale_cut = cut_short_scale())) +
   theme_classic()+
   theme(axis.text.x = element_text(size = 8, colour = "black"),
