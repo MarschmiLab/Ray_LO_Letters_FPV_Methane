@@ -2735,7 +2735,7 @@ plot_fig3
 ![](Microbial_Analyses_files/figure-html/fig-3-1.png)<!-- -->
 
 ``` r
-ggsave(plot_fig3, width = 6.5, height = 4.5, dpi = 300,
+ggsave(plot_fig3, width = 6, height = 3.5, dpi = 300,
         filename = "figures/Fig_3.png")
 ```
 
