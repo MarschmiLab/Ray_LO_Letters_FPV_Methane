@@ -1,7 +1,7 @@
 ---
 title: "Water Column and Sediment Methanogens & Methanotrophs in FPV Ponds"
 author: "Sophia Aredas & Mar Schmidt"
-date: "29 January, 2026"
+date: "30 January, 2026"
 output:
   html_document:
     code_folding: show
@@ -2736,7 +2736,7 @@ plot_fig3
 
 ``` r
 ggsave(plot_fig3, width = 6.5, height = 4.5, dpi = 300,
-        filename = "figures/Fig_3/Fig_3.png")
+        filename = "figures/Fig_3.png")
 ```
 
 
@@ -3162,7 +3162,7 @@ With betadispr we find the PERMANOVA results are are valid as pond, treatment, a
 Now we will calculate the differential abundance between our water and sediment samples. First I will try to do the original methane cyclers in water and sediments. but i may also further break it down into sediment methane cycler type.
 
 
-### Fig 4: ASVs more Abundant in FPV
+### ASVs more Abundant in FPV
 #### Water
 Note as of this step the results do change in that methanobacteriales is not differentially abundant anymore and we have a reduction in asv_1479 and 976. but all asvs belong to methylococcales order
 
@@ -4342,7 +4342,7 @@ fig4
 ![](Microbial_Analyses_files/figure-html/diff-abund-boxplots-13.png)<!-- -->
 
 
-### Figure S4: ASVs Less abundant in FPVs
+### ASVs Less abundant in FPVs
 
 
 ``` r
@@ -4407,13 +4407,7 @@ diffAbund_ASVsLowerFPV_boxplots <-
       legend.text = element_text(size = 8, colour = "black")); diffAbund_ASVsLowerFPV_boxplots
 ```
 
-![](Microbial_Analyses_files/figure-html/FigS4-asvs-lower-in-FPV-1.png)<!-- -->
-
-``` r
-# Save the plot   
-ggsave(diffAbund_ASVsLowerFPV_boxplots, width = 4.5, height = 4.5, dpi = 300,
-        filename = "figures/Fig_S4/Fig_S4.png")
-```
+![](Microbial_Analyses_files/figure-html/asvs-lower-in-FPV-1.png)<!-- -->
 
 
 
@@ -4593,7 +4587,6 @@ sed_difAbund_plot <- sed_ch4_asv_df_glom %>%
 ```
 
 # Supplemental Figures
-# Figure S3
 Now we will split this up by water and sediment methane cyclers.
 
 ## Water Methanogens
@@ -4892,7 +4885,7 @@ fig_s4 <- plot(pro, kind = 1, main = "Procrustes Errors"); fig_s4
 ``` r
 # save procrustes image 
 ggsave(fig_s4, width = 6.5, height = 6.5, dpi = 300,
-        filename = "figures/Fig_S4/fig_S4.png")
+        filename = "figures/bonus/procustes.png")
 ```
 
 ```
@@ -5222,10 +5215,7 @@ leg <- cowplot::get_legend(
       color = guide_legend(title.hjust = 0.5, nrow = 1, byrow = TRUE,override.aes = list(size = 2.5)),  # horizontal Treatment
       shape = guide_legend(title.hjust = 0.5, nrow = 2, byrow = TRUE, override.aes = list(size = 2.5))   # optional
     ) +
-    theme(#legend.key.size = unit(0.4, "cm"), 
-          #legend.spacing.x = unit(0.7, "cm"),
-          #legend.margin = margin(t = -5, unit = "pt"),
-          legend.position = "right", 
+    theme(legend.position = "right", 
           legend.box = "vertical",
           legend.box.just = "center"))
 
@@ -5257,12 +5247,12 @@ plot_figS3 <-
 plot_figS3
 ```
 
-![](Microbial_Analyses_files/figure-html/plot-FigS3-1.png)<!-- -->
+![](Microbial_Analyses_files/figure-html/plot-FigS4-pcoa-1.png)<!-- -->
 
 ``` r
 # Now, actually save the plot   
 ggsave(plot_figS3, width = 6.5, height = 4.5, dpi = 300,
-        filename = "figures/Fig_S3/Fig_S3.png")
+        filename = "figures/Fig_S4.png")
 ```
 
 Sediment samples are still distinct from other and separate along first axis
@@ -5548,7 +5538,7 @@ permutest(betadispr_sed_methanogens_pond) # not significant p = 0.659
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq     F N.Perm Pr(>F)
-## Groups     5 0.029297 0.0058594 0.809    999  0.556
+## Groups     5 0.029297 0.0058594 0.809    999  0.557
 ## Residuals 38 0.275224 0.0072427
 ```
 
@@ -5580,7 +5570,7 @@ permutest(betadispr_sed_methanogens_JDate) # not significant p = 0.44
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     3 0.006703 0.0022343 1.0343    999  0.414
+## Groups     3 0.006703 0.0022343 1.0343    999  0.413
 ## Residuals 40 0.086412 0.0021603
 ```
 
@@ -6157,7 +6147,7 @@ devtools::session_info()
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
 ##  tz       America/New_York
-##  date     2026-01-29
+##  date     2026-01-30
 ##  pandoc   3.1.1 @ /usr/lib/rstudio-server/bin/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
