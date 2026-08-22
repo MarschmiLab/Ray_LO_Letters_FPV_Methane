@@ -1745,9 +1745,14 @@ plot_fig3 <-
     legend.margin = margin(t = -5, unit = "pt")
   )
 plot_fig3
-  
+
+# png
 ggsave(plot_fig3, width = 6, height = 3.5, dpi = 300,
         filename = "figures/Fig_3.png")
+
+# save as .jpeg 
+ggsave(plot_fig3, width = 6, height = 3.5, dpi = 300,
+        filename = "figures/Fig_3.jpeg")
 ```
 
 
