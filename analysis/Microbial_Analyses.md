@@ -1,7 +1,7 @@
 ---
 title: "Water Column and Sediment Methanogens & Methanotrophs in FPV Ponds"
 author: "Sophia Aredas & Mar Schmidt"
-date: "31 July, 2026"
+date: "22 August, 2026"
 output:
   html_document:
     code_folding: show
@@ -35,7 +35,7 @@ which will be added to the google document.
 
 ``` r
 # Efficiently load packages 
-pacman::p_load(ggplot2, phyloseq, ggpubr, tidyverse, patchwork, ggh4x, speedyseq, rstatix, dplyr, purrr, vegan, ANCOMBC, microViz,cowplot, grid, scales, Biostrings, stringr, lmerTest, ggtext, install = FALSE)
+pacman::p_load(ggplot2, phyloseq, ggpubr, tidyverse, patchwork, ggh4x, speedyseq, rstatix, dplyr, purrr, vegan, ANCOMBC, microViz,cowplot, grid, scales, Biostrings, stringr, lmerTest, ggtext, install = TRUE)
 
 source("code/functions.R") # contains scale_reads
 source("code/colors_and_shapes.R")
@@ -1338,7 +1338,7 @@ sed_ch4_cyclers_df %>%
 ##   group                 shapiro_p     n
 ##   <fct>                     <dbl> <int>
 ## 1 Methanogen Sediment      0.136     23
-## 2 Methanotroph Sediment    0.0681    23
+## 2 Methanotroph Sediment    0.0686    23
 ```
 
 Based on our data with the qq plots and the density histograms, data is normally distriburted but to be consistent with water we will proceed as normal. 
@@ -1545,8 +1545,8 @@ methanotroph_surface_sum <- water_ch4_cyclers_df %>%
   dplyr::filter(Depth_Class == "Surface Water",
                 CH4_Cycler == "Methanotroph") %>% 
   group_by(solar_progress, JDate) %>%
-  dplyr::summarize(sd_meth = sd(total_abundance/1e5),
-                   mean_meth = mean(total_abundance/1e5), # max does exceed 1mil
+  dplyr::summarize(sd_meth = sd(total_abundance),
+                   mean_meth = mean(total_abundance), # max does exceed 1mil
                    .groups = "drop")
 methanotroph_surface_sum
 ```
@@ -1555,14 +1555,14 @@ methanotroph_surface_sum
 ## # A tibble: 8 × 4
 ##   solar_progress JDate sd_meth mean_meth
 ##   <fct>          <dbl>   <dbl>     <dbl>
-## 1 FPV              172  0.130      0.468
-## 2 FPV              193  1.16       1.54 
-## 3 FPV              234  1.53       3.55 
-## 4 FPV              255  3.15       6.76 
-## 5 Open             172  0.0621     0.130
-## 6 Open             193  0.459      0.850
-## 7 Open             234  0.501      1.34 
-## 8 Open             255  0.710      0.658
+## 1 FPV              172  13014.    46784.
+## 2 FPV              193 115883.   154147.
+## 3 FPV              234 152940.   354579.
+## 4 FPV              255 314547.   676476 
+## 5 Open             172   6211.    12978 
+## 6 Open             193  45921.    85024.
+## 7 Open             234  50089.   134331.
+## 8 Open             255  70960.    65802.
 ```
 
 ``` r
@@ -1570,7 +1570,7 @@ max(methanotroph_surface_sum$mean_meth)
 ```
 
 ```
-## [1] 6.76476
+## [1] 676476
 ```
 
 ``` r
@@ -1578,19 +1578,25 @@ max(methanotroph_surface_sum$mean_meth)
 methanotroph_surface_sum_text <- water_ch4_cyclers_df %>%
   dplyr::filter(Depth_Class == "Surface Water",
                 CH4_Cycler == "Methanotroph") %>% 
-  group_by(solar_progress) %>% 
-  dplyr::summarize(sd_meth = sd(total_abundance/1e5),
-                   mean_meth = mean(total_abundance/1e5),
+  group_by(solar_progress, JDate) %>% 
+  dplyr::summarize(sd_meth = sd(total_abundance),
+                   mean_meth = mean(total_abundance),
                    .groups = "drop")
 methanotroph_surface_sum_text
 ```
 
 ```
-## # A tibble: 2 × 3
-##   solar_progress sd_meth mean_meth
-##   <fct>            <dbl>     <dbl>
-## 1 FPV              2.96      3.08 
-## 2 Open             0.618     0.745
+## # A tibble: 8 × 4
+##   solar_progress JDate sd_meth mean_meth
+##   <fct>          <dbl>   <dbl>     <dbl>
+## 1 FPV              172  13014.    46784.
+## 2 FPV              193 115883.   154147.
+## 3 FPV              234 152940.   354579.
+## 4 FPV              255 314547.   676476 
+## 5 Open             172   6211.    12978 
+## 6 Open             193  45921.    85024.
+## 7 Open             234  50089.   134331.
+## 8 Open             255  70960.    65802.
 ```
 
 ``` r
@@ -1598,7 +1604,7 @@ max(methanotroph_surface_sum_text$mean_meth)
 ```
 
 ```
-## [1] 3.079966
+## [1] 676476
 ```
 
 ``` r
@@ -1683,7 +1689,7 @@ methanotroph_surface <- methanotroph_surface_sum %>%
   theme_classic()+
   geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
   geom_point(size = 3, shape = 16)+
-  geom_point(size = 3, shape = 1, color = "black")+
+  geom_point(size = 3, shape = 1, color = "black") +
   labs(y= "Surface Methanotroph<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
   scale_y_continuous(
     limits = c(0, NA),
@@ -1754,8 +1760,8 @@ methanogen_bottom_sum <- water_ch4_cyclers_df %>%
   dplyr::filter(Depth_Class == "Bottom Water",
                 CH4_Cycler == "Methanogen") %>% 
   group_by(solar_progress, JDate) %>% 
-  dplyr::summarize(sd_meth = sd(total_abundance/1e5),
-                   mean_meth = mean(total_abundance/1e5))
+  dplyr::summarize(sd_meth = sd(total_abundance),
+                   mean_meth = mean(total_abundance))
 methanogen_bottom_sum
 ```
 
@@ -1764,14 +1770,14 @@ methanogen_bottom_sum
 ## # Groups:   solar_progress [2]
 ##   solar_progress JDate sd_meth mean_meth
 ##   <fct>          <dbl>   <dbl>     <dbl>
-## 1 FPV              172  0.0395    0.0831
-## 2 FPV              193  0.0931    0.153 
-## 3 FPV              234  0.0121    0.0400
-## 4 FPV              255  0.0371    0.0727
-## 5 Open             172  0.157     0.111 
-## 6 Open             193  0.0295    0.154 
-## 7 Open             234  0.437     0.306 
-## 8 Open             255  0.0207    0.0236
+## 1 FPV              172   3950.     8308.
+## 2 FPV              193   9307.    15281 
+## 3 FPV              234   1209.     4002.
+## 4 FPV              255   3707.     7266.
+## 5 Open             172  15699.    11104 
+## 6 Open             193   2948.    15425.
+## 7 Open             234  43683.    30571.
+## 8 Open             255   2068.     2356
 ```
 
 ``` r
@@ -1779,7 +1785,7 @@ max(methanogen_bottom_sum$mean_meth)
 ```
 
 ```
-## [1] 0.3057067
+## [1] 30570.67
 ```
 
 ``` r
@@ -1787,6 +1793,7 @@ max(methanogen_bottom_sum$mean_meth)
 methanogen_bottom_data <- water_ch4_cyclers_df %>%
   dplyr::filter(Depth_Class == "Bottom Water",
                 CH4_Cycler == "Methanogen") 
+
 methanogen_bottom_data$Pond <- as.factor(methanogen_bottom_data$Pond)
 
 bottom_methanogen_model <- lmer(total_abundance ~ solar_progress + JDate + (1|Pond), data = methanogen_bottom_data)
@@ -1857,7 +1864,7 @@ methanogen_bottom <- methanogen_bottom_sum %>%
   geom_line()+
   geom_point()+
   theme_classic()+
-  geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black") +
   geom_point(size = 3, shape = 16)+
   geom_point(size = 3, shape = 1, color = "black")+
   labs(y= "Bottom Methanogen<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
@@ -1906,7 +1913,7 @@ methanogen_bottom_box <- methanogen_bottom_data %>%
   #                    label.y.npc = 0.9,
   #                    fontface = "italic")
                      #label.y = c(8000, 100000, 500000, 400000, 400000), # get pvalue
- annotate("text", x = 2, y = 8e4, label = "p = 0.54", size = 2.822,  fontface = "italic")
+ annotate("text", x = 2, y = 7.94e4, label = "p = 0.54", size = 2.822,  fontface = "italic")
 methanogen_bottom_box
 ```
 
@@ -1920,8 +1927,8 @@ methanotroph_bottom_sum <- water_ch4_cyclers_df %>%
   dplyr::filter(Depth_Class == "Bottom Water",
                 CH4_Cycler == "Methanotroph") %>% 
   group_by(solar_progress, JDate) %>% 
-  dplyr::summarize(sd_meth = sd(total_abundance/1e5),
-                   mean_meth = mean(total_abundance/1e5))
+  dplyr::summarize(sd_meth = sd(total_abundance),
+                   mean_meth = mean(total_abundance))
 methanotroph_bottom_sum
 ```
 
@@ -1930,14 +1937,14 @@ methanotroph_bottom_sum
 ## # Groups:   solar_progress [2]
 ##   solar_progress JDate sd_meth mean_meth
 ##   <fct>          <dbl>   <dbl>     <dbl>
-## 1 FPV              172   0.822     1.46 
-## 2 FPV              193   2.20      2.30 
-## 3 FPV              234   1.91      3.57 
-## 4 FPV              255   4.20      5.65 
-## 5 Open             172   0.731     1.27 
-## 6 Open             193   0.332     0.862
-## 7 Open             234   1.17      1.71 
-## 8 Open             255   0.503     0.533
+## 1 FPV              172  82213.   146429.
+## 2 FPV              193 219991.   229929.
+## 3 FPV              234 190811.   357040 
+## 4 FPV              255 420076.   565286.
+## 5 Open             172  73065.   127291.
+## 6 Open             193  33201.    86164 
+## 7 Open             234 116670.   170832.
+## 8 Open             255  50276.    53339
 ```
 
 ``` r
@@ -1945,7 +1952,7 @@ max(methanotroph_bottom_sum$mean_meth)
 ```
 
 ```
-## [1] 5.652857
+## [1] 565285.7
 ```
 
 ``` r
@@ -1953,19 +1960,25 @@ max(methanotroph_bottom_sum$mean_meth)
 methanotroph_bottom_sum_text <- water_ch4_cyclers_df %>%
   dplyr::filter(Depth_Class == "Bottom Water",
                 CH4_Cycler == "Methanotroph") %>% 
-  group_by(solar_progress) %>% 
-  dplyr::summarize(sd_meth = sd(total_abundance/1e5),
-                   mean_meth = mean(total_abundance/1e5),
+  group_by(solar_progress, JDate) %>% 
+  dplyr::summarize(sd_meth = sd(total_abundance),
+                   mean_meth = mean(total_abundance),
                    .groups = "drop")
 methanotroph_bottom_sum_text
 ```
 
 ```
-## # A tibble: 2 × 3
-##   solar_progress sd_meth mean_meth
-##   <fct>            <dbl>     <dbl>
-## 1 FPV              2.76       3.25
-## 2 Open             0.789      1.09
+## # A tibble: 8 × 4
+##   solar_progress JDate sd_meth mean_meth
+##   <fct>          <dbl>   <dbl>     <dbl>
+## 1 FPV              172  82213.   146429.
+## 2 FPV              193 219991.   229929.
+## 3 FPV              234 190811.   357040 
+## 4 FPV              255 420076.   565286.
+## 5 Open             172  73065.   127291.
+## 6 Open             193  33201.    86164 
+## 7 Open             234 116670.   170832.
+## 8 Open             255  50276.    53339
 ```
 
 ``` r
@@ -1973,7 +1986,7 @@ max(methanotroph_bottom_sum_text$mean_meth)
 ```
 
 ```
-## [1] 3.246711
+## [1] 565285.7
 ```
 
 ``` r
@@ -2008,7 +2021,7 @@ summary(bottom_methanotroph_model) # 0.0679
 ##                      Estimate Std. Error         df t value Pr(>|t|)  
 ## (Intercept)        -1.401e+05  2.587e+05  1.349e+03  -0.541   0.5883  
 ## solar_progressOpen -2.153e+05  8.538e+04  4.000e+00  -2.521   0.0653 .
-## JDate               2.177e+03  1.178e+03  1.481e+18   1.847   0.0647 .
+## JDate               2.177e+03  1.178e+03  7.983e+17   1.847   0.0647 .
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
@@ -2112,8 +2125,8 @@ methanotroph_bottom_box
 #### Sediment Summary Stats 
 sed_ch4_cyclers_df %>%
   group_by(solar_progress, CH4_Cycler) %>% 
-  dplyr::summarize(sd_meth = sd(rel_abundance),
-                   mean_meth = mean(rel_abundance))
+  dplyr::summarize(sd_meth = sd(rel_abundance*100),
+                   mean_meth = mean(rel_abundance*100))
 ```
 
 ```
@@ -2121,10 +2134,10 @@ sed_ch4_cyclers_df %>%
 ## # Groups:   solar_progress [2]
 ##   solar_progress CH4_Cycler   sd_meth mean_meth
 ##   <fct>          <chr>          <dbl>     <dbl>
-## 1 FPV            Methanogen    0.0399    0.146 
-## 2 FPV            Methanotroph  0.0134    0.0385
-## 3 Open           Methanogen    0.0351    0.155 
-## 4 Open           Methanotroph  0.0141    0.0444
+## 1 FPV            Methanogen      3.99     14.6 
+## 2 FPV            Methanotroph    1.34      3.85
+## 3 Open           Methanogen      3.51     15.5 
+## 4 Open           Methanotroph    1.41      4.44
 ```
 
 ``` r
@@ -2191,19 +2204,19 @@ summary(sed_methanogen_model) # 0.7598
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -1.9877 -0.4323 -0.1066  0.7566  1.4539 
+## -1.9877 -0.4323 -0.1066  0.7566  1.4540 
 ## 
 ## Random effects:
 ##  Groups   Name        Variance  Std.Dev.
-##  Pond     (Intercept) 0.0005100 0.02258 
+##  Pond     (Intercept) 0.0005099 0.02258 
 ##  Residual             0.0008464 0.02909 
 ## Number of obs: 23, groups:  Pond, 6
 ## 
 ## Fixed effects:
 ##                      Estimate Std. Error         df t value Pr(>|t|)    
-## (Intercept)         0.2378562  0.0418242 19.5467847   5.687 1.58e-05 ***
-## solar_progressOpen  0.0072479  0.0221030  3.8980053   0.328   0.7598    
-## JDate              -0.0004243  0.0001833 15.9481887  -2.314   0.0343 *  
+## (Intercept)         0.2378548  0.0418243 19.5467203   5.687 1.58e-05 ***
+## solar_progressOpen  0.0072475  0.0221027  3.8979966   0.328   0.7598    
+## JDate              -0.0004243  0.0001833 15.9481818  -2.314   0.0343 *  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
@@ -2315,7 +2328,7 @@ methanotroph_sed_sum
 ## 2 FPV              193 0.00849    0.0417
 ## 3 FPV              234 0.00177    0.0347
 ## 4 FPV              255 0.0108     0.0270
-## 5 Open             172 0.00343    0.0431
+## 5 Open             172 0.00341    0.0431
 ## 6 Open             193 0.00603    0.0645
 ## 7 Open             234 0.00375    0.0373
 ## 8 Open             255 0.0117     0.0326
@@ -2352,23 +2365,23 @@ summary(sed_methanotroph_model) # 0.18701
 ## Formula: rel_abundance ~ solar_progress + JDate + (1 | Pond)
 ##    Data: methanotroph_sed_data
 ## 
-## REML criterion at convergence: -107.8
+## REML criterion at convergence: -107.9
 ## 
 ## Scaled residuals: 
 ##      Min       1Q   Median       3Q      Max 
-## -1.30294 -0.71987  0.03116  0.73635  1.96980 
+## -1.30338 -0.72030  0.03134  0.73645  1.96982 
 ## 
 ## Random effects:
 ##  Groups   Name        Variance  Std.Dev.
 ##  Pond     (Intercept) 0.0000000 0.00000 
-##  Residual             0.0001258 0.01121 
+##  Residual             0.0001257 0.01121 
 ## Number of obs: 23, groups:  Pond, 6
 ## 
 ## Fixed effects:
 ##                      Estimate Std. Error         df t value Pr(>|t|)    
-## (Intercept)         8.969e-02  1.531e-02  2.000e+01   5.857 9.93e-06 ***
-## solar_progressOpen  6.332e-03  4.683e-03  2.000e+01   1.352  0.19140    
-## JDate              -2.419e-04  7.057e-05  2.000e+01  -3.427  0.00267 ** 
+## (Intercept)         8.971e-02  1.531e-02  2.000e+01   5.860 9.87e-06 ***
+## solar_progressOpen  6.337e-03  4.682e-03  2.000e+01   1.354  0.19098    
+## JDate              -2.419e-04  7.055e-05  2.000e+01  -3.429  0.00266 ** 
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
@@ -2395,7 +2408,7 @@ emmeans::lsmeans(sed_methanotroph_model, pairwise ~ solar_progress) #0.2464
 ## 
 ## $contrasts
 ##  contrast   estimate     SE   df t.ratio p.value
-##  FPV - Open -0.00633 0.0047 3.94  -1.346  0.2504
+##  FPV - Open -0.00634 0.0047 3.94  -1.347  0.2500
 ## 
 ## Degrees-of-freedom method: kenward-roger
 ```
@@ -2756,8 +2769,13 @@ plot_fig3
 ![](Microbial_Analyses_files/figure-html/fig-3-1.png)<!-- -->
 
 ``` r
+# png
 ggsave(plot_fig3, width = 6, height = 3.5, dpi = 300,
         filename = "figures/Fig_3.png")
+
+# save as .jpeg 
+ggsave(plot_fig3, width = 6, height = 3.5, dpi = 300,
+        filename = "figures/Fig_3.jpeg")
 ```
 
 
@@ -2879,7 +2897,7 @@ adonis2(water_bray ~ JDate, data = water_metadata, by = "terms")
 ``` r
 #2. Test the terms together
 # Now lets see the effect of each pond by date_collected and solar progress
-water_permanova <- adonis2(water_bray ~ solar_progress * Pond * JDate, data = water_metadata, by = "terms"); water_permanova
+water_permanova <- adonis2(water_bray ~ solar_progress * Pond * JDate * Depth_Class, data = water_metadata, by = "terms"); water_permanova
 ```
 
 ```
@@ -2888,15 +2906,21 @@ water_permanova <- adonis2(water_bray ~ solar_progress * Pond * JDate, data = wa
 ## Permutation: free
 ## Number of permutations: 999
 ## 
-## adonis2(formula = water_bray ~ solar_progress * Pond * JDate, data = water_metadata, by = "terms")
-##                      Df SumOfSqs      R2      F Pr(>F)    
-## solar_progress        1   1.6055 0.11599 8.4287  0.001 ***
-## Pond                  4   2.2419 0.16197 2.9424  0.001 ***
-## JDate                 1   1.0658 0.07700 5.5954  0.001 ***
-## solar_progress:JDate  1   0.8822 0.06374 4.6313  0.001 ***
-## Pond:JDate            4   1.1885 0.08586 1.5598  0.031 *  
-## Residual             36   6.8573 0.49543                  
-## Total                47  13.8412 1.00000                  
+## adonis2(formula = water_bray ~ solar_progress * Pond * JDate * Depth_Class, data = water_metadata, by = "terms")
+##                                  Df SumOfSqs      R2      F Pr(>F)    
+## solar_progress                    1   1.6055 0.11599 8.1774  0.001 ***
+## Pond                              4   2.2419 0.16197 2.8547  0.001 ***
+## JDate                             1   1.0658 0.07700 5.4285  0.001 ***
+## Depth_Class                       1   0.3712 0.02682 1.8906  0.031 *  
+## solar_progress:JDate              1   0.8822 0.06374 4.4933  0.001 ***
+## Pond:JDate                        4   1.1885 0.08586 1.5133  0.037 *  
+## solar_progress:Depth_Class        1   0.1754 0.01267 0.8934  0.517    
+## Pond:Depth_Class                  4   0.5270 0.03807 0.6710  0.952    
+## JDate:Depth_Class                 1   0.4191 0.03028 2.1348  0.035 *  
+## solar_progress:JDate:Depth_Class  1   0.1699 0.01227 0.8653  0.568    
+## Pond:JDate:Depth_Class            4   0.4827 0.03487 0.6146  0.985    
+## Residual                         24   4.7120 0.34044                  
+## Total                            47  13.8412 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -2934,9 +2958,9 @@ adonis2(sed_bray ~ solar_progress, data = sed_metadata, by = "terms")
 ## 
 ## adonis2(formula = sed_bray ~ solar_progress, data = sed_metadata, by = "terms")
 ##                Df SumOfSqs      R2      F Pr(>F)    
-## solar_progress  1  0.37478 0.13284 6.4339  0.001 ***
-## Residual       42  2.44655 0.86716                  
-## Total          43  2.82133 1.00000                  
+## solar_progress  1  0.37482 0.13285 6.4343  0.001 ***
+## Residual       42  2.44660 0.86715                  
+## Total          43  2.82142 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -2953,10 +2977,10 @@ adonis2(sed_bray ~ Pond, data = sed_metadata, by = "terms")
 ## Number of permutations: 999
 ## 
 ## adonis2(formula = sed_bray ~ Pond, data = sed_metadata, by = "terms")
-##          Df SumOfSqs      R2      F Pr(>F)    
-## Pond      5   1.2062 0.42751 5.6754  0.001 ***
-## Residual 38   1.6152 0.57249                  
-## Total    43   2.8213 1.00000                  
+##          Df SumOfSqs     R2      F Pr(>F)    
+## Pond      5   1.2062 0.4275 5.6751  0.001 ***
+## Residual 38   1.6153 0.5725                  
+## Total    43   2.8214 1.0000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -2973,10 +2997,10 @@ adonis2(sed_bray ~ JDate, data = sed_metadata, by = "terms")
 ## Number of permutations: 999
 ## 
 ## adonis2(formula = sed_bray ~ JDate, data = sed_metadata, by = "terms")
-##          Df SumOfSqs      R2     F Pr(>F)   
-## JDate     1  0.30672 0.10872 5.123  0.003 **
-## Residual 42  2.51461 0.89128                
-## Total    43  2.82133 1.00000                
+##          Df SumOfSqs      R2      F Pr(>F)   
+## JDate     1  0.30672 0.10871 5.1228  0.003 **
+## Residual 42  2.51470 0.89129                 
+## Total    43  2.82142 1.00000                 
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -2995,13 +3019,13 @@ sediment_permanova <- adonis2(sed_bray ~ solar_progress * Pond * JDate, data = s
 ## 
 ## adonis2(formula = sed_bray ~ solar_progress * Pond * JDate, data = sed_metadata, by = "terms")
 ##                      Df SumOfSqs      R2       F Pr(>F)    
-## solar_progress        1  0.37478 0.13284 11.7068  0.001 ***
-## Pond                  4  0.83138 0.29467  6.4923  0.001 ***
-## JDate                 1  0.28949 0.10261  9.0425  0.001 ***
-## solar_progress:JDate  1  0.08303 0.02943  2.5935  0.017 *  
-## Pond:JDate            4  0.21821 0.07734  1.7041  0.014 *  
-## Residual             32  1.02445 0.36311                   
-## Total                43  2.82133 1.00000                   
+## solar_progress        1  0.37482 0.13285 11.7070  0.001 ***
+## Pond                  4  0.83134 0.29465  6.4916  0.001 ***
+## JDate                 1  0.28948 0.10260  9.0417  0.001 ***
+## solar_progress:JDate  1  0.08302 0.02942  2.5930  0.017 *  
+## Pond:JDate            4  0.21824 0.07735  1.7041  0.014 *  
+## Residual             32  1.02452 0.36312                   
+## Total                43  2.82142 1.00000                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -3139,8 +3163,8 @@ permutest(betadispr_sed_pond) # not significant p = 0.661
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.020235 0.0040471 0.5669    999  0.742
-## Residuals 38 0.271266 0.0071386
+## Groups     5 0.020225 0.0040450 0.5666    999  0.742
+## Residuals 38 0.271278 0.0071389
 ```
 
 ``` r
@@ -3154,9 +3178,9 @@ permutest(betadispr_sed_solar) # not significant p = 0.673
 ## Number of permutations: 999
 ## 
 ## Response: Distances
-##           Df  Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     1 0.00547 0.0054703 1.5548    999  0.201
-## Residuals 42 0.14777 0.0035183
+##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
+## Groups     1 0.005467 0.0054670 1.5541    999  0.201
+## Residuals 42 0.147745 0.0035177
 ```
 
 ``` r
@@ -3171,8 +3195,8 @@ permutest(betadispr_sed_JDate) # not significant p = 0.162
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     3 0.008772 0.0029239 1.3218    999  0.273
-## Residuals 40 0.088482 0.0022121
+## Groups     3 0.008773 0.0029243 1.3222    999  0.273
+## Residuals 40 0.088472 0.0022118
 ```
 With betadispr we find the PERMANOVA results are are valid as pond, treatment, and date are not significant but significant in the PERMANOVA. Thus our PERMANOVA result is reliable and the differences between groups are due to location/centroids of groups rather than differences in variation within groups 
 
@@ -3203,23 +3227,23 @@ water_ch4_phy_bc <- water_ch4_cyclers_physeq %>%
 water_ch4_cyclers_physeq@sam_data$solar_progress <- factor(water_ch4_cyclers_physeq@sam_data$solar_progress, levels = c("No FPV", "FPV"))
 
 # run ancombc2 for water all methane cyclers
-water_ch4_asv_output <- ancombc2(data = water_ch4_phy_bc,
-                                 tax_level = "ASV", # Test for each phylum
-                                 fix_formula = "solar_progress",
-                                 p_adj_method = "fdr",
-                                 pseudo_sens = TRUE, # Run sensitivity test to make sure taxa isn't sensitive to psuedo-count choice
-                                 prv_cut = 0.05, # Prevalence filter of 1%
-                                 group = NULL, # Use Comp_Group_Hier as groups when doing pairwise comparisons
-                                 struc_zero = FALSE, # Do not detect structural zeroes
-                                 alpha = 0.05, # Significance threshold of 0.05
-                                 n_cl = 10, # Use 10 threads
-                                 verbose = FALSE, # Don't print verbose output
-                                 s0_perc = 0.05,
-                                 global = FALSE, # Run a global test (sorta like an ANOVA to first find if a given ASV is sig diff)
-                                 pairwise = FALSE) # Run pairwise tests between groups (sorta like a post-hoc test like Tukey)
+# water_ch4_asv_output <- ancombc2(data = water_ch4_phy_bc,
+#                                  tax_level = "ASV", # Test for each phylum
+#                                  fix_formula = "solar_progress",
+#                                  p_adj_method = "fdr",
+#                                  pseudo_sens = TRUE, # Run sensitivity test to make sure taxa isn't sensitive to psuedo-count choice
+#                                  prv_cut = 0.05, # Prevalence filter of 1%
+#                                  group = NULL, # Use Comp_Group_Hier as groups when doing pairwise comparisons
+#                                  struc_zero = FALSE, # Do not detect structural zeroes
+#                                  alpha = 0.05, # Significance threshold of 0.05
+#                                  n_cl = 10, # Use 10 threads
+#                                  verbose = FALSE, # Don't print verbose output
+#                                  s0_perc = 0.05,
+#                                  global = FALSE, # Run a global test (sorta like an ANOVA to first find if a given ASV is sig diff)
+#                                  pairwise = FALSE) # Run pairwise tests between groups (sorta like a post-hoc test like Tukey)
 
 
-save(water_ch4_asv_output, file = "data/03_diff_abund/water_ch4_asv_output.RData")
+# save(water_ch4_asv_output, file = "data/03_diff_abund/water_ch4_asv_output.RData")
 
 load("data/03_diff_abund/water_ch4_asv_output.RData")
 
@@ -3520,15 +3544,10 @@ diffAbund_boxplots <- diff_abund_df %>%
 # Save the plot   
 ggsave(diffAbund_boxplots, width = 4.5, height = 4.5, dpi = 300,
         filename = "figures/Fig_4/Fig_4.png")
-```
 
-```
-## Error in `ggsave()`:
-## ! Cannot find directory 'figures/Fig_4'.
-## ℹ Please supply an existing directory or use `create.dir = TRUE`.
-```
+ggsave(diffAbund_boxplots, width = 4.5, height = 4.5, dpi = 300,
+        filename = "figures/Fig_4/Fig_4.jpeg")
 
-``` r
 ##### ASV_13 Methylococcales #####
 #1. Run stats
 # 1a. calculate abundances
@@ -4255,15 +4274,8 @@ fig4
 # Save the plot   
 ggsave(fig4, width = 6.5, height = 4.5, dpi = 300,
         filename = "figures/Fig_4/Fig_4.png")
-```
 
-```
-## Error in `ggsave()`:
-## ! Cannot find directory 'figures/Fig_4'.
-## ℹ Please supply an existing directory or use `create.dir = TRUE`.
-```
 
-``` r
 #or
 library(ggplot2)
 library(patchwork)
@@ -5313,9 +5325,9 @@ adonis2(sed_gen_bray ~ solar_progress,
 ## 
 ## adonis2(formula = sed_gen_bray ~ solar_progress, data = sed_methanogens_metadata, by = "terms")
 ##                Df SumOfSqs      R2      F Pr(>F)    
-## solar_progress  1   0.3218 0.12741 6.1324  0.001 ***
-## Residual       42   2.2039 0.87259                  
-## Total          43   2.5257 1.00000                  
+## solar_progress  1  0.32179 0.12741 6.1324  0.001 ***
+## Residual       42  2.20393 0.87259                  
+## Total          43  2.52572 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -5356,8 +5368,8 @@ adonis2(sed_gen_bray ~ as.factor(JDate),
 ## adonis2(formula = sed_gen_bray ~ as.factor(JDate), data = sed_methanogens_metadata, by = "terms")
 ##                  Df SumOfSqs      R2      F Pr(>F)    
 ## as.factor(JDate)  3  0.56103 0.22213 3.8074  0.001 ***
-## Residual         40  1.96470 0.77787                  
-## Total            43  2.52573 1.00000                  
+## Residual         40  1.96469 0.77787                  
+## Total            43  2.52572 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -5381,13 +5393,13 @@ sed_methanogens_permanova
 ## 
 ## adonis2(formula = sed_gen_bray ~ solar_progress * Pond * JDate, data = sed_methanogens_metadata, by = "terms")
 ##                      Df SumOfSqs      R2       F Pr(>F)    
-## solar_progress        1  0.32180 0.12741 11.4894  0.001 ***
-## Pond                  4  0.78781 0.31191  7.0320  0.001 ***
+## solar_progress        1  0.32179 0.12741 11.4894  0.001 ***
+## Pond                  4  0.78780 0.31191  7.0319  0.001 ***
 ## JDate                 1  0.24408 0.09664  8.7148  0.001 ***
 ## solar_progress:JDate  1  0.08547 0.03384  3.0517  0.008 ** 
 ## Pond:JDate            4  0.19031 0.07535  1.6987  0.023 *  
 ## Residual             32  0.89626 0.35485                   
-## Total                43  2.52573 1.00000                   
+## Total                43  2.52572 1.00000                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -5423,10 +5435,10 @@ adonis2(sed_troph_bray ~ solar_progress,
 ## Number of permutations: 999
 ## 
 ## adonis2(formula = sed_troph_bray ~ solar_progress, data = sed_methanotrophs_metadata, by = "terms")
-##                Df SumOfSqs      R2      F Pr(>F)    
-## solar_progress  1   0.5656 0.13967 6.8187  0.001 ***
-## Residual       42   3.4841 0.86033                  
-## Total          43   4.0497 1.00000                  
+##                Df SumOfSqs     R2    F Pr(>F)    
+## solar_progress  1   0.5658 0.1397 6.82  0.001 ***
+## Residual       42   3.4843 0.8603                
+## Total          43   4.0501 1.0000                
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -5445,9 +5457,9 @@ adonis2(sed_troph_bray ~ Pond,
 ## 
 ## adonis2(formula = sed_troph_bray ~ Pond, data = sed_methanotrophs_metadata, by = "terms")
 ##          Df SumOfSqs      R2      F Pr(>F)    
-## Pond      5   1.5484 0.38236 4.7048  0.001 ***
-## Residual 38   2.5013 0.61764                  
-## Total    43   4.0497 1.00000                  
+## Pond      5   1.5484 0.38231 4.7039  0.001 ***
+## Residual 38   2.5017 0.61769                  
+## Total    43   4.0501 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -5466,9 +5478,9 @@ adonis2(sed_troph_bray ~ as.factor(JDate),
 ## 
 ## adonis2(formula = sed_troph_bray ~ as.factor(JDate), data = sed_methanotrophs_metadata, by = "terms")
 ##                  Df SumOfSqs      R2      F Pr(>F)    
-## as.factor(JDate)  3   1.0290 0.25409 4.5419  0.001 ***
-## Residual         40   3.0207 0.74591                  
-## Total            43   4.0497 1.00000                  
+## as.factor(JDate)  3   1.0289 0.25404 4.5407  0.001 ***
+## Residual         40   3.0212 0.74596                  
+## Total            43   4.0501 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -5492,13 +5504,13 @@ sed_methanotrophs_permanova
 ## 
 ## adonis2(formula = sed_troph_bray ~ solar_progress * Pond * JDate, data = sed_methanotrophs_metadata, by = "terms")
 ##                      Df SumOfSqs      R2       F Pr(>F)    
-## solar_progress        1   0.5656 0.13967 11.3670  0.001 ***
-## Pond                  4   0.9828 0.24268  4.9375  0.001 ***
-## JDate                 1   0.4902 0.12103  9.8500  0.001 ***
-## solar_progress:JDate  1   0.0717 0.01770  1.4402  0.153    
-## Pond:JDate            4   0.3471 0.08570  1.7437  0.013 *  
-## Residual             32   1.5924 0.39321                   
-## Total                43   4.0497 1.00000                   
+## solar_progress        1   0.5658 0.13970 11.3673  0.001 ***
+## Pond                  4   0.9826 0.24261  4.9354  0.001 ***
+## JDate                 1   0.4902 0.12102  9.8477  0.001 ***
+## solar_progress:JDate  1   0.0716 0.01769  1.4391  0.155    
+## Pond:JDate            4   0.3472 0.08573  1.7439  0.013 *  
+## Residual             32   1.5928 0.39326                   
+## Total                43   4.0501 1.00000                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -5555,7 +5567,7 @@ permutest(betadispr_sed_methanogens_pond) # not significant p = 0.659
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.028167 0.0056335 0.8054    999  0.558
+## Groups     5 0.028166 0.0056333 0.8054    999  0.556
 ## Residuals 38 0.265794 0.0069946
 ```
 
@@ -5572,7 +5584,7 @@ permutest(betadispr_sed_methanogens_solar) # not significant p = 0.067
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
 ## Groups     1 0.009152 0.0091520 2.6864    999  0.112
-## Residuals 42 0.143088 0.0034069
+## Residuals 42 0.143087 0.0034068
 ```
 
 ``` r
@@ -5587,7 +5599,7 @@ permutest(betadispr_sed_methanogens_JDate) # not significant p = 0.44
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     3 0.005044 0.0016813 0.6919    999  0.599
+## Groups     3 0.005044 0.0016812 0.6919    999  0.599
 ## Residuals 40 0.097192 0.0024298
 ```
 
@@ -5620,8 +5632,8 @@ permutest(betadispr_sed_methanotrophs_pond) # not significant p = 0.515
 ## 
 ## Response: Distances
 ##           Df  Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.01640 0.0032807 0.3896    999  0.831
-## Residuals 38 0.31995 0.0084198
+## Groups     5 0.01643 0.0032859 0.3902    999   0.83
+## Residuals 38 0.31997 0.0084203
 ```
 
 ``` r
@@ -5635,9 +5647,9 @@ permutest(betadispr_sed_methanotrophs_solar) # not significant p = 0.682
 ## Number of permutations: 999
 ## 
 ## Response: Distances
-##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     1 0.000132 0.0001323 0.0233    999  0.869
-## Residuals 42 0.238635 0.0056818
+##           Df   Sum Sq   Mean Sq     F N.Perm Pr(>F)
+## Groups     1 0.000131 0.0001305 0.023    999  0.873
+## Residuals 42 0.238617 0.0056814
 ```
 
 ``` r
@@ -5651,9 +5663,9 @@ permutest(betadispr_sed_methanotrophs_JDate) # significant p = 0.011 *
 ## Number of permutations: 999
 ## 
 ## Response: Distances
-##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)  
-## Groups     3 0.023534 0.0078447 3.2561    999  0.027 *
-## Residuals 40 0.096370 0.0024093                       
+##           Df   Sum Sq   Mean Sq     F N.Perm Pr(>F)  
+## Groups     3 0.023559 0.0078532 3.259    999  0.026 *
+## Residuals 40 0.096386 0.0024097                      
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -6156,236 +6168,184 @@ devtools::session_info()
 ```
 ## ─ Session info ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ##  setting  value
-##  version  R version 4.3.3 (2024-02-29)
-##  os       Rocky Linux 9.8 (Blue Onyx)
-##  system   x86_64, linux-gnu
+##  version  R version 4.6.1 (2026-06-24)
+##  os       macOS Tahoe 26.1
+##  system   aarch64, darwin23
 ##  ui       X11
 ##  language (EN)
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
 ##  tz       America/New_York
-##  date     2026-07-31
-##  pandoc   3.1.1 @ /usr/lib/rstudio-server/bin/quarto/bin/tools/ (via rmarkdown)
-##  quarto   1.3.450 @ /usr/lib/rstudio-server/bin/quarto/bin/quarto
+##  date     2026-08-22
+##  pandoc   3.8.3 @ /private/var/folders/g2/c7j07yjs5msd15j7b92hzpbh0000gn/T/AppTranslocation/2F886EC3-468F-4FCB-8142-9209EEE92A1A/d/RStudio.app/Contents/Resources/app/quarto/bin/tools/aarch64/ (via rmarkdown)
+##  quarto   1.9.38 @ /private/var/folders/g2/c7j07yjs5msd15j7b92hzpbh0000gn/T/AppTranslocation/2F886EC3-468F-4FCB-8142-9209EEE92A1A/d/RStudio.app/Contents/Resources/app/quarto/bin/quarto
 ## 
 ## ─ Packages ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-##  package                  * version    date (UTC) lib source
-##  abind                      1.4-8      2024-09-12 [1] CRAN (R 4.3.2)
-##  ade4                       1.7-23     2025-02-14 [1] CRAN (R 4.3.3)
-##  ANCOMBC                  * 2.4.0      2023-10-24 [1] Bioconductor
-##  ape                        5.8-1      2024-12-16 [1] CRAN (R 4.3.2)
-##  backports                  1.5.0      2024-05-23 [1] CRAN (R 4.3.2)
-##  base64enc                  0.1-3      2015-07-28 [2] CRAN (R 4.3.3)
-##  beachmat                   2.18.1     2024-02-14 [1] Bioconductor 3.18 (R 4.3.3)
-##  beeswarm                   0.4.0      2021-06-01 [1] CRAN (R 4.3.3)
-##  Biobase                    2.62.0     2023-10-24 [2] Bioconductor
-##  BiocGenerics             * 0.48.1     2023-11-01 [2] Bioconductor
-##  BiocNeighbors              1.20.2     2024-01-07 [1] Bioconductor 3.18 (R 4.3.3)
-##  BiocParallel               1.36.0     2023-10-24 [2] Bioconductor
-##  BiocSingular               1.18.0     2023-10-24 [1] Bioconductor
-##  biomformat                 1.30.0     2023-10-24 [1] Bioconductor
-##  Biostrings               * 2.70.3     2024-03-13 [2] Bioconductor 3.18 (R 4.3.3)
-##  bit                        4.6.0      2025-03-06 [1] CRAN (R 4.3.3)
-##  bit64                      4.6.0-1    2025-01-16 [1] CRAN (R 4.3.2)
-##  bitops                     1.0-9      2024-10-03 [2] CRAN (R 4.3.3)
-##  blob                       1.2.4      2023-03-17 [2] CRAN (R 4.3.3)
-##  bluster                    1.12.0     2023-10-24 [1] Bioconductor
-##  boot                       1.3-29     2024-02-19 [2] CRAN (R 4.3.3)
-##  broom                      1.0.11     2025-12-04 [1] CRAN (R 4.3.3)
-##  bslib                      0.9.0      2025-01-30 [1] CRAN (R 4.3.3)
-##  cachem                     1.1.0      2024-05-16 [1] CRAN (R 4.3.2)
-##  car                        3.1-3      2024-09-27 [1] CRAN (R 4.3.2)
-##  carData                    3.0-5      2022-01-06 [1] CRAN (R 4.3.2)
-##  cellranger                 1.1.0      2016-07-27 [1] CRAN (R 4.3.2)
-##  checkmate                  2.3.3      2025-08-18 [1] CRAN (R 4.3.3)
-##  class                      7.3-22     2023-05-03 [2] CRAN (R 4.3.3)
-##  cli                        3.6.5      2025-04-23 [1] CRAN (R 4.3.3)
-##  cluster                    2.1.6      2023-12-01 [2] CRAN (R 4.3.3)
-##  coda                       0.19-4.1   2024-01-31 [1] CRAN (R 4.3.2)
-##  codetools                  0.2-19     2023-02-01 [2] CRAN (R 4.3.3)
-##  colorspace                 2.1-2      2025-09-22 [1] CRAN (R 4.3.3)
-##  commonmark                 2.0.0      2025-07-07 [1] CRAN (R 4.3.3)
-##  cowplot                  * 1.1.3      2024-01-22 [2] CRAN (R 4.3.3)
-##  crayon                     1.5.3      2024-06-20 [1] CRAN (R 4.3.2)
-##  CVXR                       1.0-15     2024-11-07 [1] CRAN (R 4.3.3)
-##  data.table                 1.17.8     2025-07-10 [1] CRAN (R 4.3.3)
-##  DBI                        1.2.3      2024-06-02 [2] CRAN (R 4.3.3)
-##  DECIPHER                   2.30.0     2023-10-24 [1] Bioconductor
-##  decontam                   1.22.0     2023-10-24 [1] Bioconductor
-##  DelayedArray               0.28.0     2023-10-24 [2] Bioconductor
-##  DelayedMatrixStats         1.24.0     2023-10-24 [1] Bioconductor
-##  DescTools                  0.99.60    2025-03-28 [1] CRAN (R 4.3.3)
-##  devtools                   2.4.6      2025-10-03 [1] CRAN (R 4.3.3)
-##  dichromat                  2.0-0.1    2022-05-02 [1] CRAN (R 4.3.2)
-##  digest                     0.6.39     2025-11-19 [1] CRAN (R 4.3.3)
-##  DirichletMultinomial       1.44.0     2023-10-24 [1] Bioconductor
-##  doParallel                 1.0.17     2022-02-07 [1] CRAN (R 4.3.3)
-##  doRNG                      1.8.6.2    2025-04-02 [1] CRAN (R 4.3.3)
-##  dplyr                    * 1.1.4      2023-11-17 [1] CRAN (R 4.3.2)
-##  e1071                      1.7-16     2024-09-16 [1] CRAN (R 4.3.2)
-##  ellipsis                   0.3.2      2021-04-29 [2] CRAN (R 4.3.3)
-##  emmeans                    2.0.1      2025-12-16 [1] CRAN (R 4.3.3)
-##  energy                     1.7-12     2024-08-24 [1] CRAN (R 4.3.3)
-##  estimability               1.5.1      2024-05-12 [1] CRAN (R 4.3.3)
-##  evaluate                   1.0.5      2025-08-27 [1] CRAN (R 4.3.3)
-##  Exact                      3.3        2024-07-21 [1] CRAN (R 4.3.3)
-##  expm                       1.0-0      2024-08-19 [1] CRAN (R 4.3.2)
-##  farver                     2.1.2      2024-05-13 [2] CRAN (R 4.3.3)
-##  fastmap                    1.2.0      2024-05-15 [1] CRAN (R 4.3.2)
-##  forcats                  * 1.0.1      2025-09-25 [1] CRAN (R 4.3.3)
-##  foreach                    1.5.2      2022-02-02 [1] CRAN (R 4.3.3)
-##  foreign                    0.8-86     2023-11-28 [2] CRAN (R 4.3.3)
-##  Formula                    1.2-5      2023-02-24 [1] CRAN (R 4.3.2)
-##  fs                         1.6.6      2025-04-12 [1] CRAN (R 4.3.3)
-##  generics                   0.1.4      2025-05-09 [1] CRAN (R 4.3.3)
-##  GenomeInfoDb             * 1.38.8     2024-03-15 [2] Bioconductor 3.18 (R 4.3.3)
-##  GenomeInfoDbData           1.2.11     2024-11-25 [2] Bioconductor
-##  GenomicRanges              1.54.1     2023-10-29 [2] Bioconductor
-##  ggbeeswarm                 0.7.3      2025-11-29 [1] CRAN (R 4.3.3)
-##  ggh4x                      0.3.1.9000 2025-12-17 [1] Github (teunbrand/ggh4x@63c91b7)
-##  ggplot2                  * 3.5.2      2025-04-09 [1] CRAN (R 4.3.3)
-##  ggpubr                   * 0.6.2      2025-10-17 [1] CRAN (R 4.3.3)
-##  ggrepel                    0.9.6      2024-09-07 [1] CRAN (R 4.3.3)
-##  ggsignif                   0.6.4      2022-10-13 [1] CRAN (R 4.3.2)
-##  ggtext                   * 0.1.2      2022-09-16 [1] CRAN (R 4.3.3)
-##  gld                        2.6.8      2025-09-14 [1] CRAN (R 4.3.3)
-##  glue                       1.8.0      2024-09-30 [1] CRAN (R 4.3.2)
-##  gmp                        0.7-5.1    2026-02-09 [1] CRAN (R 4.3.3)
-##  gridExtra                  2.3        2017-09-09 [2] CRAN (R 4.3.3)
-##  gridtext                   0.1.5      2022-09-16 [1] CRAN (R 4.3.3)
-##  gsl                        2.1-8      2023-01-24 [1] CRAN (R 4.3.3)
-##  gtable                     0.3.6      2024-10-25 [2] CRAN (R 4.3.3)
-##  gtools                     3.9.5      2023-11-20 [2] CRAN (R 4.3.3)
-##  haven                      2.5.5      2025-05-30 [1] CRAN (R 4.3.3)
-##  Hmisc                      5.2-4      2025-10-05 [1] CRAN (R 4.3.3)
-##  hms                        1.1.4      2025-10-17 [1] CRAN (R 4.3.3)
-##  htmlTable                  2.4.3      2024-07-21 [1] CRAN (R 4.3.3)
-##  htmltools                  0.5.9      2025-12-04 [1] CRAN (R 4.3.3)
-##  htmlwidgets                1.6.4      2023-12-06 [1] CRAN (R 4.3.2)
-##  httr                       1.4.7      2023-08-15 [2] CRAN (R 4.3.3)
-##  igraph                     2.2.1      2025-10-27 [1] CRAN (R 4.3.3)
-##  IRanges                  * 2.36.0     2023-10-24 [2] Bioconductor
-##  irlba                      2.3.5.1    2022-10-03 [2] CRAN (R 4.3.3)
-##  iterators                  1.0.14     2022-02-05 [1] CRAN (R 4.3.3)
-##  jquerylib                  0.1.4      2021-04-26 [2] CRAN (R 4.3.3)
-##  jsonlite                   2.0.0      2025-03-27 [1] CRAN (R 4.3.3)
-##  knitr                      1.51       2025-12-20 [1] CRAN (R 4.3.3)
-##  labeling                   0.4.3      2023-08-29 [2] CRAN (R 4.3.3)
-##  lattice                    0.22-5     2023-10-24 [2] CRAN (R 4.3.3)
-##  lazyeval                   0.2.2      2019-03-15 [2] CRAN (R 4.3.3)
-##  lifecycle                  1.0.4      2023-11-07 [1] CRAN (R 4.3.2)
-##  litedown                   0.8        2025-11-02 [1] CRAN (R 4.3.3)
-##  lme4                     * 1.1-38     2025-12-02 [1] CRAN (R 4.3.3)
-##  lmerTest                 * 3.1-3      2020-10-23 [1] CRAN (R 4.3.3)
-##  lmom                       3.2        2024-09-30 [1] CRAN (R 4.3.3)
-##  lubridate                * 1.9.4      2024-12-08 [1] CRAN (R 4.3.3)
-##  magrittr                   2.0.4      2025-09-12 [1] CRAN (R 4.3.3)
-##  markdown                   2.0        2025-03-23 [1] CRAN (R 4.3.3)
-##  MASS                       7.3-60.0.1 2024-01-13 [2] CRAN (R 4.3.3)
-##  Matrix                   * 1.6-5      2024-01-11 [2] CRAN (R 4.3.3)
-##  MatrixGenerics             1.14.0     2023-10-24 [2] Bioconductor
-##  matrixStats                1.5.0      2025-01-07 [1] CRAN (R 4.3.3)
-##  memoise                    2.0.1      2021-11-26 [2] CRAN (R 4.3.3)
-##  mgcv                       1.9-1      2023-12-21 [2] CRAN (R 4.3.3)
-##  mia                        1.10.0     2023-10-24 [1] Bioconductor
-##  microViz                 * 0.12.6     2025-01-30 [1] https://david-barnett.r-universe.dev (R 4.3.3)
-##  minqa                      1.2.8      2024-08-17 [1] CRAN (R 4.3.2)
-##  multcomp                   1.4-29     2025-10-20 [1] CRAN (R 4.3.3)
-##  MultiAssayExperiment       1.28.0     2023-10-24 [1] Bioconductor
-##  multtest                   2.58.0     2023-10-24 [1] Bioconductor
-##  mvtnorm                    1.3-3      2025-01-10 [1] CRAN (R 4.3.2)
-##  nlme                       3.1-164    2023-11-27 [2] CRAN (R 4.3.3)
-##  nloptr                     2.2.1      2025-03-17 [1] CRAN (R 4.3.3)
-##  nnet                       7.3-19     2023-05-03 [2] CRAN (R 4.3.3)
-##  numDeriv                   2016.8-1.1 2019-06-06 [1] CRAN (R 4.3.2)
-##  otel                       0.2.0      2025-08-29 [1] CRAN (R 4.3.3)
-##  pacman                     0.5.1      2019-03-11 [1] CRAN (R 4.3.2)
-##  patchwork                * 1.3.2.9000 2025-12-19 [1] Github (thomasp85/patchwork@6b1d88c)
-##  pbkrtest                   0.5.5      2025-07-18 [1] CRAN (R 4.3.3)
-##  permute                  * 0.9-10     2026-02-06 [1] CRAN (R 4.3.3)
-##  phyloseq                 * 1.46.0     2023-10-24 [1] Bioconductor
-##  pillar                     1.11.1     2025-09-17 [1] CRAN (R 4.3.3)
-##  pkgbuild                   1.4.8      2025-05-26 [1] CRAN (R 4.3.3)
-##  pkgconfig                  2.0.3      2019-09-22 [2] CRAN (R 4.3.3)
-##  pkgload                    1.4.1      2025-09-23 [1] CRAN (R 4.3.3)
-##  plyr                       1.8.9      2023-10-02 [2] CRAN (R 4.3.3)
-##  proxy                      0.4-29     2025-12-29 [1] CRAN (R 4.3.3)
-##  purrr                    * 1.2.0      2025-11-04 [1] CRAN (R 4.3.3)
-##  R6                         2.6.1      2025-02-15 [1] CRAN (R 4.3.3)
-##  ragg                       1.5.0      2025-09-02 [1] CRAN (R 4.3.3)
-##  rappdirs                   0.3.3      2021-01-31 [2] CRAN (R 4.3.3)
-##  rbibutils                  2.4.1      2026-01-21 [1] CRAN (R 4.3.3)
-##  RColorBrewer               1.1-3      2022-04-03 [2] CRAN (R 4.3.3)
-##  Rcpp                       1.1.1      2026-01-10 [1] CRAN (R 4.3.3)
-##  RCurl                      1.98-1.16  2024-07-11 [2] CRAN (R 4.3.3)
-##  Rdpack                     2.6.4      2025-04-09 [1] CRAN (R 4.3.3)
-##  readr                    * 2.1.6      2025-11-14 [1] CRAN (R 4.3.3)
-##  readxl                     1.4.5      2025-03-07 [1] CRAN (R 4.3.3)
-##  reformulas                 0.4.2      2025-10-28 [1] CRAN (R 4.3.3)
-##  remotes                    2.5.0      2024-03-17 [1] CRAN (R 4.3.3)
-##  reshape2                   1.4.4      2020-04-09 [2] CRAN (R 4.3.3)
-##  rhdf5                      2.46.1     2023-11-29 [1] Bioconductor 3.18 (R 4.3.2)
-##  rhdf5filters               1.14.1     2023-11-06 [1] Bioconductor
-##  Rhdf5lib                   1.24.2     2024-02-07 [1] Bioconductor 3.18 (R 4.3.2)
-##  rlang                      1.1.7      2026-01-09 [1] CRAN (R 4.3.3)
-##  rmarkdown                  2.30       2025-09-28 [1] CRAN (R 4.3.3)
-##  Rmpfr                      1.1-2      2025-10-27 [1] CRAN (R 4.3.3)
-##  rngtools                   1.5.2      2021-09-20 [1] CRAN (R 4.3.3)
-##  rootSolve                  1.8.2.4    2023-09-21 [1] CRAN (R 4.3.3)
-##  rpart                      4.1.23     2023-12-05 [2] CRAN (R 4.3.3)
-##  RSQLite                    2.3.8      2024-11-17 [2] CRAN (R 4.3.3)
-##  rstatix                  * 0.7.3      2025-10-18 [1] CRAN (R 4.3.3)
-##  rstudioapi                 0.17.1     2024-10-22 [2] CRAN (R 4.3.3)
-##  rsvd                       1.0.5      2021-04-16 [1] CRAN (R 4.3.3)
-##  S4Arrays                   1.2.1      2024-03-04 [2] Bioconductor 3.18 (R 4.3.3)
-##  S4Vectors                * 0.40.2     2023-11-23 [2] Bioconductor 3.18 (R 4.3.3)
-##  sandwich                   3.1-1      2024-09-15 [1] CRAN (R 4.3.3)
-##  sass                       0.4.10     2025-04-11 [1] CRAN (R 4.3.3)
-##  ScaledMatrix               1.10.0     2023-10-24 [1] Bioconductor
-##  scales                   * 1.4.0      2025-04-24 [1] CRAN (R 4.3.3)
-##  scater                     1.30.1     2023-11-16 [1] Bioconductor
-##  scuttle                    1.12.0     2023-10-24 [1] Bioconductor
-##  sessioninfo                1.2.3      2025-02-05 [1] CRAN (R 4.3.3)
-##  SingleCellExperiment       1.24.0     2023-10-24 [1] Bioconductor
-##  SparseArray                1.2.4      2024-02-11 [2] Bioconductor 3.18 (R 4.3.3)
-##  sparseMatrixStats          1.14.0     2023-10-24 [1] Bioconductor
-##  speedyseq                * 0.5.3.9021 2025-02-18 [1] Github (mikemc/speedyseq@0057652)
-##  stringi                    1.8.7      2025-03-27 [1] CRAN (R 4.3.3)
-##  stringr                  * 1.6.0      2025-11-04 [1] CRAN (R 4.3.3)
-##  SummarizedExperiment       1.32.0     2023-10-24 [2] Bioconductor
-##  survival                   3.5-8      2024-02-14 [2] CRAN (R 4.3.3)
-##  systemfonts                1.3.1      2025-10-01 [1] CRAN (R 4.3.3)
-##  textshaping                0.4.0      2024-05-24 [2] CRAN (R 4.3.3)
-##  TH.data                    1.1-5      2025-11-17 [1] CRAN (R 4.3.3)
-##  tibble                   * 3.3.0      2025-06-08 [1] CRAN (R 4.3.3)
-##  tidyr                    * 1.3.1      2024-01-24 [1] CRAN (R 4.3.3)
-##  tidyselect                 1.2.1      2024-03-11 [1] CRAN (R 4.3.2)
-##  tidytree                   0.4.6      2023-12-12 [1] CRAN (R 4.3.2)
-##  tidyverse                * 2.0.0      2023-02-22 [1] CRAN (R 4.3.3)
-##  timechange                 0.4.0      2026-01-29 [1] CRAN (R 4.3.3)
-##  treeio                     1.26.0     2023-10-24 [1] Bioconductor
-##  TreeSummarizedExperiment   2.10.0     2023-10-24 [1] Bioconductor
-##  tzdb                       0.5.0      2025-03-15 [1] CRAN (R 4.3.3)
-##  usethis                    3.2.1      2025-09-06 [1] CRAN (R 4.3.3)
-##  utf8                       1.2.6      2025-06-08 [1] CRAN (R 4.3.3)
-##  vctrs                      0.6.5      2023-12-01 [1] CRAN (R 4.3.2)
-##  vegan                    * 2.7-2      2025-10-08 [1] CRAN (R 4.3.3)
-##  vipor                      0.4.7      2023-12-18 [1] CRAN (R 4.3.3)
-##  viridis                    0.6.5      2024-01-29 [1] CRAN (R 4.3.3)
-##  viridisLite                0.4.2      2023-05-02 [2] CRAN (R 4.3.3)
-##  vroom                      1.6.7      2025-11-28 [1] CRAN (R 4.3.3)
-##  withr                      3.0.2      2024-10-28 [1] CRAN (R 4.3.2)
-##  xfun                       0.54       2025-10-30 [1] CRAN (R 4.3.3)
-##  xml2                       1.5.1      2025-12-01 [1] CRAN (R 4.3.3)
-##  xtable                     1.8-4      2019-04-21 [2] CRAN (R 4.3.3)
-##  XVector                  * 0.42.0     2023-10-24 [2] Bioconductor
-##  yaml                       2.3.12     2025-12-10 [1] CRAN (R 4.3.3)
-##  yulab.utils                0.2.2      2025-12-01 [1] CRAN (R 4.3.3)
-##  zlibbioc                   1.48.2     2024-03-13 [2] Bioconductor 3.18 (R 4.3.3)
-##  zoo                        1.8-12     2023-04-13 [2] CRAN (R 4.3.3)
+##  package      * version    date (UTC) lib source
+##  abind          1.4-8      2024-09-12 [1] CRAN (R 4.6.0)
+##  ade4           1.7-24     2026-03-21 [1] CRAN (R 4.6.0)
+##  ANCOMBC      * 2.14.0     2026-04-28 [1] Bioconductor 3.23 (R 4.6.0)
+##  ape            5.8-1      2024-12-16 [1] CRAN (R 4.6.0)
+##  backports      1.5.1      2026-04-03 [1] CRAN (R 4.6.0)
+##  base64enc      0.1-6      2026-02-02 [1] CRAN (R 4.6.0)
+##  Biobase        2.72.0     2026-04-28 [1] Bioconductor 3.23 (R 4.6.0)
+##  BiocGenerics * 0.58.1     2026-05-14 [1] https://bioc-release.r-universe.dev (R 4.6.0)
+##  BiocManager    1.30.27    2025-11-14 [1] CRAN (R 4.6.0)
+##  biomformat     1.40.0     2026-04-28 [1] Bioconductor 3.23 (R 4.6.0)
+##  Biostrings   * 2.80.1     2026-05-22 [1] https://bioc-release.r-universe.dev (R 4.6.0)
+##  bit            4.6.0      2025-03-06 [1] CRAN (R 4.6.0)
+##  bit64          4.8.4      2026-08-20 [1] CRAN (R 4.6.1)
+##  boot           1.3-32     2025-08-29 [1] CRAN (R 4.6.1)
+##  broom          1.0.13     2026-05-14 [1] CRAN (R 4.6.0)
+##  bslib          0.12.0     2026-08-04 [1] CRAN (R 4.6.1)
+##  cachem         1.1.0      2024-05-16 [1] CRAN (R 4.6.0)
+##  car            3.1-5      2026-02-03 [1] CRAN (R 4.6.0)
+##  carData        3.0-6      2026-01-30 [1] CRAN (R 4.6.0)
+##  cellranger     1.1.0      2016-07-27 [1] CRAN (R 4.6.0)
+##  checkmate      2.3.4      2026-02-03 [1] CRAN (R 4.6.0)
+##  class          7.3-24     2026-08-03 [1] CRAN (R 4.6.1)
+##  cli            3.6.6      2026-04-09 [1] CRAN (R 4.6.0)
+##  cluster        2.1.8.3    2026-07-30 [1] CRAN (R 4.6.1)
+##  codetools      0.2-20     2024-03-31 [1] CRAN (R 4.6.1)
+##  colorspace     2.1-3      2026-07-12 [1] CRAN (R 4.6.1)
+##  commonmark     2.0.0      2025-07-07 [1] CRAN (R 4.6.0)
+##  cowplot      * 1.2.0      2025-07-07 [1] CRAN (R 4.6.0)
+##  crayon         1.5.3      2024-06-20 [1] CRAN (R 4.6.0)
+##  data.table     1.18.4     2026-05-06 [1] CRAN (R 4.6.0)
+##  DescTools      0.99.60    2025-03-28 [1] CRAN (R 4.6.0)
+##  devtools       2.5.2      2026-04-30 [1] CRAN (R 4.6.0)
+##  digest         0.6.39     2025-11-19 [1] CRAN (R 4.6.0)
+##  doParallel     1.0.17     2022-02-07 [1] CRAN (R 4.6.0)
+##  doRNG          1.8.6.3    2026-02-05 [1] CRAN (R 4.6.0)
+##  dplyr        * 1.2.1      2026-04-03 [1] CRAN (R 4.6.0)
+##  e1071          1.7-17     2025-12-18 [1] CRAN (R 4.6.0)
+##  ellipsis       0.3.3      2026-04-04 [1] CRAN (R 4.6.0)
+##  emmeans        2.0.4      2026-07-15 [1] CRAN (R 4.6.1)
+##  energy         1.7-12     2024-08-24 [1] CRAN (R 4.6.0)
+##  estimability   2.0.0      2026-06-26 [1] CRAN (R 4.6.1)
+##  evaluate       1.0.5      2025-08-27 [1] CRAN (R 4.6.0)
+##  Exact          3.3        2024-07-21 [1] CRAN (R 4.6.0)
+##  expm           1.0-0      2024-08-19 [1] CRAN (R 4.6.0)
+##  farver         2.1.2      2024-05-13 [1] CRAN (R 4.6.0)
+##  fastmap        1.2.0      2024-05-15 [1] CRAN (R 4.6.0)
+##  forcats      * 1.0.1      2025-09-25 [1] CRAN (R 4.6.0)
+##  foreach        1.5.2      2022-02-02 [1] CRAN (R 4.6.0)
+##  foreign        0.8-91     2026-01-29 [1] CRAN (R 4.6.1)
+##  Formula        1.2-6      2026-08-03 [1] CRAN (R 4.6.1)
+##  fs             2.1.0      2026-04-18 [1] CRAN (R 4.6.0)
+##  generics     * 0.1.4      2025-05-09 [1] CRAN (R 4.6.0)
+##  ggh4x        * 0.3.1      2025-05-30 [1] CRAN (R 4.6.0)
+##  ggplot2      * 4.0.3      2026-04-22 [1] CRAN (R 4.6.0)
+##  ggpubr       * 1.0.0      2026-07-06 [1] CRAN (R 4.6.1)
+##  ggsignif       0.6.4      2022-10-13 [1] CRAN (R 4.6.0)
+##  ggtext       * 0.1.2      2022-09-16 [1] CRAN (R 4.6.0)
+##  gld            2.6.8      2025-09-14 [1] CRAN (R 4.6.0)
+##  glue           1.8.1      2026-04-17 [1] CRAN (R 4.6.0)
+##  gridExtra      2.3.1      2026-06-25 [1] CRAN (R 4.6.1)
+##  gridtext       0.1.6      2026-02-19 [1] CRAN (R 4.6.0)
+##  gsl            2.1-9      2025-11-10 [1] CRAN (R 4.6.0)
+##  gtable         0.3.6      2024-10-25 [1] CRAN (R 4.6.0)
+##  gtools         3.9.5      2023-11-20 [1] CRAN (R 4.6.0)
+##  haven          2.5.5      2025-05-30 [1] CRAN (R 4.6.0)
+##  Hmisc          5.2-6      2026-06-19 [1] CRAN (R 4.6.0)
+##  hms            1.1.4      2025-10-17 [1] CRAN (R 4.6.0)
+##  htmlTable      2.5.0      2026-04-22 [1] CRAN (R 4.6.0)
+##  htmltools      0.5.9      2025-12-04 [1] CRAN (R 4.6.0)
+##  htmlwidgets    1.6.4      2023-12-06 [1] CRAN (R 4.6.0)
+##  httr           1.4.8      2026-02-13 [1] CRAN (R 4.6.0)
+##  igraph         2.3.3      2026-06-26 [1] CRAN (R 4.6.1)
+##  IRanges      * 2.46.0     2026-04-28 [1] Bioconductor 3.23 (R 4.6.0)
+##  iterators      1.0.14     2022-02-05 [1] CRAN (R 4.6.0)
+##  jquerylib      0.1.4      2021-04-26 [1] CRAN (R 4.6.0)
+##  jsonlite       2.0.0      2025-03-27 [1] CRAN (R 4.6.0)
+##  knitr          1.51       2025-12-20 [1] CRAN (R 4.6.0)
+##  labeling       0.4.3      2023-08-29 [1] CRAN (R 4.6.0)
+##  lattice        0.23-1     2026-08-12 [1] CRAN (R 4.6.1)
+##  lifecycle      1.0.5      2026-01-08 [1] CRAN (R 4.6.0)
+##  litedown       0.10       2026-07-11 [1] CRAN (R 4.6.1)
+##  lme4         * 2.0-6      2026-07-16 [1] CRAN (R 4.6.1)
+##  lmerTest     * 3.2-1      2026-03-05 [1] CRAN (R 4.6.0)
+##  lmom           3.3        2026-03-24 [1] CRAN (R 4.6.0)
+##  lubridate    * 1.9.5      2026-02-04 [1] CRAN (R 4.6.0)
+##  magrittr       2.0.5      2026-04-04 [1] CRAN (R 4.6.0)
+##  markdown       2.0        2025-03-23 [1] CRAN (R 4.6.0)
+##  MASS           7.3-66     2026-07-15 [1] CRAN (R 4.6.1)
+##  Matrix       * 1.7-6      2026-07-25 [1] CRAN (R 4.6.1)
+##  memoise        2.0.1      2021-11-26 [1] CRAN (R 4.6.0)
+##  mgcv           1.9-4      2025-11-07 [1] CRAN (R 4.6.1)
+##  minqa          1.2.8      2024-08-17 [1] CRAN (R 4.6.0)
+##  multcomp       1.4-32     2026-08-21 [1] CRAN (R 4.6.1)
+##  multtest       2.68.0     2026-04-28 [1] Bioconductor 3.23 (R 4.6.0)
+##  mvtnorm        1.4-2      2026-07-12 [1] CRAN (R 4.6.1)
+##  nlme           3.1-170    2026-07-15 [1] CRAN (R 4.6.1)
+##  nloptr         2.2.1      2025-03-17 [1] CRAN (R 4.6.0)
+##  nnet           7.3-21     2026-08-03 [1] CRAN (R 4.6.1)
+##  numDeriv       2016.8-1.1 2019-06-06 [1] CRAN (R 4.6.0)
+##  otel           0.2.0      2025-08-29 [1] CRAN (R 4.6.0)
+##  pacman         0.5.1      2019-03-11 [1] CRAN (R 4.6.0)
+##  patchwork    * 1.3.2      2025-08-25 [1] CRAN (R 4.6.0)
+##  pbkrtest       0.5.5      2025-07-18 [1] CRAN (R 4.6.0)
+##  permute      * 0.9-10     2026-02-06 [1] CRAN (R 4.6.0)
+##  phyloseq     * 1.56.0     2026-04-28 [1] Bioconductor 3.23 (R 4.6.0)
+##  pillar         1.11.1     2025-09-17 [1] CRAN (R 4.6.0)
+##  pkgbuild       1.4.8      2025-05-26 [1] CRAN (R 4.6.0)
+##  pkgconfig      2.0.3      2019-09-22 [1] CRAN (R 4.6.0)
+##  pkgload        1.5.3      2026-06-15 [1] CRAN (R 4.6.0)
+##  plyr           1.8.9      2023-10-02 [1] CRAN (R 4.6.0)
+##  proxy          0.4-29     2025-12-29 [1] CRAN (R 4.6.0)
+##  purrr        * 1.2.2      2026-04-10 [1] CRAN (R 4.6.0)
+##  quadprog       1.5-8      2019-11-20 [1] CRAN (R 4.6.0)
+##  R6             2.6.1      2025-02-15 [1] CRAN (R 4.6.0)
+##  ragg           1.5.2      2026-03-23 [1] CRAN (R 4.6.0)
+##  rbibutils      2.4.1      2026-01-21 [1] CRAN (R 4.6.0)
+##  RColorBrewer   1.1-3      2022-04-03 [1] CRAN (R 4.6.0)
+##  Rcpp           1.1.2      2026-07-05 [1] CRAN (R 4.6.1)
+##  Rdpack         2.6.6      2026-02-08 [1] CRAN (R 4.6.0)
+##  readr        * 2.2.0      2026-02-19 [1] CRAN (R 4.6.0)
+##  readxl         1.5.0      2026-05-16 [1] CRAN (R 4.6.0)
+##  reformulas     0.4.4      2026-02-02 [1] CRAN (R 4.6.0)
+##  reshape2       1.4.5      2025-11-12 [1] CRAN (R 4.6.0)
+##  rlang          1.3.0      2026-07-05 [1] CRAN (R 4.6.1)
+##  rmarkdown      2.31       2026-03-26 [1] CRAN (R 4.6.0)
+##  rngtools       1.5.2      2021-09-20 [1] CRAN (R 4.6.0)
+##  rootSolve      1.8.2.4    2023-09-21 [1] CRAN (R 4.6.0)
+##  rpart          4.1.27     2026-03-27 [1] CRAN (R 4.6.1)
+##  rstatix      * 1.1.0      2026-07-23 [1] CRAN (R 4.6.1)
+##  rstudioapi     0.19.0     2026-06-11 [1] CRAN (R 4.6.0)
+##  S4Vectors    * 0.50.1     2026-05-03 [1] https://bioc-release.r-universe.dev (R 4.6.0)
+##  S7             0.2.2      2026-04-22 [1] CRAN (R 4.6.0)
+##  sandwich       3.1-3      2026-08-03 [1] CRAN (R 4.6.1)
+##  sass           0.4.10     2025-04-11 [1] CRAN (R 4.6.0)
+##  scales       * 1.4.0      2025-04-24 [1] CRAN (R 4.6.0)
+##  Seqinfo      * 1.2.0      2026-04-28 [1] Bioconductor 3.23 (R 4.6.0)
+##  sessioninfo    1.2.4      2026-06-04 [1] CRAN (R 4.6.0)
+##  speedyseq    * 0.5.3.9021 2026-08-22 [1] Github (mikemc/speedyseq@0057652)
+##  stringi        1.8.9      2026-08-04 [1] CRAN (R 4.6.1)
+##  stringr      * 1.6.0      2025-11-04 [1] CRAN (R 4.6.0)
+##  survival       3.8-11     2026-08-21 [1] CRAN (R 4.6.1)
+##  systemfonts    1.3.2      2026-03-05 [1] CRAN (R 4.6.0)
+##  textshaping    1.0.5      2026-03-06 [1] CRAN (R 4.6.0)
+##  TH.data        1.1-5      2025-11-17 [1] CRAN (R 4.6.0)
+##  tibble       * 3.3.1      2026-01-11 [1] CRAN (R 4.6.0)
+##  tidyr        * 1.3.2      2025-12-19 [1] CRAN (R 4.6.0)
+##  tidyselect     1.2.1      2024-03-11 [1] CRAN (R 4.6.0)
+##  tidyverse    * 2.0.0      2023-02-22 [1] CRAN (R 4.6.0)
+##  timechange     0.4.0      2026-01-29 [1] CRAN (R 4.6.0)
+##  tzdb           0.5.0      2025-03-15 [1] CRAN (R 4.6.0)
+##  usethis        3.2.1      2025-09-06 [1] CRAN (R 4.6.0)
+##  utf8           1.2.6      2025-06-08 [1] CRAN (R 4.6.0)
+##  vctrs          0.7.3      2026-04-11 [1] CRAN (R 4.6.0)
+##  vegan        * 2.7-5      2026-05-25 [1] CRAN (R 4.6.0)
+##  vroom          1.7.1      2026-03-31 [1] CRAN (R 4.6.0)
+##  withr          3.0.3      2026-06-19 [1] CRAN (R 4.6.0)
+##  xfun           0.60       2026-07-09 [1] CRAN (R 4.6.1)
+##  xml2           1.6.0      2026-06-22 [1] CRAN (R 4.6.1)
+##  xtable         1.8-8      2026-02-22 [1] CRAN (R 4.6.0)
+##  XVector      * 0.52.0     2026-04-28 [1] Bioconductor 3.23 (R 4.6.0)
+##  yaml           2.3.12     2025-12-10 [1] CRAN (R 4.6.0)
+##  zoo            1.9-0      2026-07-31 [1] CRAN (R 4.6.1)
 ## 
-##  [1] /lustre2/home/hendrylab/sna49/R/x86_64-pc-linux-gnu-library/4.3
-##  [2] /programs/R-4.3.3/lib64/R/library
+##  [1] /Library/Frameworks/R.framework/Versions/4.6/Resources/library
 ##  * ── Packages attached to the search path.
 ## 
 ## ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────

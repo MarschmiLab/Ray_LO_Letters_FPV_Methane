@@ -847,6 +847,11 @@ ggsave(figure_4,
        width = 9, height = 8, dpi = 300,
        filename = "figures/Fig_4.png")
 
+ggsave(figure_4, 
+       width = 9, height = 8, dpi = 300,
+       filename = "figures/Fig_4.jpeg")
+
+
 # Show the plot
 figure_4
 ```
@@ -1534,6 +1539,10 @@ sed_methanogen_ASV_plot <-
 ggsave(sed_methanogen_ASV_plot, 
        width = 10, height = 8, dpi = 300,
        filename = "figures/Fig_5.png")
+
+ggsave(sed_methanogen_ASV_plot, 
+       width = 10, height = 8, dpi = 300,
+       filename = "figures/Fig_5.jpeg")
 ```
 
 

@@ -47,7 +47,7 @@ knitr::opts_chunk$set(eval = TRUE,
 
 ```{r load-packages}
 # Efficiently load packages 
-pacman::p_load(ggplot2, phyloseq, ggpubr, tidyverse, patchwork, ggh4x, speedyseq, rstatix, dplyr, purrr, vegan, ANCOMBC, microViz,cowplot, grid, scales, Biostrings, stringr, lmerTest, ggtext, install = FALSE)
+pacman::p_load(ggplot2, phyloseq, ggpubr, tidyverse, patchwork, ggh4x, speedyseq, rstatix, dplyr, purrr, vegan, ANCOMBC, microViz,cowplot, grid, scales, Biostrings, stringr, lmerTest, ggtext, install = TRUE)
 
 source("code/functions.R") # contains scale_reads
 source("code/colors_and_shapes.R")
@@ -1939,23 +1939,23 @@ water_ch4_phy_bc <- water_ch4_cyclers_physeq %>%
 water_ch4_cyclers_physeq@sam_data$solar_progress <- factor(water_ch4_cyclers_physeq@sam_data$solar_progress, levels = c("No FPV", "FPV"))
 
 # run ancombc2 for water all methane cyclers
-water_ch4_asv_output <- ancombc2(data = water_ch4_phy_bc,
-                                 tax_level = "ASV", # Test for each phylum
-                                 fix_formula = "solar_progress",
-                                 p_adj_method = "fdr",
-                                 pseudo_sens = TRUE, # Run sensitivity test to make sure taxa isn't sensitive to psuedo-count choice
-                                 prv_cut = 0.05, # Prevalence filter of 1%
-                                 group = NULL, # Use Comp_Group_Hier as groups when doing pairwise comparisons
-                                 struc_zero = FALSE, # Do not detect structural zeroes
-                                 alpha = 0.05, # Significance threshold of 0.05
-                                 n_cl = 10, # Use 10 threads
-                                 verbose = FALSE, # Don't print verbose output
-                                 s0_perc = 0.05,
-                                 global = FALSE, # Run a global test (sorta like an ANOVA to first find if a given ASV is sig diff)
-                                 pairwise = FALSE) # Run pairwise tests between groups (sorta like a post-hoc test like Tukey)
+# water_ch4_asv_output <- ancombc2(data = water_ch4_phy_bc,
+#                                  tax_level = "ASV", # Test for each phylum
+#                                  fix_formula = "solar_progress",
+#                                  p_adj_method = "fdr",
+#                                  pseudo_sens = TRUE, # Run sensitivity test to make sure taxa isn't sensitive to psuedo-count choice
+#                                  prv_cut = 0.05, # Prevalence filter of 1%
+#                                  group = NULL, # Use Comp_Group_Hier as groups when doing pairwise comparisons
+#                                  struc_zero = FALSE, # Do not detect structural zeroes
+#                                  alpha = 0.05, # Significance threshold of 0.05
+#                                  n_cl = 10, # Use 10 threads
+#                                  verbose = FALSE, # Don't print verbose output
+#                                  s0_perc = 0.05,
+#                                  global = FALSE, # Run a global test (sorta like an ANOVA to first find if a given ASV is sig diff)
+#                                  pairwise = FALSE) # Run pairwise tests between groups (sorta like a post-hoc test like Tukey)
 
 
-save(water_ch4_asv_output, file = "data/03_diff_abund/water_ch4_asv_output.RData")
+# save(water_ch4_asv_output, file = "data/03_diff_abund/water_ch4_asv_output.RData")
 
 load("data/03_diff_abund/water_ch4_asv_output.RData")
 
@@ -2216,6 +2216,9 @@ diffAbund_boxplots <- diff_abund_df %>%
 # Save the plot   
 ggsave(diffAbund_boxplots, width = 4.5, height = 4.5, dpi = 300,
         filename = "figures/Fig_4/Fig_4.png")
+
+ggsave(diffAbund_boxplots, width = 4.5, height = 4.5, dpi = 300,
+        filename = "figures/Fig_4/Fig_4.jpeg")
 
 ##### ASV_13 Methylococcales #####
 #1. Run stats
