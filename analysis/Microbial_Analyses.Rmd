@@ -58,7 +58,7 @@ set.seed(09091999)
 
 # Load in Data
 
-Loading in our .RData objects.
+Loading in our .RData objects. This has now has 16S rRNA abundances normalized by picrust2
 
 1. Water samples have flow cytometry derived absolute abundances.
 
@@ -67,9 +67,6 @@ Loading in our .RData objects.
 And we will add in our metadata as well!
 
 ```{r load-metadata}
-# water physeq with absolute abundance counts, this hasnt pruned the taxa out yet
-# load("data/00_load_data/full_abs_physeq.RData")
-
 # or we can also load in water physeq that has absolute abundance as well
 load("data/00_load_data/water_physeq.RData")
 
@@ -80,12 +77,15 @@ load("data/00_load_data/scaled_sed_physeq.RData")
 sample_data(scaled_sed_physeq)$JDate <-
   lubridate::yday(sample_data(scaled_sed_physeq)$Date_Collected)
 
+# add picrust2 normalized 16s abundances, note water abundances are not absolute yet
+load("data/00_load_data/normalized_water_sed_physeq.RData")
+
 # physeq with water (unincorporated cell counts) + sediment samples = 188 samples total
-load("data/00_load_data/new_archaea_rooted_physeq.RData")
+# load("data/00_load_data/new_archaea_rooted_physeq.RData")
 
 ## Add JDate to the sample_data 
-sample_data(new_archaea_rooted_physeq)$JDate <-
-  lubridate::yday(sample_data(new_archaea_rooted_physeq)$Date_Collected)
+sample_data(normalized_water_sed_physeq)$JDate <-
+  lubridate::yday(sample_data(normalized_water_sed_physeq)$Date_Collected)
 
 # load in metadata
 load("data/00_load_data/meta_track_23_24.RData")
@@ -125,7 +125,7 @@ Same as the water samples we will filter out our phyloseq object and save it.
 We do not have absolute abundance counts for our sediment samples so we will need to rarefy to the minimum sequencing depth (20826 reads)
 ```{r sed-phyloseq-24}
 # filter phyloseq for only sediment samples
-sed_phy <- subset_samples(new_archaea_rooted_physeq, SampleType == "Sediment")
+sed_phy <- subset_samples(normalized_water_sed_physeq, SampleType == "Sediment")
 
 # subset samples 
 sed_physeq <- subset_samples(sed_phy, !(sample_names(sed_phy) %in% c("SA_D046", "SA_D047")))
@@ -135,7 +135,7 @@ sed_phy <- sed_physeq %>%
   prune_taxa(taxa_sums(.) > 0,.)
 
 # Intuition check of number of sequences per sample
-min(sample_sums(sed_phy)) ## min = 20826
+min(sample_sums(sed_phy)) ## min = 18812.56
 
 # scale water_physeq to minimum number of reads
 scaled_sed_physeq <- 
@@ -229,7 +229,7 @@ export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH # was having issues for getti
 
 # run script with aligned mafft aligned fasta file and tree
 # running with default for now which uses the binomial hsp algorithm
-Rscript faprotax.R -i water_otu_table.tsv -a alignment_ch4water.fasta -o ch4_water_function_table_16S.tsv --out_intermediates ch4_water_intermediates2 -d /local//workdir/sna49/FS_CH4_Mech_Ray_LO_Letters/data/02A_Water_FAPROTAXv2 -r ch4_water_report.txt  --otu_names_are_in_column "OTU" --hsp_algorithm "binomial"
+Rscript faprotax.R -i water_otu_table.tsv -a water_16s_alignment.fasta -o ch4_water_function_table_16S_1new.tsv --out_intermediates ch4_water_intermediates3 -d /local//workdir/sna49/FS_CH4_Mech_Ray_LO_Letters/data/02A_Water_FAPROTAXv2 -r ch4_water_report3.txt  --otu_names_are_in_column "OTU" --hsp_algorithm "binomial"
 ```
 
 ### Water - Extract Predicted FAPROTAXv2 Results
@@ -242,7 +242,7 @@ ASVs not classified to the family or genus level were filtered out from analysis
 Each ASV will be verified through literature review to ensure it is a known methanogen or methanotroph
 ```{r pull-faprotaxv2-asvs}
 # Read the text file of faprotaxv2 report from the previous chunk!
-lines <- readLines("data/02A_Water_FAPROTAXv2/ch4_water_report.txt")
+lines <- readLines("data/02A_Water_FAPROTAXv2/ch4_water_report3.txt")
 
 # create empty vectors
 function_group <- c()
@@ -309,7 +309,7 @@ water_ch4_cyclers_asv_unique <- water_ch4_cyclers_asv_df %>%
 # join ch4 cyclers with water_physeq_ch4_df
 water_ch4_joined <- water_physeq_ch4_df %>%
   dplyr::inner_join(water_ch4_cyclers_asv_unique, 
-                    by = c("ASV" = "asv_id")) # 20112 observations!
+                    by = c("ASV" = "asv_id")) # 11712 observations!
 
 # tidy up dataframe
 water_ch4_joined <- water_ch4_joined %>% 
@@ -323,9 +323,10 @@ water_ch4_joined$Order %>% unique()
 water_ch4_joined$Genus %>% unique()
 water_ch4_joined$ASV %>% unique()
 
+
 # filter out NA at order level
 water_ch4_joined <- water_ch4_joined %>% 
-  dplyr::filter(!is.na(Family)) # 16368
+  dplyr::filter(!is.na(Family)) # 10992
 
 # create dataframe for sipmlified distinct ASV to verify
 simplified_af <- water_ch4_joined %>% 
@@ -340,8 +341,10 @@ water_ch4_joined_clean_faprotax <- water_ch4_joined %>%
     "Derxia", "UBA10450", "UBA11358", "Alsobacter", "UBA3015", "GAS474", "JAAUTS01",
     "UBA6215", "LW23", "WYBW01", "Pedosphaera", "Azospirillum", "YA12-FULL-60-10",
     "Beijerinckia", "SXTU01", "AV2", "Lenti-01", "PWTM01", "UBA95"),
-    !Family %in% c("J093", "UBA10450"),
-    !ASV %in% c("ASV_23314", "ASV_301", "ASV_3420", "ASV_2686", "ASV_2686", "ASV_3289")) # total 10560
+    !Family %in% c("J093", "UBA10450", "Rhodanobacteraceae"),
+    !ASV %in% c("ASV_468")) # total 9744
+
+water_ch4_joined_clean_faprotax$Family %>% unique()
 
 # notes for my exclusions:
 # 1. cannot find any information for derxia being methanotroph
@@ -394,7 +397,8 @@ water_24_taxonomysearch <- water_physeq_ch4_df %>%
 water_24_manual <- water_24_taxonomysearch %>%
   dplyr::filter(Family %in% c("2-02-FULL-66-22", "Methanomethylophilaceae", "UBA472", 
                               "Methanomassiliicoccaceae", "Methylomonadaceae", "Methanobacteriaceae") |
-                Order %in% c("Methylococcales"))# %>% 
+                Order %in% c("Methylococcales") |
+                  Genus %in% c("Methylocella"))# %>% 
   #dplyr::filter
   # family level to also include manually (e.g., specific N-DAMO methanotroph and methanogen
   #dplyr::distinct(ASV, .keep_all = TRUE) # one ASV per row
@@ -448,7 +452,7 @@ tax_tab$CH4_Cycler <- dplyr::case_when(
 
 tax_table(water_ch4_cyclers_physeq) <- tax_table(as.matrix(tax_tab))
 
-water_ch4_cyclers_physeq # 255 total ASVs
+water_ch4_cyclers_physeq # 248 total ASVs
 
 # save phyloseq object
 save(water_ch4_cyclers_physeq, file = "data/01_phyloseq/water_ch4_cyclers_physeq.RData")
@@ -635,7 +639,7 @@ sed_ch4_joined$ASV %>% unique()
 
 # filter out NA at order level
 sed_ch4_joined <- sed_ch4_joined %>% 
-  dplyr::filter(!is.na(Family)) # 23628
+  dplyr::filter(!is.na(Family)) # 23496
 
 # create dataframe for simplified distinct ASV to verify
 simplified_af <- sed_ch4_joined %>% 
@@ -649,9 +653,10 @@ sed_ch4_joined_clean_faprotax <- sed_ch4_joined %>%
     !Genus %in% c("AV2", "Alsobacter", "Beijerinckia", "BOG-1460", "DP16D-bin41", "MWDV01", "SLKG01", "UBA7542", 	
                   "WLWN01", "UBA11358",  "UBA3015", "GAS474", "JAAUTS01","UBA6215", "LW23", "WYBW01", 
                   "Pedosphaera", "YA12-FULL-60-10", "UBA10450", "UBA3939", "PWTM01", "UBA95", "Lenti-01"),
-    !Family %in% c("Pontiellaceae","J093", "UBA10450", "JAAZAB01", "UBA11358"),
-    !ASV %in% c("ASV_3646", "ASV_468", "ASV_24935", "ASV_3646", "ASV_468")) # total 13200
+    !Family %in% c("Pontiellaceae","J093", "UBA10450", "JAAZAB01", "UBA11358"))
+    #!ASV %in% c("ASV_3646", "ASV_468", "ASV_24935", "ASV_3646", "ASV_468")) # total 13200
 
+sed_ch4_joined_clean_faprotax$Genus %>% unique()
 # notes for my exclusions:
 # 1. cannot find any information for derxia being methanotroph
 # 2. UBA10450 (family) is within Chthoniobacterales (order) within Verrucomicrobiota. since this is at family level its hard to say what is function is. im finding its involved in complex carbon degradation and could maybe be a methanotroph and have other pathways to break this down but with this uncertainty and especially since no genus level identification will omit for now. most are apparently aerobic/anaerobic chemoorganotrophs
@@ -721,7 +726,7 @@ sed_ch4_cyclers_complete_df <- dplyr::bind_rows(
 )
 
 # unique asv counts
-test<- sed_ch4_cyclers_complete_df$ASV %>% unique() # correclty 347
+test<- sed_ch4_cyclers_complete_df$ASV %>% unique() # correclty 341
 # list of all our CH4 cycler ASVs to filter phyloseq 
 ch4_asv_list <- sed_ch4_cyclers_complete_df$ASV
 
@@ -749,7 +754,7 @@ tax_tab$CH4_Cycler <- dplyr::case_when(
 
 tax_table(sed_ch4_cyclers_physeq) <- tax_table(as.matrix(tax_tab))
 
-sed_ch4_cyclers_physeq # 347 total ASVs, 44 samples
+sed_ch4_cyclers_physeq # 341 total ASVs, 44 samples
 
 # save phyloseq object
 save(sed_ch4_cyclers_physeq, file = "data/01_phyloseq/sed_ch4_cyclers_physeq.RData")
@@ -856,10 +861,10 @@ Based on our data with the qq plots we see that the points more or less fit the 
 # A tibble: 4 × 3
   group                        shapiro_p     n
   <fct>                            <dbl> <int>
-1 Methanogen Surface Water   0.00000185     24
-2 Methanotroph Surface Water 0.000267       24
-3 Methanogen Bottom Water    0.000000393    24
-4 Methanotroph Bottom Water  0.000445       24
+1 Methanogen Surface Water   0.0000202      24
+2 Methanotroph Surface Water 0.0000304      24
+3 Methanogen Bottom Water    0.000000400    24
+4 Methanotroph Bottom Water  0.0000474      24
 
 The data is not normal! 
 
@@ -924,12 +929,15 @@ sed_ch4_cyclers_df %>%
   )
 ```
 
-Based on our data with the qq plots and the density histograms, data does not seem to be clearly normally distributed. Shapiro-Wilk test to also test for a normal distribution if p > 0.05 the data is likely normal but if p < 0.05 then the data is not normal.
+Based on our data with the qq plots and the density histograms, data is normally distriburted but to be consistent with water we will proceed as normal. 
 
+Shapiro-Wilk test to also test for a normal distribution if p > 0.05 the data is likely normal but if p < 0.05 then the data is not normal.
+
+# A tibble: 2 × 3
   group                 shapiro_p     n
   <fct>                     <dbl> <int>
-1 Methanogen Sediment      0.137     23
-2 Methanotroph Sediment    0.0184    23
+1 Methanogen Sediment      0.136     23
+2 Methanotroph Sediment    0.0681    23
 
 Methanotrophs are not normally distributed but but methanogens are which is interesting. but will still go with two-sample Wilcoxon tests
 
@@ -967,8 +975,8 @@ methanogen_surface_data <- water_ch4_cyclers_df %>%
 methanogen_surface_data$Pond <- as.factor(methanogen_surface_data$Pond)
 
 surface_methanogen_model <- lmerTest::lmer(total_abundance ~ solar_progress + JDate + (1|Pond), data = methanogen_surface_data)
-summary(surface_methanogen_model) #0.876
-emmeans::emmeans(surface_methanogen_model, pairwise ~ solar_progress) # 0.8820
+summary(surface_methanogen_model) #0.579
+emmeans::emmeans(surface_methanogen_model, pairwise ~ solar_progress) # 0.6033
 
 # 2. plot surface water methanogens overtime
 methanogen_surface <- methanogen_surface_sum %>% 
@@ -981,12 +989,12 @@ methanogen_surface <- methanogen_surface_sum %>%
   geom_point(size = 3, shape = 1, color = "black")+
   labs(y= "Surface Methanogen<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
   scale_y_continuous(
-    limits = c(NA, 8250),
+    limits = c(NA, 6000),
     # breaks = c(0, 2500, 5000, 7500),
     # limits = c(NA, 8e3),
     # breaks = breaks_extended(n = 4),
-    breaks = c(0, 4000, 8000),
-    labels = label_number(scale_cut = cut_short_scale())) +
+    breaks = c(0, 3000, 6000),
+  labels = label_number(scale_cut = cut_short_scale())) +
   theme(axis.text.x =  element_text(size = 8,colour = "black"),
          axis.text.y =  element_text(size = 8,colour = "black"),
          axis.title.x = element_blank(),
@@ -1005,9 +1013,9 @@ methanogen_surface_box <- methanogen_surface_data %>%
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = c("black", "black"))+
   scale_y_continuous(
-    limits = c(NA, 8250),
+    limits = c(NA, 6000),
     #breaks = c(0, 2500, 5000, 7500),
-     breaks = c(0, 4000, 8000),
+     breaks = c(0, 3000, 6000),
     labels = label_number(scale_cut = cut_short_scale())) +
   theme_classic()+
   theme(axis.text.x = element_text(size = 8,colour = "black"),
@@ -1017,7 +1025,7 @@ methanogen_surface_box <- methanogen_surface_data %>%
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
         legend.position = "none") +
- annotate("text", x = 2, y = 8000, label = "p = 0.882", size = 2.822,  fontface = "italic") #.882
+ annotate("text", x = 2, y = 6000, label = "p = 0.60", size = 2.822,  fontface = "italic") #.6033
 methanogen_surface_box
 
 ##### surface methanotrophs #####
@@ -1028,7 +1036,7 @@ methanotroph_surface_sum <- water_ch4_cyclers_df %>%
                 CH4_Cycler == "Methanotroph") %>% 
   group_by(solar_progress, JDate) %>%
   dplyr::summarize(sd_meth = sd(total_abundance),
-                   mean_meth = mean(total_abundance),
+                   mean_meth = mean(total_abundance), # max does exceed 1mil
                    .groups = "drop")
 methanotroph_surface_sum
 max(methanotroph_surface_sum$mean_meth)
@@ -1037,9 +1045,9 @@ max(methanotroph_surface_sum$mean_meth)
 methanotroph_surface_sum_text <- water_ch4_cyclers_df %>%
   dplyr::filter(Depth_Class == "Surface Water",
                 CH4_Cycler == "Methanotroph") %>% 
-  group_by(solar_progress) %>% 
-  dplyr::summarize(sd_meth = sd(total_abundance/1e5),
-                   mean_meth = mean(total_abundance/1e5),
+  group_by(solar_progress, JDate) %>% 
+  dplyr::summarize(sd_meth = sd(total_abundance),
+                   mean_meth = mean(total_abundance),
                    .groups = "drop")
 methanotroph_surface_sum_text
 max(methanotroph_surface_sum_text$mean_meth)
@@ -1051,11 +1059,11 @@ methanotroph_surface_data <- water_ch4_cyclers_df %>%
                 CH4_Cycler == "Methanotroph") 
 methanotroph_surface_data$Pond <- as.factor(methanotroph_surface_data$Pond)
 
-max(methanotroph_surface_data$total_abundance)
+max(methanotroph_surface_data$total_abundance/1e6)
 
 surface_methanotroph_model <- lmer(total_abundance ~ solar_progress + JDate + (1|Pond), data = methanotroph_surface_data)
-summary(surface_methanotroph_model) # 0.000217 ***
-emmeans::emmeans(surface_methanotroph_model, pairwise ~ solar_progress) # 0.0209
+summary(surface_methanotroph_model) # 0.000924 ***
+emmeans::emmeans(surface_methanotroph_model, pairwise ~ solar_progress) # 0.0296
 
 
 # 2. plot surface water methanotrophs
@@ -1067,18 +1075,18 @@ methanotroph_surface <- methanotroph_surface_sum %>%
   theme_classic()+
   geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
   geom_point(size = 3, shape = 16)+
-  geom_point(size = 3, shape = 1, color = "black")+
+  geom_point(size = 3, shape = 1, color = "black") +
   labs(y= "Surface Methanotroph<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
   scale_y_continuous(
-    limits = c(0, 1.27e6),
-    breaks = c(0, 6.25e5, 1.25e6),
-    labels = c("0", "625K", "1.25M"))+
+    limits = c(0, NA),
+    breaks = c(0, 5e5, 1e6),
+    labels = c("0", "500K", "1M"))+
   # scale_y_continuous(
   #    limits = c(0, NA),
   #   # breaks = c(0, 7.5e5, 1.5e6),
   #   # labels = c("0", "750K", "1.5M"))+
-  #   labels = label_number(scale_cut = cut_short_scale())) +
-  #   #labels = label_number(scale_cut = cut_short_scale(), accuracy = 0.01)) +
+    # labels = label_number(scale_cut = cut_short_scale())) +
+    #labels = label_number(scale_cut = cut_short_scale(), accuracy = 0.01)) +
   theme(axis.text.x =  element_text(size = 8,colour = "black"),
          axis.text.y =  element_text(size = 8,colour = "black"),
          axis.title.x = element_blank(),
@@ -1097,9 +1105,9 @@ methanotroph_surface_box <- methanotroph_surface_data %>%
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = c("black", "black"))+
   scale_y_continuous(
-    limits = c(0, 1.27e6),
-    breaks = c(0, 6.25e5, 1.25e6),
-    labels = c("0", "625K", "1.25M"))+
+    limits = c(0, NA),
+    breaks = c(0, 5e5, 1e6),
+    labels = c("0", "500K", "1M"))+
   # scale_y_continuous(
   #   limits = c(0, 1.27e6),
   #   breaks = c(0, 2.5e5, 7.5e5, 1.25e6),
@@ -1121,7 +1129,7 @@ methanotroph_surface_box <- methanotroph_surface_data %>%
   #                    label.y.npc = 0.9,
   #                    fontface = "italic")
   #label.y = c(8000, 100000, 500000, 400000, 400000), # get pvalue
- annotate("text", x = 2, y = 1.25e6, label = "p = 0.021", size = 2.822,  fontface = "italic") # add p value
+ annotate("text", x = 2, y = 1e6, label = "p = 0.03", size = 2.822,  fontface = "italic") # add p value
 methanotroph_surface_box
 
 ##### bottom methanogens #####
@@ -1141,11 +1149,12 @@ max(methanogen_bottom_sum$mean_meth)
 methanogen_bottom_data <- water_ch4_cyclers_df %>%
   dplyr::filter(Depth_Class == "Bottom Water",
                 CH4_Cycler == "Methanogen") 
+
 methanogen_bottom_data$Pond <- as.factor(methanogen_bottom_data$Pond)
 
 bottom_methanogen_model <- lmer(total_abundance ~ solar_progress + JDate + (1|Pond), data = methanogen_bottom_data)
-summary(bottom_methanogen_model) # 0.514
-emmeans::emmeans(bottom_methanogen_model, pairwise ~ solar_progress) # 0.514
+summary(bottom_methanogen_model) # 0.536
+emmeans::emmeans(bottom_methanogen_model, pairwise ~ solar_progress) # 0.5355
 
 max(methanogen_bottom_data$total_abundance)
 
@@ -1155,13 +1164,13 @@ methanogen_bottom <- methanogen_bottom_sum %>%
   geom_line()+
   geom_point()+
   theme_classic()+
-  geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black") +
   geom_point(size = 3, shape = 16)+
   geom_point(size = 3, shape = 1, color = "black")+
   labs(y= "Bottom Methanogen<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
   scale_y_continuous(
-    limits = c(NA, 1.1e5),
-    breaks = c(0, 5e4, 1e5),
+  limits = c(NA, 8e4),
+  breaks = c(0, 4e4, 8e4),
     labels = label_number(scale_cut = cut_short_scale())) +
   theme(axis.text.x =  element_text(size = 8,colour = "black"),
          axis.text.y =  element_text(size = 8,colour = "black"),
@@ -1183,8 +1192,8 @@ methanogen_bottom_box <- methanogen_bottom_data %>%
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = c("black", "black"))+
   scale_y_continuous(
-    limits = c(NA, 1.1e5),
-    breaks = c(0, 5e4, 1e5),
+  limits = c(NA, 8.1e4),
+  breaks = c(0, 4e4, 8e4),
     labels = label_number(scale_cut = cut_short_scale())) +
   theme_classic()+
   theme(axis.text.x = element_text(size = 8,colour = "black"),
@@ -1201,7 +1210,7 @@ methanogen_bottom_box <- methanogen_bottom_data %>%
   #                    label.y.npc = 0.9,
   #                    fontface = "italic")
                      #label.y = c(8000, 100000, 500000, 400000, 400000), # get pvalue
- annotate("text", x = 2, y = 1e5, label = "p = 0.514", size = 2.822,  fontface = "italic")
+ annotate("text", x = 2, y = 7.94e4, label = "p = 0.54", size = 2.822,  fontface = "italic")
 methanogen_bottom_box
 
 ##### bottom water methanotrophs #####
@@ -1220,9 +1229,9 @@ max(methanotroph_bottom_sum$mean_meth)
 methanotroph_bottom_sum_text <- water_ch4_cyclers_df %>%
   dplyr::filter(Depth_Class == "Bottom Water",
                 CH4_Cycler == "Methanotroph") %>% 
-  group_by(solar_progress) %>% 
-  dplyr::summarize(sd_meth = sd(total_abundance/1e5),
-                   mean_meth = mean(total_abundance/1e5),
+  group_by(solar_progress, JDate) %>% 
+  dplyr::summarize(sd_meth = sd(total_abundance),
+                   mean_meth = mean(total_abundance),
                    .groups = "drop")
 methanotroph_bottom_sum_text
 max(methanotroph_bottom_sum_text$mean_meth)
@@ -1234,8 +1243,8 @@ methanotroph_bottom_data <- water_ch4_cyclers_df %>%
 methanotroph_bottom_data$Pond <- as.factor(methanotroph_bottom_data$Pond)
 
 bottom_methanotroph_model <- lmerTest::lmer(total_abundance ~ solar_progress + JDate + (1|Pond), data = methanotroph_bottom_data)
-summary(bottom_methanotroph_model) # 0.00272 **
-emmeans::emmeans(bottom_methanotroph_model, pairwise ~ solar_progress) # 0.0400
+summary(bottom_methanotroph_model) # 0.0679 
+emmeans::emmeans(bottom_methanotroph_model, pairwise ~ solar_progress) # 0.0679
 
 # 2. plot bottom water methanotrophs
 methanotroph_bottom <- methanotroph_bottom_sum %>% 
@@ -1248,14 +1257,13 @@ methanotroph_bottom <- methanotroph_bottom_sum %>%
   geom_point(size = 3, shape = 1, color = "black")+
   labs(y= "Bottom Methanotroph<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
   scale_y_continuous(
-    breaks = c(0, 6.25e5, 1.25e6),
-    labels = c("0", "625K", "1.25M"))+
+    breaks = c(0, 5e5, 1e6),
+    labels = c("0", "500K", "1M"))+
   # scale_y_continuous(
   #   breaks = c(0, 2.5e5, 7.5e5, 1.25e6),
   #   labels = c("0", "250K", "750K", "1.25M"))+
   # labels = label_number(scale_cut = cut_short_scale(), accuracy = 0.01)) +
   # scale_y_continuous(
-  #   
   #   limits = c(0, 1.25e6),
   #   breaks = c(0, 5e5, 1e6, 1.25e6),
   #   labels = label_number(scale_cut = cut_short_scale())) +
@@ -1278,8 +1286,8 @@ methanotroph_bottom_box <- methanotroph_bottom_data %>%
   scale_fill_manual(values = solar_colors) +
   scale_color_manual(values = c("black", "black"))+
   scale_y_continuous(
-    breaks = c(0, 6.25e5, 1.25e6),
-    labels = c("0", "625K", "1.25M"))+
+    breaks = c(0, 5e5, 1e6),
+    labels = c("0", "500K", "1M"))+
   # scale_y_continuous(
   #   breaks = c(0, 2.5e5, 7.5e5, 1.25e6),
   #   labels = c("0","250K", "750K", "1.25M"))+
@@ -1299,28 +1307,29 @@ methanotroph_bottom_box <- methanotroph_bottom_data %>%
   #                    label.y.npc = 0.9,
   #                    fontface = "italic")
   #                    #label.y = c(8000, 100000, 500000, 400000, 400000), # get pvalue
- annotate("text", x = 2, y = 1.25e6, label = "p = 0.040", size = 2.822,  fontface = "italic") # add p value
+ annotate("text", x = 2, y = 1e6, label = "p = 0.07", size = 2.822,  fontface = "italic") # add p value
 methanotroph_bottom_box
 
 
 #### Sediment Summary Stats 
 sed_ch4_cyclers_df %>%
   group_by(solar_progress, CH4_Cycler) %>% 
-  dplyr::summarize(sd_meth = sd(rel_abundance),
-                   mean_meth = mean(rel_abundance))
+  dplyr::summarize(sd_meth = sd(rel_abundance*100),
+                   mean_meth = mean(rel_abundance*100))
 
 ##### sediment methanogen #####
 # calculate stats
 # 1a. calcualte abundance
 methanogen_sed_sum <- sed_ch4_cyclers_df %>%
-  #dplyr::filter(CH4_Cycler == "Methanogen") %>% 
+  dplyr::filter(CH4_Cycler == "Methanogen") %>% 
  # group_by(solar_progress) %>% # when this is commented out then roughly 20% of community is methanogens
  # group_by(solar_progress) %>%  # when this is run then fpv has 18.9% methanogens and controls have more with 20.5%
-  group_by(solar_progress, CH4_Cycler) %>% 
+  group_by(solar_progress, JDate) %>% 
   dplyr::summarize(sd_meth = sd(rel_abundance),
                    mean_meth = mean(rel_abundance))
 methanogen_sed_sum
 max(methanogen_sed_sum$mean_meth)
+min(methanogen_sed_sum$mean_meth)
 
 # 1b. linear mixed model 
 methanogen_sed_data <- sed_ch4_cyclers_df %>%
@@ -1328,8 +1337,8 @@ methanogen_sed_data <- sed_ch4_cyclers_df %>%
 methanogen_sed_data$Pond <- as.factor(methanogen_sed_data$Pond)
 
 sed_methanogen_model <- lmer(rel_abundance ~ solar_progress + JDate + (1|Pond), data = methanogen_sed_data)
-summary(sed_methanogen_model) # 0.6678 
-emmeans::emmeans(sed_methanogen_model, pairwise ~ solar_progress) # 0.667
+summary(sed_methanogen_model) # 0.7598
+emmeans::emmeans(sed_methanogen_model, pairwise ~ solar_progress) # 0.7596
 
 # plot sediment methanogens
 methanogen_sed <- methanogen_sed_sum %>% 
@@ -1337,15 +1346,19 @@ methanogen_sed <- methanogen_sed_sum %>%
   geom_line()+
   geom_point()+
   theme_classic()+
-  geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_errorbar(aes(x = JDate, ymin = mean_meth*100 - sd_meth*100, 
+                    ymax = mean_meth*100 + sd_meth*100), width = 0, color = "black")+
   geom_point(size = 3, shape = 16)+
   geom_point(size = 3, shape = 1, color = "black")+
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = solar_colors)+
   scale_y_continuous(
-    limits = c(.08*100, .3*100),
-    breaks = c(0.1*100, .2*100, .30*100))+
-    #labels = label_number(scale_cut = cut_short_scale())) +
+    breaks = scales::pretty_breaks(n = 3),
+   labels = label_number(scale_cut = cut_short_scale())) +
+  # scale_y_continuous(
+  #   limits = c(.1*100, .22*100),
+  #   breaks = c(0.1*100, .15*100, .20*100))+
+ #labels = label_number(scale_cut = cut_short_scale())) +
   labs(y= "Sediment Methanogen<br> Abundance (%)", x = "Day of Year")+
   theme(axis.text.x =  element_text(size = 8,colour = "black"),
          axis.text.y =  element_text(size = 8,colour = "black"),
@@ -1363,8 +1376,11 @@ methanogen_sed_box <- methanogen_sed_data %>%
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = c("black", "black"))+
   scale_y_continuous(
-    limits = c(.08*100, .3*100),
-    breaks = c(0.1*100, .2*100, .30*100))+
+    breaks = scales::pretty_breaks(n = 3),
+    labels = label_number(scale_cut = cut_short_scale())) +
+  # scale_y_continuous(
+  #   limits = c(.08*100, .3*100),
+  #   breaks = c(0.1*100, .2*100, .30*100))+
   theme_classic()+
   theme(axis.text.x = element_text(size = 8,colour = "black"),
         axis.title.x = element_blank(),
@@ -1373,7 +1389,7 @@ methanogen_sed_box <- methanogen_sed_data %>%
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
         legend.position = "none") +
- annotate("text", x = 2, y = .3, label = "p = 0.667", size = 2.822,  fontface = "italic")
+ annotate("text", x = 2, y = 22, label = "p = 0.76", size = 2.822,  fontface = "italic")
 methanogen_sed_box
 
 
@@ -1389,6 +1405,7 @@ methanotroph_sed_sum <- sed_ch4_cyclers_df %>%
                    mean_meth = mean(rel_abundance))
 methanotroph_sed_sum
 max(methanotroph_sed_sum$mean_meth)
+min(methanotroph_sed_sum$mean_meth)
 
 #1b linear mixed model
 methanotroph_sed_data <- sed_ch4_cyclers_df %>%
@@ -1396,12 +1413,12 @@ methanotroph_sed_data <- sed_ch4_cyclers_df %>%
 methanotroph_sed_data$Pond <- as.factor(methanotroph_sed_data$Pond)
 
 sed_methanotroph_model <- lmerTest::lmer(rel_abundance ~ solar_progress + JDate + (1|Pond), data = methanotroph_sed_data)
-summary(sed_methanotroph_model) # 0.39913 
-emmeans::lsmeans(sed_methanotroph_model, pairwise ~ solar_progress) #0.4401
+summary(sed_methanotroph_model) # 0.18701
+emmeans::lsmeans(sed_methanotroph_model, pairwise ~ solar_progress) #0.2464
   
 
 # 2. plot sed methanotrophs overtime 
-methanotroph_sed<- methanotroph_sed_sum %>% 
+methanotroph_sed <- methanotroph_sed_sum %>% 
   ggplot(aes(x = JDate, y = mean_meth*100, fill = solar_progress, color = solar_progress)) +
   geom_line()+
   geom_point()+
@@ -1409,7 +1426,7 @@ methanotroph_sed<- methanotroph_sed_sum %>%
   geom_errorbar(aes(x = JDate, ymin = mean_meth*100 - sd_meth*100, 
                     ymax = mean_meth*100 + sd_meth*100), width = 0, color = "black")+
   geom_point(size = 3, shape = 16)+
-  geom_point(size = 3, shape = 1, color = "black")+
+  geom_point(size = 3, shape = 1, color = "black") +
   labs(y= "Sediment Methanotroph<br>Abundance (%)", x = "Day of Year")+
   theme(axis.text.x =  element_text(size = 8,colour = "black"),
          axis.text.y =  element_text(size = 8,colour = "black"),
@@ -1418,8 +1435,7 @@ methanotroph_sed<- methanotroph_sed_sum %>%
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = solar_colors)+
   scale_y_continuous(
-    limits = c(0.02*100, .15*100),
-    breaks = c(0.05*100, 0.10*100, 0.15*100),
+    breaks = scales::pretty_breaks(n = 3),
     labels = label_number(scale_cut = cut_short_scale())) +
   theme(legend.position = "none")
 methanotroph_sed
@@ -1431,10 +1447,9 @@ methanotroph_sed_box <- methanotroph_sed_data %>%
   geom_boxplot(outlier.shape = NA, color = "black") +
   geom_jitter(aes(color = solar_progress, fill = solar_progress), width = 0.2, size = 2, shape = 21) +
   scale_fill_manual(values = solar_colors)+
-  scale_color_manual(values = c("black", "black"))+
+  scale_color_manual(values = c("black", "black")) +
   scale_y_continuous(
-    limits = c(0.02*100, .15*100),
-    breaks = c(0.05*100, 0.10*100, 0.15*100),
+    breaks = scales::pretty_breaks(n = 3),
     labels = label_number(scale_cut = cut_short_scale())) +
   theme_classic()+
   theme(axis.text.x = element_text(size = 8, colour = "black"),
@@ -1451,7 +1466,7 @@ methanotroph_sed_box <- methanotroph_sed_data %>%
   #                    label.y.npc = 0.9,
   #                    fontface = "italic")
   #                    #label.y = c(8000, 100000, 500000, 400000, 400000), # get pvalue
- annotate("text", x = 2, y = .15, label = "p = 0.440", size = 2.822,  fontface = "italic") # add p value
+ annotate("text", x = 2, y = 8, label = "p = 0.25", size = 2.822,  fontface = "italic") # add p value
 methanotroph_sed_box
 
 
@@ -1467,6 +1482,17 @@ fig2 <- methanotroph_surface + methanotroph_surface_box + methanogen_surface + m
 fig2
 
 
+fig2 <- methanotroph_surface + methanotroph_surface_box + 
+  methanogen_surface + methanogen_surface_box + 
+  methanotroph_bottom + methanotroph_bottom_box + 
+  methanogen_bottom + methanogen_bottom_box +
+  methanotroph_sed + methanotroph_sed_box + 
+  methanogen_sed + methanogen_sed_box +
+  plot_layout(nrow = 6, ncol = 2, widths = c(10, 4)) +
+  plot_annotation(tag_levels = "A", 
+                  tag_suffix = ".") &
+  theme(
+    plot.tag = element_text(size = 8)); fig2
 
 #export the figure
 ggsave(fig2, width = 6.5, height = 8.5, units = "in", filename = "figures/Fig_2/fig2.png") # could only save at height 8.5, orignally h = 8
@@ -1525,8 +1551,8 @@ fig3a_water_pcoa <-
   scale_color_manual(values = solar_colors) +
   labs(color = "Treatment",
        shape = "Pond",
-       x = "Axis.1 [27.4%]",
-       y = "Axis.2 [11.3%]",
+       x = "Axis.1 [25.9%]",
+       y = "Axis.2 [10.9%]",
        title = expression("Water")) +  # CH"[4]*" Cyclers
   guides(
     color = guide_legend(
@@ -1588,7 +1614,7 @@ fig3a_water_pcoa
 #     legend.box.just = "center",
 #     legend.box.background = element_rect(size = 0.2, linetype = "solid", color = "black"),
 #     legend.margin = margin(1, 2, 1, 1))
-#
+
 # Plot it
 # s1a_water_pcoa
 ```
@@ -1634,8 +1660,8 @@ fig3b_sed_pcoa <-
   scale_color_manual(values = solar_colors) +
   labs(color = "Treatment",
        shape = "Pond",
-       x = "Axis.1 [32.5%]",
-       y = "Axis.2 [15.8%]",
+       x = "Axis.1 [32.1%]",
+       y = "Axis.2 [15%]",
        title = expression("Sediment")) + #  CH"[4]*" Cyclers
   guides(
     color = guide_legend(
@@ -1775,7 +1801,7 @@ adonis2(water_bray ~ JDate, data = water_metadata, by = "terms")
 
 #2. Test the terms together
 # Now lets see the effect of each pond by date_collected and solar progress
-water_permanova <- adonis2(water_bray ~ solar_progress * Pond * JDate, data = water_metadata, by = "terms"); water_permanova
+water_permanova <- adonis2(water_bray ~ solar_progress * Pond * JDate * Depth_Class, data = water_metadata, by = "terms"); water_permanova
 ```
 With our PERMANOVA we find that treatment (solar_progress), day of year sampled (JDate - Julian date), and Pond is significant but depth class alone is not.
 
@@ -1897,7 +1923,7 @@ Note as of this step the results do change in that methanobacteriales is not dif
 # filter out for ASVs with zero variances; recommended to remove them as they are sparse and lowly abundant 
 
 # remove bad taxa 
-bad_taxa <- c("ASV_1071", "ASV_11590", "ASV_642", "ASV_231", "ASV_4564", "ASV_7355", "ASV_1920", "ASV_11514", "ASV_4168", "ASV_4105", "ASV_3231", "ASV_2424", "ASV_2964", "ASV_2205", "ASV_7156", "ASV_10120", "ASV_4270", "ASV_8273", "ASV_3557", "ASV_7055", "ASV_2530", "ASV_4099", "ASV_1677", "ASV_10767", "ASV_1252")
+bad_taxa <- c("ASV_1071", "ASV_642", "ASV_231", "ASV_8273", "ASV_7156", "ASV_10120", "ASV_3557", "ASV_7055", "ASV_4270", "ASV_2964", "ASV_2205", "ASV_1677", "ASV_1252", "ASV_10767", "ASV_2530", "ASV_4099", "ASV_7355", "ASV_3231", "ASV_2424", "ASV_4105", "ASV_1920", "ASV_11514", "ASV_4168", "ASV_4564")
 
 water_ch4_phy_bc <- water_ch4_cyclers_physeq %>%
   subset_taxa(., !(ASV %in% bad_taxa)) %>% 
@@ -1908,23 +1934,23 @@ water_ch4_phy_bc <- water_ch4_cyclers_physeq %>%
 water_ch4_cyclers_physeq@sam_data$solar_progress <- factor(water_ch4_cyclers_physeq@sam_data$solar_progress, levels = c("No FPV", "FPV"))
 
 # run ancombc2 for water all methane cyclers
-# water_ch4_asv_output <- ancombc2(data = water_ch4_phy_bc,
-#                                  tax_level = "ASV", # Test for each phylum
-#                                  fix_formula = "solar_progress", 
-#                                  p_adj_method = "fdr", 
-#                                  pseudo_sens = TRUE, # Run sensitivity test to make sure taxa isn't sensitive to psuedo-count choice
-#                                  prv_cut = 0.05, # Prevalence filter of 1%
-#                                  group = NULL, # Use Comp_Group_Hier as groups when doing pairwise comparisons
-#                                  struc_zero = FALSE, # Do not detect structural zeroes
-#                                  alpha = 0.05, # Significance threshold of 0.05
-#                                  n_cl = 10, # Use 10 threads
-#                                  verbose = FALSE, # Don't print verbose output
-#                                  s0_perc = 0.05,
-#                                  global = FALSE, # Run a global test (sorta like an ANOVA to first find if a given ASV is sig diff)
-#                                  pairwise = FALSE) # Run pairwise tests between groups (sorta like a post-hoc test like Tukey)
+water_ch4_asv_output <- ancombc2(data = water_ch4_phy_bc,
+                                 tax_level = "ASV", # Test for each phylum
+                                 fix_formula = "solar_progress",
+                                 p_adj_method = "fdr",
+                                 pseudo_sens = TRUE, # Run sensitivity test to make sure taxa isn't sensitive to psuedo-count choice
+                                 prv_cut = 0.05, # Prevalence filter of 1%
+                                 group = NULL, # Use Comp_Group_Hier as groups when doing pairwise comparisons
+                                 struc_zero = FALSE, # Do not detect structural zeroes
+                                 alpha = 0.05, # Significance threshold of 0.05
+                                 n_cl = 10, # Use 10 threads
+                                 verbose = FALSE, # Don't print verbose output
+                                 s0_perc = 0.05,
+                                 global = FALSE, # Run a global test (sorta like an ANOVA to first find if a given ASV is sig diff)
+                                 pairwise = FALSE) # Run pairwise tests between groups (sorta like a post-hoc test like Tukey)
 
 
-# save(water_ch4_asv_output, file = "data/03_diff_abund/water_ch4_asv_output.RData")
+save(water_ch4_asv_output, file = "data/03_diff_abund/water_ch4_asv_output.RData")
 
 load("data/03_diff_abund/water_ch4_asv_output.RData")
 

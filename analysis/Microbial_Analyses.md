@@ -1,11 +1,7 @@
 ---
 title: "Water Column and Sediment Methanogens & Methanotrophs in FPV Ponds"
 author: "Sophia Aredas & Mar Schmidt"
-<<<<<<< HEAD
-date: "30 January, 2026"
-=======
-date: "29 January, 2026"
->>>>>>> 1bc6f19 (reknit files)
+date: "31 July, 2026"
 output:
   html_document:
     code_folding: show
@@ -50,7 +46,7 @@ set.seed(09091999)
 
 # Load in Data
 
-Loading in our .RData objects.
+Loading in our .RData objects. This has now has 16S rRNA abundances normalized by picrust2
 
 1. Water samples have flow cytometry derived absolute abundances.
 
@@ -60,9 +56,6 @@ And we will add in our metadata as well!
 
 
 ``` r
-# water physeq with absolute abundance counts, this hasnt pruned the taxa out yet
-# load("data/00_load_data/full_abs_physeq.RData")
-
 # or we can also load in water physeq that has absolute abundance as well
 load("data/00_load_data/water_physeq.RData")
 
@@ -73,12 +66,15 @@ load("data/00_load_data/scaled_sed_physeq.RData")
 sample_data(scaled_sed_physeq)$JDate <-
   lubridate::yday(sample_data(scaled_sed_physeq)$Date_Collected)
 
+# add picrust2 normalized 16s abundances, note water abundances are not absolute yet
+load("data/00_load_data/normalized_water_sed_physeq.RData")
+
 # physeq with water (unincorporated cell counts) + sediment samples = 188 samples total
-load("data/00_load_data/new_archaea_rooted_physeq.RData")
+# load("data/00_load_data/new_archaea_rooted_physeq.RData")
 
 ## Add JDate to the sample_data 
-sample_data(new_archaea_rooted_physeq)$JDate <-
-  lubridate::yday(sample_data(new_archaea_rooted_physeq)$Date_Collected)
+sample_data(normalized_water_sed_physeq)$JDate <-
+  lubridate::yday(sample_data(normalized_water_sed_physeq)$Date_Collected)
 
 # load in metadata
 load("data/00_load_data/meta_track_23_24.RData")
@@ -120,7 +116,7 @@ We do not have absolute abundance counts for our sediment samples so we will nee
 
 ``` r
 # filter phyloseq for only sediment samples
-sed_phy <- subset_samples(new_archaea_rooted_physeq, SampleType == "Sediment")
+sed_phy <- subset_samples(normalized_water_sed_physeq, SampleType == "Sediment")
 
 # subset samples 
 sed_physeq <- subset_samples(sed_phy, !(sample_names(sed_phy) %in% c("SA_D046", "SA_D047")))
@@ -130,11 +126,11 @@ sed_phy <- sed_physeq %>%
   prune_taxa(taxa_sums(.) > 0,.)
 
 # Intuition check of number of sequences per sample
-min(sample_sums(sed_phy)) ## min = 20826
+min(sample_sums(sed_phy)) ## min = 18812.56
 ```
 
 ```
-## [1] 20826
+## [1] 18812.56
 ```
 
 ``` r
@@ -238,7 +234,7 @@ export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH # was having issues for getti
 
 # run script with aligned mafft aligned fasta file and tree
 # running with default for now which uses the binomial hsp algorithm
-Rscript faprotax.R -i water_otu_table.tsv -a alignment_ch4water.fasta -o ch4_water_function_table_16S.tsv --out_intermediates ch4_water_intermediates2 -d /local//workdir/sna49/FS_CH4_Mech_Ray_LO_Letters/data/02A_Water_FAPROTAXv2 -r ch4_water_report.txt  --otu_names_are_in_column "OTU" --hsp_algorithm "binomial"
+Rscript faprotax.R -i water_otu_table.tsv -a water_16s_alignment.fasta -o ch4_water_function_table_16S_1new.tsv --out_intermediates ch4_water_intermediates3 -d /local//workdir/sna49/FS_CH4_Mech_Ray_LO_Letters/data/02A_Water_FAPROTAXv2 -r ch4_water_report3.txt  --otu_names_are_in_column "OTU" --hsp_algorithm "binomial"
 ```
 
 ### Water - Extract Predicted FAPROTAXv2 Results
@@ -252,7 +248,7 @@ Each ASV will be verified through literature review to ensure it is a known meth
 
 ``` r
 # Read the text file of faprotaxv2 report from the previous chunk!
-lines <- readLines("data/02A_Water_FAPROTAXv2/ch4_water_report.txt")
+lines <- readLines("data/02A_Water_FAPROTAXv2/ch4_water_report3.txt")
 
 # create empty vectors
 function_group <- c()
@@ -313,20 +309,20 @@ duplicates # awesome methanogenesis functions overlap
 ```
 
 ```
-## # A tibble: 62 × 3
+## # A tibble: 61 × 3
 ##    asv_id    n_function_groups function_groups                                                                                                                                                          
 ##    <chr>                 <int> <chr>                                                                                                                                                                    
-##  1 ASV_102                   2 methanogenesis_by_CO2_reduction_with_H2.value, methanogenesis.value                                                                                                      
+##  1 ASV_102                   3 methanogenesis_by_CO2_reduction_with_H2.value, methanogenesis_using_formate.value, methanogenesis.value                                                                  
 ##  2 ASV_1063                  4 hydrogenotrophic_methanogenesis.value, methanogenesis_by_CO2_reduction_with_H2.value, methanogenesis_by_reduction_of_methyl_compounds_with_H2.value, methanogenesis.value
-##  3 ASV_10909                 4 hydrogenotrophic_methanogenesis.value, methanogenesis_by_CO2_reduction_with_H2.value, methanogenesis_using_formate.value, methanogenesis.value                           
-##  4 ASV_1130                  2 methanogenesis_by_CO2_reduction_with_H2.value, methanogenesis.value                                                                                                      
-##  5 ASV_11495                 4 hydrogenotrophic_methanogenesis.value, methanogenesis_by_CO2_reduction_with_H2.value, methanogenesis_using_formate.value, methanogenesis.value                           
-##  6 ASV_1308                  2 methanogenesis_by_CO2_reduction_with_H2.value, methanogenesis.value                                                                                                      
-##  7 ASV_13661                 2 methanogenesis_by_CO2_reduction_with_H2.value, methanogenesis.value                                                                                                      
-##  8 ASV_1399                  2 methanogenesis_by_disproportionation_of_methyl_groups.value, methanogenesis.value                                                                                        
-##  9 ASV_14                    2 acetoclastic_methanogenesis.value, methanogenesis.value                                                                                                                  
-## 10 ASV_165                   3 hydrogenotrophic_methanogenesis.value, methanogenesis_by_CO2_reduction_with_H2.value, methanogenesis.value                                                               
-## # ℹ 52 more rows
+##  3 ASV_1130                  3 methanogenesis_by_CO2_reduction_with_H2.value, methanogenesis_using_formate.value, methanogenesis.value                                                                  
+##  4 ASV_11495                 4 hydrogenotrophic_methanogenesis.value, methanogenesis_by_CO2_reduction_with_H2.value, methanogenesis_using_formate.value, methanogenesis.value                           
+##  5 ASV_1308                  3 methanogenesis_by_CO2_reduction_with_H2.value, methanogenesis_using_formate.value, methanogenesis.value                                                                  
+##  6 ASV_13661                 3 methanogenesis_by_CO2_reduction_with_H2.value, methanogenesis_using_formate.value, methanogenesis.value                                                                  
+##  7 ASV_1399                  4 acetoclastic_methanogenesis.value, methanogenesis_by_CO2_reduction_with_H2.value, methanogenesis_by_disproportionation_of_methyl_groups.value, methanogenesis.value      
+##  8 ASV_14                    2 acetoclastic_methanogenesis.value, methanogenesis.value                                                                                                                  
+##  9 ASV_165                   3 hydrogenotrophic_methanogenesis.value, methanogenesis_by_CO2_reduction_with_H2.value, methanogenesis.value                                                               
+## 10 ASV_17520                 4 hydrogenotrophic_methanogenesis.value, methanogenesis_by_CO2_reduction_with_H2.value, methanogenesis_using_formate.value, methanogenesis.value                           
+## # ℹ 51 more rows
 ```
 
 ``` r
@@ -337,7 +333,7 @@ water_ch4_cyclers_asv_unique <- water_ch4_cyclers_asv_df %>%
 # join ch4 cyclers with water_physeq_ch4_df
 water_ch4_joined <- water_physeq_ch4_df %>%
   dplyr::inner_join(water_ch4_cyclers_asv_unique, 
-                    by = c("ASV" = "asv_id")) # 20112 observations!
+                    by = c("ASV" = "asv_id")) # 11712 observations!
 
 # tidy up dataframe
 water_ch4_joined <- water_ch4_joined %>% 
@@ -350,8 +346,7 @@ water_ch4_joined$Phylum %>% unique()
 ```
 
 ```
-##  [1] "Pseudomonadota"           "Verrucomicrobiota"        "Halobacteriota"           "Methanobacteriota_A_1229" "Omnitrophota"             NA                         "Micrarchaeota"            "Nitrospirota_A_437815"    "Patescibacteria"         
-## [10] "Methanobacteriota_B"
+## [1] "Pseudomonadota"           "Halobacteriota"           "Verrucomicrobiota"        "Methanobacteriota_A_1229" "Methanobacteriota_B"
 ```
 
 ``` r
@@ -359,9 +354,8 @@ water_ch4_joined$Order %>% unique()
 ```
 
 ```
-##  [1] "Methylococcales"          "Limisphaerales"           "Rhizobiales_505101"       "Methanotrichales"         "Methanomicrobiales"       "Methylacidiphilales"      NA                         "Methanobacteriales"       "Pluralincolimonadales"   
-## [10] "Burkholderiales"          "Enterobacterales_737866"  "Azospirillales_507929"    "UBA8416"                  "Verrucomicrobiales"       "Chthoniobacterales"       "SLAD01"                   "Norongarragalinales"      "Methanosarcinales_A_2632"
-## [19] "PWTM01"                   "Methanocellales"          "LD1-PB3_B"                "Omnitrophales"            "Methanofastidiosales"
+##  [1] "Methylococcales"          "Rhizobiales_505101"       "Methanotrichales"         "Methanomicrobiales"       "Methylacidiphilales"      "Methanobacteriales"       NA                         "Burkholderiales"          "Enterobacterales_737866" 
+## [10] "Azospirillales_507929"    "Methanocellales"          "Methanosarcinales_A_2632" "Methanofastidiosales"     "Xanthomonadales"
 ```
 
 ``` r
@@ -369,12 +363,10 @@ water_ch4_joined$Genus %>% unique()
 ```
 
 ```
-##  [1] "Methylomonas"            NA                        "UBA11358"                "Methyloparacoccus"       "Methylobacter_C_601751"  "Methylocystis"           "Methylococcus"           "Alsobacter"              "Methylosoma"            
-## [10] "Methanothrix_B"          "UBA4132"                 "Methanoregula"           "UBA3015"                 "Methanobacterium_B_963"  "Methyloterricola"        "Methanobacterium_A"      "GAS474"                  "JAAUTS01"               
-## [19] "Methylotetracoccus"      "Methylomagnum"           "UBA6215"                 "LW23"                    "Methylobacter_C_601048"  "Methanobacterium_D_1054" "WYBW01"                  "Methanospirillum"        "Derxia"                 
-## [28] "Methanosphaera"          "UBA467"                  "Methanolinea_A"          "Methylosinus"            "Methyloglobulus"         "Pedosphaera"             "Methylovulum"            "Azospirillum"            "YA12-FULL-60-10"        
-## [37] "Methanobrevibacter_D"    "Crenothrix"              "Methanobacterium_F_900"  "Beijerinckia"            "SXTU01"                  "UBA95"                   "Methanosarcina_2619"     "PWTM01"                  "Methanocella_A"         
-## [46] "Lenti-01"                "AV2"                     "Methanofastidiosum"
+##  [1] "Methylomonas"            NA                        "Methyloparacoccus"       "Methylobacter_C_601751"  "Methylocystis"           "Methylosoma"             "Methanothrix_B"          "Methanoregula"           "UBA3015"                
+## [10] "UBA4132"                 "Methylococcus"           "GAS474"                  "JAAUTS01"                "Methanobacterium_B_963"  "LW23"                    "Methyloterricola"        "Methylobacter_C_601048"  "Methanobacterium_A"     
+## [19] "Methanospirillum"        "Derxia"                  "Methylotetracoccus"      "UBA467"                  "Methylomagnum"           "Methanobacterium_D_1054" "Methanolinea_A"          "Methanosphaera"          "Methyloglobulus"        
+## [28] "Methylovulum"            "Azospirillum"            "Methanobrevibacter_D"    "Crenothrix"              "Methanobacterium_F_900"  "Methanocella_A"          "Methanosarcina_2619"     "Methanofastidiosum"      "Tahibacter"
 ```
 
 ``` r
@@ -382,33 +374,25 @@ water_ch4_joined$ASV %>% unique()
 ```
 
 ```
-##   [1] "ASV_44"    "ASV_13"    "ASV_63"    "ASV_32"    "ASV_178"   "ASV_56"    "ASV_119"   "ASV_141"   "ASV_930"   "ASV_465"   "ASV_357"   "ASV_688"   "ASV_826"   "ASV_1510"  "ASV_498"   "ASV_177"   "ASV_294"   "ASV_1219"  "ASV_679"   "ASV_301"  
-##  [21] "ASV_415"   "ASV_208"   "ASV_14"    "ASV_3420"  "ASV_493"   "ASV_559"   "ASV_1865"  "ASV_4105"  "ASV_346"   "ASV_822"   "ASV_54"    "ASV_3795"  "ASV_5160"  "ASV_1609"  "ASV_2021"  "ASV_570"   "ASV_951"   "ASV_1063"  "ASV_376"   "ASV_1396" 
-##  [41] "ASV_1674"  "ASV_1115"  "ASV_976"   "ASV_1698"  "ASV_400"   "ASV_1308"  "ASV_1008"  "ASV_110"   "ASV_2686"  "ASV_4041"  "ASV_363"   "ASV_1006"  "ASV_3053"  "ASV_656"   "ASV_4723"  "ASV_2664"  "ASV_4211"  "ASV_1600"  "ASV_1051"  "ASV_971"  
-##  [61] "ASV_4168"  "ASV_4099"  "ASV_4990"  "ASV_286"   "ASV_1928"  "ASV_2200"  "ASV_340"   "ASV_1479"  "ASV_1271"  "ASV_1755"  "ASV_3580"  "ASV_1252"  "ASV_1384"  "ASV_1801"  "ASV_4959"  "ASV_1357"  "ASV_9125"  "ASV_2286"  "ASV_4242"  "ASV_1233" 
-##  [81] "ASV_499"   "ASV_4006"  "ASV_3539"  "ASV_6420"  "ASV_494"   "ASV_517"   "ASV_2424"  "ASV_2530"  "ASV_2527"  "ASV_2551"  "ASV_4563"  "ASV_642"   "ASV_25455" "ASV_231"   "ASV_1855"  "ASV_2432"  "ASV_3289"  "ASV_6047"  "ASV_1402"  "ASV_1663" 
-## [101] "ASV_216"   "ASV_940"   "ASV_10496" "ASV_5855"  "ASV_2205"  "ASV_7080"  "ASV_1711"  "ASV_3675"  "ASV_1677"  "ASV_6300"  "ASV_3019"  "ASV_9716"  "ASV_1148"  "ASV_352"   "ASV_3513"  "ASV_4634"  "ASV_12554" "ASV_7055"  "ASV_1420"  "ASV_10495"
-## [121] "ASV_7761"  "ASV_1945"  "ASV_7156"  "ASV_10548" "ASV_9485"  "ASV_434"   "ASV_8513"  "ASV_8260"  "ASV_3231"  "ASV_4861"  "ASV_5050"  "ASV_3671"  "ASV_16274" "ASV_3987"  "ASV_4270"  "ASV_10767" "ASV_4564"  "ASV_2436"  "ASV_5236"  "ASV_1693" 
-## [141] "ASV_1765"  "ASV_302"   "ASV_6110"  "ASV_20489" "ASV_9712"  "ASV_8273"  "ASV_4629"  "ASV_15901" "ASV_15902" "ASV_5180"  "ASV_13661" "ASV_8851"  "ASV_3075"  "ASV_2677"  "ASV_13808" "ASV_9322"  "ASV_7017"  "ASV_568"   "ASV_6913"  "ASV_9249" 
-## [161] "ASV_1100"  "ASV_16436" "ASV_9644"  "ASV_38296" "ASV_38297" "ASV_38299" "ASV_22163" "ASV_10605" "ASV_39294" "ASV_22892" "ASV_3329"  "ASV_7406"  "ASV_21570" "ASV_3305"  "ASV_15349" "ASV_2964"  "ASV_3842"  "ASV_7623"  "ASV_9569"  "ASV_7355" 
-## [181] "ASV_3663"  "ASV_13255" "ASV_20600" "ASV_592"   "ASV_2028"  "ASV_6648"  "ASV_4886"  "ASV_4112"  "ASV_4541"  "ASV_6560"  "ASV_12642" "ASV_25349" "ASV_5284"  "ASV_13375" "ASV_6126"  "ASV_31783" "ASV_3467"  "ASV_1920"  "ASV_7536"  "ASV_19979"
-## [201] "ASV_16387" "ASV_11915" "ASV_5124"  "ASV_10120" "ASV_20873" "ASV_3724"  "ASV_650"   "ASV_165"   "ASV_23314" "ASV_45107" "ASV_11495" "ASV_1449"  "ASV_20915" "ASV_5235"  "ASV_10712" "ASV_27640" "ASV_8748"  "ASV_11111" "ASV_12143" "ASV_15160"
-## [221] "ASV_6672"  "ASV_13266" "ASV_22894" "ASV_28736" "ASV_28739" "ASV_431"   "ASV_9739"  "ASV_13810" "ASV_7149"  "ASV_10136" "ASV_19639" "ASV_14949" "ASV_8447"  "ASV_11115" "ASV_19098" "ASV_2358"  "ASV_18287" "ASV_35996" "ASV_3601"  "ASV_36017"
-## [241] "ASV_4061"  "ASV_18045" "ASV_6238"  "ASV_17395" "ASV_5269"  "ASV_10914" "ASV_33829" "ASV_16385" "ASV_6164"  "ASV_4503"  "ASV_853"   "ASV_7195"  "ASV_8036"  "ASV_10606" "ASV_31812" "ASV_9559"  "ASV_8955"  "ASV_102"   "ASV_13258" "ASV_13551"
-## [261] "ASV_9411"  "ASV_8271"  "ASV_11517" "ASV_11514" "ASV_7934"  "ASV_9492"  "ASV_20918" "ASV_10909" "ASV_25963" "ASV_43593" "ASV_43613" "ASV_6828"  "ASV_12500" "ASV_23067" "ASV_14649" "ASV_21586" "ASV_30308" "ASV_34225" "ASV_6701"  "ASV_27149"
-## [281] "ASV_11700" "ASV_42352" "ASV_17147" "ASV_1130"  "ASV_29197" "ASV_19702" "ASV_23345" "ASV_30344" "ASV_12362" "ASV_1809"  "ASV_21338" "ASV_2861"  "ASV_6703"  "ASV_8857"  "ASV_15913" "ASV_17846" "ASV_25358" "ASV_37436" "ASV_5528"  "ASV_13894"
-## [301] "ASV_23042" "ASV_9950"  "ASV_24837" "ASV_24839" "ASV_25231" "ASV_10538" "ASV_21382" "ASV_14797" "ASV_4051"  "ASV_26767" "ASV_34133" "ASV_10257" "ASV_11913" "ASV_33533" "ASV_13755" "ASV_26130" "ASV_23069" "ASV_36580" "ASV_37395" "ASV_5923" 
-## [321] "ASV_13437" "ASV_42413" "ASV_32144" "ASV_11676" "ASV_13607" "ASV_29215" "ASV_4382"  "ASV_18979" "ASV_11575" "ASV_2783"  "ASV_24344" "ASV_16078" "ASV_6725"  "ASV_18629" "ASV_33153" "ASV_45711" "ASV_23074" "ASV_23076" "ASV_10277" "ASV_21559"
-## [341] "ASV_29492" "ASV_20303" "ASV_46566" "ASV_32538" "ASV_39379" "ASV_6606"  "ASV_20251" "ASV_39265" "ASV_884"   "ASV_38388" "ASV_38409" "ASV_38428" "ASV_11074" "ASV_37932" "ASV_5812"  "ASV_3892"  "ASV_21347" "ASV_33875" "ASV_32507" "ASV_4087" 
-## [361] "ASV_28466" "ASV_33250" "ASV_33262" "ASV_32866" "ASV_29697" "ASV_14639" "ASV_321"   "ASV_580"   "ASV_21710" "ASV_16206" "ASV_37854" "ASV_7594"  "ASV_32172" "ASV_15540" "ASV_28456" "ASV_15124" "ASV_1399"  "ASV_38864" "ASV_13674" "ASV_28359"
-## [381] "ASV_43434" "ASV_6851"  "ASV_17636" "ASV_21325" "ASV_22635" "ASV_44795" "ASV_17807" "ASV_12696" "ASV_17520" "ASV_22244" "ASV_5752"  "ASV_19439" "ASV_20727" "ASV_28362" "ASV_19320" "ASV_24194" "ASV_7324"  "ASV_44669" "ASV_45940" "ASV_45941"
-## [401] "ASV_33513" "ASV_33519" "ASV_36504" "ASV_44524" "ASV_10924" "ASV_45729" "ASV_45799" "ASV_8424"  "ASV_29466" "ASV_44088" "ASV_44094" "ASV_44715" "ASV_7697"  "ASV_38964" "ASV_14329" "ASV_44184" "ASV_44201" "ASV_44646" "ASV_43119"
+##   [1] "ASV_44"    "ASV_13"    "ASV_32"    "ASV_119"   "ASV_930"   "ASV_357"   "ASV_141"   "ASV_498"   "ASV_294"   "ASV_465"   "ASV_468"   "ASV_177"   "ASV_4105"  "ASV_679"   "ASV_415"   "ASV_54"    "ASV_5160"  "ASV_3795"  "ASV_14"    "ASV_376"  
+##  [21] "ASV_493"   "ASV_559"   "ASV_1308"  "ASV_4041"  "ASV_822"   "ASV_2664"  "ASV_3053"  "ASV_1600"  "ASV_2021"  "ASV_951"   "ASV_286"   "ASV_340"   "ASV_346"   "ASV_1063"  "ASV_1115"  "ASV_2286"  "ASV_1396"  "ASV_4242"  "ASV_1233"  "ASV_976"  
+##  [41] "ASV_400"   "ASV_517"   "ASV_1008"  "ASV_4563"  "ASV_363"   "ASV_656"   "ASV_6047"  "ASV_5855"  "ASV_940"   "ASV_4211"  "ASV_971"   "ASV_1051"  "ASV_4168"  "ASV_352"   "ASV_4099"  "ASV_2200"  "ASV_7055"  "ASV_4990"  "ASV_110"   "ASV_1384" 
+##  [61] "ASV_1252"  "ASV_3231"  "ASV_1479"  "ASV_1801"  "ASV_1271"  "ASV_1755"  "ASV_1357"  "ASV_4861"  "ASV_4723"  "ASV_4564"  "ASV_2530"  "ASV_499"   "ASV_4006"  "ASV_302"   "ASV_642"   "ASV_3075"  "ASV_231"   "ASV_13661" "ASV_1855"  "ASV_2432" 
+##  [81] "ASV_13808" "ASV_9322"  "ASV_9249"  "ASV_10605" "ASV_7017"  "ASV_1402"  "ASV_216"   "ASV_2205"  "ASV_7080"  "ASV_6300"  "ASV_21570" "ASV_3842"  "ASV_7406"  "ASV_3675"  "ASV_1711"  "ASV_592"   "ASV_12554" "ASV_2424"  "ASV_2551"  "ASV_10495"
+## [101] "ASV_1945"  "ASV_7156"  "ASV_10548" "ASV_4112"  "ASV_434"   "ASV_8513"  "ASV_31783" "ASV_4270"  "ASV_1449"  "ASV_5235"  "ASV_10767" "ASV_5236"  "ASV_33483" "ASV_45107" "ASV_2436"  "ASV_1693"  "ASV_6110"  "ASV_11495" "ASV_10712" "ASV_12143"
+## [121] "ASV_28739" "ASV_8748"  "ASV_9712"  "ASV_8273"  "ASV_8447"  "ASV_15902" "ASV_5180"  "ASV_2677"  "ASV_3601"  "ASV_36017" "ASV_16436" "ASV_8851"  "ASV_853"   "ASV_568"   "ASV_9644"  "ASV_39294" "ASV_3329"  "ASV_38296" "ASV_38299" "ASV_102"  
+## [141] "ASV_3305"  "ASV_3663"  "ASV_2964"  "ASV_7355"  "ASV_2028"  "ASV_6701"  "ASV_6648"  "ASV_4541"  "ASV_12642" "ASV_6560"  "ASV_30344" "ASV_650"   "ASV_3467"  "ASV_6126"  "ASV_1920"  "ASV_7536"  "ASV_16387" "ASV_19979" "ASV_10120" "ASV_23345"
+## [161] "ASV_1130"  "ASV_165"   "ASV_20915" "ASV_20873" "ASV_14949" "ASV_431"   "ASV_25231" "ASV_9569"  "ASV_11115" "ASV_2358"  "ASV_5923"  "ASV_25349" "ASV_4503"  "ASV_37395" "ASV_6164"  "ASV_8036"  "ASV_11915" "ASV_7195"  "ASV_31812" "ASV_8955" 
+## [181] "ASV_29215" "ASV_11514" "ASV_16078" "ASV_2783"  "ASV_12500" "ASV_20303" "ASV_20251" "ASV_15160" "ASV_6606"  "ASV_30308" "ASV_11074" "ASV_27149" "ASV_11700" "ASV_21347" "ASV_29197" "ASV_18287" "ASV_32507" "ASV_4087"  "ASV_17147" "ASV_33250"
+## [201] "ASV_580"   "ASV_24837" "ASV_37854" "ASV_21338" "ASV_13258" "ASV_11517" "ASV_23042" "ASV_28359" "ASV_26767" "ASV_21382" "ASV_33167" "ASV_33519" "ASV_4051"  "ASV_33533" "ASV_7324"  "ASV_17520" "ASV_34133" "ASV_10257" "ASV_11913" "ASV_42413"
+## [221] "ASV_36504" "ASV_4382"  "ASV_44524" "ASV_1809"  "ASV_10277" "ASV_23076" "ASV_29492" "ASV_32538" "ASV_3892"  "ASV_884"   "ASV_5812"  "ASV_45729" "ASV_45799" "ASV_8424"  "ASV_44715" "ASV_44495" "ASV_29697" "ASV_32172" "ASV_6851"  "ASV_321"  
+## [241] "ASV_1399"  "ASV_44094" "ASV_38964" "ASV_14329"
 ```
 
 ``` r
 # filter out NA at order level
 water_ch4_joined <- water_ch4_joined %>% 
-  dplyr::filter(!is.na(Family)) # 16368
+  dplyr::filter(!is.na(Family)) # 10992
 
 # create dataframe for sipmlified distinct ASV to verify
 simplified_af <- water_ch4_joined %>% 
@@ -417,104 +401,80 @@ simplified_af
 ```
 
 ```
-##                                                 function_group  Kingdom                   Phylum               Class                    Order                    Family                   Genus       Species       ASV
-## 1                                          methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylomonadaceae            Methylomonas         albis    ASV_44
-## 2                                          methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylomonadaceae                    <NA>          <NA>    ASV_13
-## 3                                          methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae           Limisphaerales                  UBA11358                UBA11358          <NA>    ASV_63
-## 4                                          methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales          Methylococcaceae       Methyloparacoccus          <NA>    ASV_32
-## 5                                          methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylomonadaceae  Methylobacter_C_601751          <NA>   ASV_141
-## 6                                          methanotrophy.value Bacteria           Pseudomonadota Alphaproteobacteria       Rhizobiales_505101          Beijerinckiaceae           Methylocystis          <NA>   ASV_465
-## 7                                          methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales          Methylococcaceae           Methylococcus    capsulatus   ASV_688
-## 8                                          methanotrophy.value Bacteria           Pseudomonadota Alphaproteobacteria       Rhizobiales_505101          Beijerinckiaceae              Alsobacter          soli   ASV_826
-## 9                                          methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylomonadaceae             Methylosoma          <NA>   ASV_679
-## 10                           acetoclastic_methanogenesis.value  Archaea           Halobacteriota     Methanosarcinia         Methanotrichales         Methanotrichaceae          Methanothrix_B    soehngenii   ASV_415
-## 11                                         methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylomonadaceae                 UBA4132   sp002134785   ASV_493
-## 12               methanogenesis_by_CO2_reduction_with_H2.value  Archaea           Halobacteriota     Methanomicrobia       Methanomicrobiales  Methanospirillaceae_2121           Methanoregula   sp002502245    ASV_54
-## 13                                         methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae      Methylacidiphilales                   UBA3015                 UBA3015   sp001438005  ASV_3795
-## 14                       hydrogenotrophic_methanogenesis.value  Archaea Methanobacteriota_A_1229     Methanobacteria       Methanobacteriales       Methanobacteriaceae  Methanobacterium_B_963         lacus  ASV_1063
-## 15                                         methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales          Methylococcaceae        Methyloterricola        oryzae  ASV_1396
-## 16                       hydrogenotrophic_methanogenesis.value  Archaea Methanobacteriota_A_1229     Methanobacteria       Methanobacteriales       Methanobacteriaceae      Methanobacterium_A  petrolearium   ASV_400
-## 17                                         methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae      Methylacidiphilales                    GAS474                  GAS474          <NA>  ASV_3053
-## 18                                         methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae      Methylacidiphilales                  JAAUTS01                JAAUTS01   sp012031345  ASV_1600
-## 19                                         methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales          Methylococcaceae      Methylotetracoccus        oryzae  ASV_1051
-## 20                                         methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales          Methylococcaceae           Methylomagnum   ishizawai_A  ASV_2200
-## 21                                         methanotrophy.value Bacteria             Omnitrophota              Koll11    Pluralincolimonadales    Pluralincolimonadaceae                 UBA6215          <NA>  ASV_3580
-## 22                                         methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae      Methylacidiphilales                   UBA1321                    LW23          <NA>  ASV_2286
-## 23                                         methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylomonadaceae  Methylobacter_C_601048 psychrophilus  ASV_1233
-## 24                       hydrogenotrophic_methanogenesis.value  Archaea Methanobacteriota_A_1229     Methanobacteria       Methanobacteriales       Methanobacteriaceae Methanobacterium_D_1054   sp002505765   ASV_499
-## 25                                         methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae           Limisphaerales                  UBA11358                  WYBW01   sp011525685   ASV_494
-## 26                       hydrogenotrophic_methanogenesis.value  Archaea           Halobacteriota     Methanomicrobia       Methanomicrobiales  Methanospirillaceae_2125        Methanospirillum       lacunae  ASV_4563
-## 27                                         methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Burkholderiales Burkholderiaceae_A_595421                  Derxia     lacustris  ASV_5855
-## 28                       hydrogenotrophic_methanogenesis.value  Archaea Methanobacteriota_A_1229     Methanobacteria       Methanobacteriales       Methanobacteriaceae          Methanosphaera          <NA>  ASV_6300
-## 29                       hydrogenotrophic_methanogenesis.value  Archaea           Halobacteriota     Methanomicrobia       Methanomicrobiales  Methanospirillaceae_2121                  UBA467   sp002503825   ASV_352
-## 30                       hydrogenotrophic_methanogenesis.value  Archaea           Halobacteriota     Methanomicrobia       Methanomicrobiales  Methanospirillaceae_2121          Methanolinea_A          <NA>   ASV_302
-## 31                                         methanotrophy.value Bacteria           Pseudomonadota Alphaproteobacteria       Rhizobiales_505101          Beijerinckiaceae            Methylosinus   sp000379125 ASV_15901
-## 32                                         methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylomonadaceae         Methyloglobulus          <NA>  ASV_2677
-## 33                                         methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae           Limisphaerales           Pedosphaeraceae             Pedosphaera   sp000172555 ASV_22163
-## 34                                         methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylomonadaceae            Methylovulum          <NA>  ASV_2028
-## 35                                         methanotrophy.value Bacteria           Pseudomonadota Alphaproteobacteria    Azospirillales_507929    Azospirillaceae_507917            Azospirillum    brasilense  ASV_6560
-## 36                                         methanotrophy.value Bacteria        Verrucomicrobiota     Kiritimatiellia                  UBA8416           YA12-FULL-60-10         YA12-FULL-60-10   sp001803315  ASV_5284
-## 37                       hydrogenotrophic_methanogenesis.value  Archaea Methanobacteriota_A_1229     Methanobacteria       Methanobacteriales       Methanobacteriaceae    Methanobrevibacter_D      curvatus  ASV_6126
-## 38                                         methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylomonadaceae              Crenothrix     polyspora ASV_19979
-## 39                       hydrogenotrophic_methanogenesis.value  Archaea Methanobacteriota_A_1229     Methanobacteria       Methanobacteriales       Methanobacteriaceae  Methanobacterium_F_900       flexile   ASV_165
-## 40                                         methanotrophy.value Bacteria           Pseudomonadota Alphaproteobacteria       Rhizobiales_505101          Beijerinckiaceae            Beijerinckia        indica  ASV_9492
-## 41                                         methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae           Limisphaerales                    SXTU01                  SXTU01   sp009773355 ASV_20918
-## 42                       hydrogenotrophic_methanogenesis.value  Archaea            Micrarchaeota        Micrarchaeia      Norongarragalinales      Norongarragalinaceae                   UBA95   sp002499405 ASV_10909
-## 43 methanogenesis_by_disproportionation_of_methyl_groups.value  Archaea           Halobacteriota     Methanosarcinia Methanosarcinales_A_2632        Methanosarcinaceae     Methanosarcina_2619          <NA>  ASV_1809
-## 44                                         methanotrophy.value Bacteria        Verrucomicrobiota     Kiritimatiellia                   PWTM01                    PWTM01                  PWTM01   sp003563855 ASV_13755
-## 45                       hydrogenotrophic_methanogenesis.value  Archaea           Halobacteriota       Methanocellia          Methanocellales          Methanocellaceae          Methanocella_A    paludicola ASV_42413
-## 46                                         methanotrophy.value Bacteria        Verrucomicrobiota     Kiritimatiellia                LD1-PB3_B                  Lenti-01                Lenti-01          <NA> ASV_18629
-## 47                                         methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae           Limisphaerales                       AV2                     AV2          <NA> ASV_22635
-## 48                       hydrogenotrophic_methanogenesis.value  Archaea      Methanobacteriota_B         Thermococci     Methanofastidiosales     Methanofastidiosaceae      Methanofastidiosum   sp001587715 ASV_45729
+##                                   function_group  Kingdom                   Phylum               Class                    Order                    Family                   Genus       Species       ASV
+## 1                            methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylomonadaceae            Methylomonas         albis    ASV_44
+## 2                            methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylomonadaceae                    <NA>          <NA>    ASV_13
+## 3                            methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales          Methylococcaceae       Methyloparacoccus          <NA>    ASV_32
+## 4                            methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylomonadaceae  Methylobacter_C_601751          <NA>   ASV_141
+## 5                            methanotrophy.value Bacteria           Pseudomonadota Alphaproteobacteria       Rhizobiales_505101          Beijerinckiaceae           Methylocystis          <NA>   ASV_465
+## 6                            methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylomonadaceae             Methylosoma          <NA>   ASV_679
+## 7              acetoclastic_methanogenesis.value  Archaea           Halobacteriota     Methanosarcinia         Methanotrichales         Methanotrichaceae          Methanothrix_B    soehngenii   ASV_415
+## 8  methanogenesis_by_CO2_reduction_with_H2.value  Archaea           Halobacteriota     Methanomicrobia       Methanomicrobiales  Methanospirillaceae_2121           Methanoregula   sp002502245    ASV_54
+## 9                            methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae      Methylacidiphilales                   UBA3015                 UBA3015   sp001438005  ASV_3795
+## 10                           methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylomonadaceae                 UBA4132   sp002134785   ASV_493
+## 11                           methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales          Methylococcaceae           Methylococcus    capsulatus   ASV_822
+## 12                           methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae      Methylacidiphilales                    GAS474                  GAS474          <NA>  ASV_3053
+## 13                           methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae      Methylacidiphilales                  JAAUTS01                JAAUTS01   sp012031345  ASV_1600
+## 14         hydrogenotrophic_methanogenesis.value  Archaea Methanobacteriota_A_1229     Methanobacteria       Methanobacteriales       Methanobacteriaceae  Methanobacterium_B_963         lacus  ASV_1063
+## 15                           methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae      Methylacidiphilales                   UBA1321                    LW23          <NA>  ASV_2286
+## 16                           methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales          Methylococcaceae        Methyloterricola        oryzae  ASV_1396
+## 17                           methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylomonadaceae  Methylobacter_C_601048 psychrophilus  ASV_1233
+## 18         hydrogenotrophic_methanogenesis.value  Archaea Methanobacteriota_A_1229     Methanobacteria       Methanobacteriales       Methanobacteriaceae      Methanobacterium_A  petrolearium   ASV_400
+## 19         hydrogenotrophic_methanogenesis.value  Archaea           Halobacteriota     Methanomicrobia       Methanomicrobiales  Methanospirillaceae_2125        Methanospirillum       lacunae  ASV_4563
+## 20                           methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Burkholderiales Burkholderiaceae_A_595421                  Derxia     lacustris  ASV_5855
+## 21                           methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales          Methylococcaceae      Methylotetracoccus        oryzae  ASV_1051
+## 22         hydrogenotrophic_methanogenesis.value  Archaea           Halobacteriota     Methanomicrobia       Methanomicrobiales  Methanospirillaceae_2121                  UBA467   sp002503825   ASV_352
+## 23                           methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales          Methylococcaceae           Methylomagnum   ishizawai_A  ASV_2200
+## 24         hydrogenotrophic_methanogenesis.value  Archaea Methanobacteriota_A_1229     Methanobacteria       Methanobacteriales       Methanobacteriaceae Methanobacterium_D_1054   sp002505765   ASV_499
+## 25         hydrogenotrophic_methanogenesis.value  Archaea           Halobacteriota     Methanomicrobia       Methanomicrobiales  Methanospirillaceae_2121          Methanolinea_A          <NA>   ASV_302
+## 26         hydrogenotrophic_methanogenesis.value  Archaea Methanobacteriota_A_1229     Methanobacteria       Methanobacteriales       Methanobacteriaceae          Methanosphaera          <NA>  ASV_6300
+## 27                           methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylomonadaceae         Methyloglobulus          <NA>  ASV_2677
+## 28                           methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylomonadaceae            Methylovulum          <NA>  ASV_2028
+## 29                           methanotrophy.value Bacteria           Pseudomonadota Alphaproteobacteria    Azospirillales_507929    Azospirillaceae_507917            Azospirillum    brasilense  ASV_6560
+## 30         hydrogenotrophic_methanogenesis.value  Archaea Methanobacteriota_A_1229     Methanobacteria       Methanobacteriales       Methanobacteriaceae    Methanobrevibacter_D      curvatus  ASV_6126
+## 31                           methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylomonadaceae              Crenothrix     polyspora ASV_19979
+## 32         hydrogenotrophic_methanogenesis.value  Archaea Methanobacteriota_A_1229     Methanobacteria       Methanobacteriales       Methanobacteriaceae  Methanobacterium_F_900       flexile   ASV_165
+## 33         hydrogenotrophic_methanogenesis.value  Archaea           Halobacteriota       Methanocellia          Methanocellales          Methanocellaceae          Methanocella_A    paludicola ASV_42413
+## 34             acetoclastic_methanogenesis.value  Archaea           Halobacteriota     Methanosarcinia Methanosarcinales_A_2632        Methanosarcinaceae     Methanosarcina_2619          <NA>  ASV_1809
+## 35         hydrogenotrophic_methanogenesis.value  Archaea      Methanobacteriota_B         Thermococci     Methanofastidiosales     Methanofastidiosaceae      Methanofastidiosum   sp001587715 ASV_45729
+## 36                           methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Xanthomonadales        Rhodanobacteraceae              Tahibacter          <NA> ASV_44495
 ##                                                                                                                                                                                                                                                           ASVseqs
 ## 1   TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGTTATTTAAGTCAGATGTGAAAGCCCTGGGCTTAACCTGGGAACTGCATTTGATACTGGATGACTAGAGTTGAGTAGAGGAGAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGAGATCTGAAGGAACACCAGTGGCGAAGGCGGCTCTCTGGACTCAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
 ## 2   TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGCTCGTTAAGTCAGATGTGAAAGCCCTGGGCTCAACCTGGGAACGGCATTTGAAACTGGCGAGCTAGAGTTTAGGAGAGGAGAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGAGATCTGAAGGAACACCAGTGGCGAAGGCGACTCTCTGGCCTAAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
-## 3   TACAGAGGTCCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGCGTAGGCGGTGGGGTAAGTTTGAGGTGAAATCTCCGGGCTCAACCCGGAAAATGCCTTGAAGACTATCCTGCTAGAGGATCGGAGGGGAGACTGGAATTCTCGGTGTAGCAGTGAAATGCGTAGATATCGAGAGGAACACCAGTGGCGAAGGCGAGTCTCTGGACGATTCCTGACGCTGAGGCACGAAAGCCAGGGGAGCAAACGGG
-## 4   TACGGAGGGTGCGAGCGTTAATCGGAATTACTGGGCGTAAAGCGCGCGTAGGCGGTTGGCTAAGTTTGCTGTGAAAGCCCCGGGCTTAACCTGGGAACTGCAGTGAATACTGGTCAGCTAGAGTATGGTAGAGGGTAGTGGAATTTCCGGTGTAGCAGTGAAATGCGTAGAGATCGGAAGGAACACCAGTGGCGAAGGCGGCTATCTGGACCAATACTGACGCTGAGGTGCGAAAGCGTGGGGAGCAAACAGG
-## 5   TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGTTCGTTAAGTCAGATGTGAAAGCCCCGGGCTCAACCTGGGAACTGCATTTGAAACTGGCGAACTAGAGTTTAGTAGAGGGGAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGATATCTGAAGGAACACCAGTGGCGAAGGCGACTCCCTGGACTAAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
-## 6   TACGAAGGGGGCTAGCGTTGTTCGGATTTACTGGGCGTAAAGCGCACGTAGGCGGATCTTTAAGTCAGGGGTGAAATCCCGAGGCTCAACCTCGGAACTGCCTTTGATACTGGAGGTCTCGAGTCCGGGAGAGGTGAGTGGAACTGCGAGTGTAGAGGTGAAATTCGTAGATATTCGCAAGAACACCAGTGGCGAAGGCGGCTCACTGGCCCGGTACTGACGCTGAGGTGCGAAAGCGTGGGGAGCAAACAGG
-## 7   TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTACGTAGGCGGTTTGATCAGTCTGATGTGAAAGCCCCGGGCTTAACCTGGGAATGGCATTGGATACTGTCCGACTGGAGTATGGTAGAGGGTAGTGGAATTTCCGGTGTAGCAGTGAAATGCGTAGAGATCGGAAGGAACACCAGTGGCGAAGGCGGCTACCTGGACCAATACTGACGCTGAGGTACGAAAGCGTGGGGAGCAAACAGG
-## 8   TACGAAGGGGGCTAGCGTTGCTCGGAATCACTGGGCGTAAAGCGCACGTAGGCGGATCCTTAAGTCAGAGGTGAAATCCCAAGGCTCAACCTTGGAACGGCCTTTGATACTGGGGATCTCGAGTCCGGAAGAGGTTGGTGGAACTGCGAGTGTAGAGGTGAAATTCGTAGATATTCGCAAGAACACCAGTGGCGAAGGCGGCCAACTGGTCCGGCACTGACGCTGAGGTGCGAAAGCGTGGGGAGCAAACAGG
-## 9   TACGGAGGGTGCGAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGCGCGCCAAGTCAGGTGTGAAAGCCCCGGGCTCAACCTGGGAACTGCATCTGAAACTGGCGCGCTAGAGTTGGGTAGAGGTAAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGATATCTGAAGGAACACCAGTGGCGAAGGCGGCTTACTGGACCCAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
-## 10 CACCGGCGGCTCGAGTGGTAACCGTTATTATTGGGTCTAAAGGGTCTGTAGCCGGCCGGATAAGTCTCTTGGGAAATCTGGCAGCTTAACTGTCAGGCTTTCAGGAGATACTGTCTGGCTCGAGGCCGGGAGAGGTGAGAGGTACTTCAGGGGTAGGGGTGAAATCTTGTAATCCTTGAAGGACCACCAGTGGCGAAGGCGTCTCACCAGAACGGACCTGACGGCAAGGGACGAAAGCTAGGGGCACGAACCGG
-## 11  TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGCTCGTTAAGTCAGATGTGAAAGCCCTGGGCTCAACCTGGGAACTGCATTTGAAACTGGCGAGCTAGAGTTTGAGAGAGGTAAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGAGATCTGAAGGAACACCAGTGGCGAAGGCGACTTACTGGCTTAAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
-## 12 TACCGGCGGCTCGAGTGGTGGCCACTATTACTGGGCTTAAAGCGTTCGTAGCTGGTCTGTTAAGTCTCTGGGGAAATCTACTGGCTTAACCAATAGGCGTCTCAGGGATACTGGCAGACTAGGGACCGGGAGAGGTGAGAGGTACTCCAGGGGTAGGAGTGAAATCCTGTAATCCTTGGGGGACCACCTGTGGCGAAGGCGTCTCACCAGAACGGCTCCGACAGTGAGGGACGAAAGCTGGGGGAGCAAACCGG
-## 13  TACAGAGGCCCCAAGCGTTGTTCGGATTTACTGGGCGTAAAGGGTGTGTAGGGGGTCGGGTAAGTTTGACGTGAAATCCCGTTGCTCAACAACGGAACTGCGTCGAATACTGCTCGGCTGGAGGTTCGGAGATGAGGGCGGAATTCTCGGTGTAGCGGTGAAATGCGTAGATATCGAGAGGAACGCCGATAGCGAAAGCAGCCCTCAAGACGAAATCTGACCCTGAAACACGAAGGCCAGGGGAGCAAACGGG
+## 3   TACGGAGGGTGCGAGCGTTAATCGGAATTACTGGGCGTAAAGCGCGCGTAGGCGGTTGGCTAAGTTTGCTGTGAAAGCCCCGGGCTTAACCTGGGAACTGCAGTGAATACTGGTCAGCTAGAGTATGGTAGAGGGTAGTGGAATTTCCGGTGTAGCAGTGAAATGCGTAGAGATCGGAAGGAACACCAGTGGCGAAGGCGGCTATCTGGACCAATACTGACGCTGAGGTGCGAAAGCGTGGGGAGCAAACAGG
+## 4   TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGTTCGTTAAGTCAGATGTGAAAGCCCCGGGCTCAACCTGGGAACTGCATTTGAAACTGGCGAACTAGAGTTTAGTAGAGGGGAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGATATCTGAAGGAACACCAGTGGCGAAGGCGACTCCCTGGACTAAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
+## 5   TACGAAGGGGGCTAGCGTTGTTCGGATTTACTGGGCGTAAAGCGCACGTAGGCGGATCTTTAAGTCAGGGGTGAAATCCCGAGGCTCAACCTCGGAACTGCCTTTGATACTGGAGGTCTCGAGTCCGGGAGAGGTGAGTGGAACTGCGAGTGTAGAGGTGAAATTCGTAGATATTCGCAAGAACACCAGTGGCGAAGGCGGCTCACTGGCCCGGTACTGACGCTGAGGTGCGAAAGCGTGGGGAGCAAACAGG
+## 6   TACGGAGGGTGCGAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGCGCGCCAAGTCAGGTGTGAAAGCCCCGGGCTCAACCTGGGAACTGCATCTGAAACTGGCGCGCTAGAGTTGGGTAGAGGTAAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGATATCTGAAGGAACACCAGTGGCGAAGGCGGCTTACTGGACCCAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
+## 7  CACCGGCGGCTCGAGTGGTAACCGTTATTATTGGGTCTAAAGGGTCTGTAGCCGGCCGGATAAGTCTCTTGGGAAATCTGGCAGCTTAACTGTCAGGCTTTCAGGAGATACTGTCTGGCTCGAGGCCGGGAGAGGTGAGAGGTACTTCAGGGGTAGGGGTGAAATCTTGTAATCCTTGAAGGACCACCAGTGGCGAAGGCGTCTCACCAGAACGGACCTGACGGCAAGGGACGAAAGCTAGGGGCACGAACCGG
+## 8  TACCGGCGGCTCGAGTGGTGGCCACTATTACTGGGCTTAAAGCGTTCGTAGCTGGTCTGTTAAGTCTCTGGGGAAATCTACTGGCTTAACCAATAGGCGTCTCAGGGATACTGGCAGACTAGGGACCGGGAGAGGTGAGAGGTACTCCAGGGGTAGGAGTGAAATCCTGTAATCCTTGGGGGACCACCTGTGGCGAAGGCGTCTCACCAGAACGGCTCCGACAGTGAGGGACGAAAGCTGGGGGAGCAAACCGG
+## 9   TACAGAGGCCCCAAGCGTTGTTCGGATTTACTGGGCGTAAAGGGTGTGTAGGGGGTCGGGTAAGTTTGACGTGAAATCCCGTTGCTCAACAACGGAACTGCGTCGAATACTGCTCGGCTGGAGGTTCGGAGATGAGGGCGGAATTCTCGGTGTAGCGGTGAAATGCGTAGATATCGAGAGGAACGCCGATAGCGAAAGCAGCCCTCAAGACGAAATCTGACCCTGAAACACGAAGGCCAGGGGAGCAAACGGG
+## 10  TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGCTCGTTAAGTCAGATGTGAAAGCCCTGGGCTCAACCTGGGAACTGCATTTGAAACTGGCGAGCTAGAGTTTGAGAGAGGTAAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGAGATCTGAAGGAACACCAGTGGCGAAGGCGACTTACTGGCTTAAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
+## 11  TACGGAGGGTGCGAGCGTTAATCGGAATTACTGGGCGTAAAGCGCGCGTAGGCGGCTGAATAAGTCTGCCGTGAAAGCCCTGGGCTTAACCTGGGAATTGCGGTGGATACTGTTCAGCTAGAGTGTGGTAGAGGGTAGTGGAATTTCCGGTGTAGCAGTGAAATGCGTAGAGATCGGAAGGAACACCAGTGGCGAAGGCGGCTACCTGGACCAACACTGACGCTGAGGTGCGAAAGCGTGGGGAGCAAACAGG
+## 12  TACAGAGGTCCCGAGCGTTATTCGGATTCACTGGGCGTAAAGGGTGTGTAGGAGGTATGATAAGTCTAGCGTGAAATCCCACCGCTCAACGGTGGAACTGCGTTGGATACTATTGTGCTAGAGGACTAGAGAGGTAAGCGGAATTCTTGGTGTAGCGGTGAAATGCGTAGATATCAAGAGGAACACCAGCGGCGAAGGCGGCTTACTGGATAGCTCCTGACTCTGAAACACGAAAGCCAGGGTAGCAAACGGG
+## 13  TACAGAGGTCCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGCGTAGGGGGTCTGCAAAGTCGGGTGTGAAATCCCACCGCTTAACGGTGGAATGGCACTCGATACTGGCGGGCTAGAGGATCGGAGGGGAGAGCGGAATTCCTGGTGTAGCGGTGAAATGCGTAGATATCAGGAGGAACACCAACGGCGAAAGCAGCTCTCTGGAAGATACCTGACCCTGAGGCACGAAGGCCAGGGGAGCAAACGGG
 ## 14 CACCGGCAGCTCAAGTGGTGGCCATTATTATTGGGCCTAAAGCGTTCGTAGCCGGTTTGATAAGTCTCTGGTGAAATCCCGCAGCTTAACTGTGGGACTTGCTGGAGATACTATCAGACTTGAGGTCGGGAGAGGTTAGGGGTACTCCCAGGGTAGGGGTGAAATCCTATAATCCTGGGAGGACCACCTGTGGCGAAGGCGCCTAACTGGAACGAACCTGACGGTGAGTAACGAAAGCCAGGGGCGCGAACCGG
-## 15  TACGGAGGGTGCGAGCGTTAATCGGAATTACTGGGCGTAAAGCGCGCGTAGGCGGTTTGTTAAGTCTGATGTGAAAGCCCTGGGCTTAACCTGGGAACGGCATTGGAGACTGGCCAGCTAGAGTGTGGTAGAGGGGTGTGGAATTTCCGGTGTAGCAGTGAAATGCGTAGAGATCGGAAGGAACACCAGTGGCGAAGGCGGCACCCTGGACCAACACTGACGCTGAGGTGCGAAAGCGTGGGGAGCAAACAGG
-## 16 CACCGGCAGCTCAAGTGGTGGCCACTTTTATTGGGCCTAAAGCGTTCGTAGCCGGCCTGATAAGTCTCTGGTGAAATCCCATAGCTTAACTGTGGGAATTGCTGGAGATACTATCAGGCTTGAGGCCGGGAGAGGCTGGAGGTACTCCCGGGGTAGGGGTGAAATCCTATAATCCCGGGAGGACCACCTGTGGCGAAGGCGTCCAGCTGGAACGGACCTGACGGTGAGTAACGAAAGCCAGGGGCGCGAACCGG
-## 17  TACAGAGGTCCCGAGCGTTATTCGGATTCACTGGGCGTAAAGGGTGTGTAGGAGGTATGATAAGTCTAGCGTGAAATCCCACCGCTCAACGGTGGAACTGCGTTGGATACTATTGTGCTAGAGGACTAGAGAGGTAAGCGGAATTCTTGGTGTAGCGGTGAAATGCGTAGATATCAAGAGGAACACCAGCGGCGAAGGCGGCTTACTGGATAGCTCCTGACTCTGAAACACGAAAGCCAGGGTAGCAAACGGG
-## 18  TACAGAGGTCCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGCGTAGGGGGTCTGCAAAGTCGGGTGTGAAATCCCACCGCTTAACGGTGGAATGGCACTCGATACTGGCGGGCTAGAGGATCGGAGGGGAGAGCGGAATTCCTGGTGTAGCGGTGAAATGCGTAGATATCAGGAGGAACACCAACGGCGAAAGCAGCTCTCTGGAAGATACCTGACCCTGAGGCACGAAGGCCAGGGGAGCAAACGGG
-## 19  TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGCGCGTAGGCGGTTTGATCAGTCCGTCGTGAAAGCCCCGGGCTTAACCTGGGAACTGCGGTGGATACTGTCGGGCTAGAGTGTGGTAGAGGGGAGTGGAATTTCCGGTGTAGCAGTGAAATGCGTAGAGATCGGAAGGAACACCAGTGGCGAAGGCGGCTCCCTGGACCAACACTGACGCTGAGGTGCGAAAGCGTGGGGAGCAAACAGG
-## 20  TACGGAGGGTGCGAGCGTTAATCGGAATTACTGGGCGTAAAGCGCGCGTAGGCGGTCCGTTAAGTCAGCCGTGAAAGCCCCGGGCTTAACCTGGGAACTGCGGATGATACTGGCGGACTAGAGTGTGGCAGAGGGTGGCGGAATTTCCGGTGTAGCAGTGAAATGCGTAGAGATCGGAAGGAACACCAGTGGCGAAGGCGGCCATCTGGGTCAACACTGACGCTGAGGTGCGAAAGCGTGGGGAGCAAACAGG
-## 21  TACGGAGGTGGCAGGCGTTACTCGGATTGATTGGGTGTAAAGGGTGTGTAGGTGGTGAATTAAGTCGAATGTGAAATCCCTTGGCTTAACCAAGGAACTGCATTCGAAACTGATTCGCTTGAGCGTCAGAGAGGAAGATGGAATTCACGGTGTAACAGTGAAATGTGTAGATATCGTGAGGAACACCAGTGGCGAAGGCGATCTTCTGGCTGACTGCTGACACTGAAACACGAGAGCAAGGGGAGCAAACAGG
-## 22  TACAGAGGTCCCGAGCGTTGTTCGGATTCATTGGGCGTAAAGGGTGTGTAGGAGGTTAGGTAAGTCGGGCGTGAAATCTCACCGCTTAACGGTGAAACTGCGTTCGATACTGCTTAGCTGGAGGATCGGAGGGGGTATCGGAATTCATGGTGTAGCAGTGAAATGCGTAGATATCATGAGGAACACCGGTGGCGAAAGCGGATACCTGGAAGATTCCTGACTCTGAAACACGAAAGCTAGGGGAGCAAACGGG
-## 23  TACGGAGGGTGCGAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGTTCGTTAAGTCAGATGTGAAAGCCCTGGGCTCAACCTGGGAACTGCATTTGAAACTGGCGGACTAGAGTTTAGTAGAGGGGAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGATATCTGAAGGAACACCAGTGGCGAAGGCGACTCCCTGGACTAGAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
+## 15  TACAGAGGTCCCGAGCGTTGTTCGGATTCATTGGGCGTAAAGGGTGTGTAGGAGGTTAGGTAAGTCGGGCGTGAAATCTCACCGCTTAACGGTGAAACTGCGTTCGATACTGCTTAGCTGGAGGATCGGAGGGGGTATCGGAATTCATGGTGTAGCAGTGAAATGCGTAGATATCATGAGGAACACCGGTGGCGAAAGCGGATACCTGGAAGATTCCTGACTCTGAAACACGAAAGCTAGGGGAGCAAACGGG
+## 16  TACGGAGGGTGCGAGCGTTAATCGGAATTACTGGGCGTAAAGCGCGCGTAGGCGGTTTGTTAAGTCTGATGTGAAAGCCCTGGGCTTAACCTGGGAACGGCATTGGAGACTGGCCAGCTAGAGTGTGGTAGAGGGGTGTGGAATTTCCGGTGTAGCAGTGAAATGCGTAGAGATCGGAAGGAACACCAGTGGCGAAGGCGGCACCCTGGACCAACACTGACGCTGAGGTGCGAAAGCGTGGGGAGCAAACAGG
+## 17  TACGGAGGGTGCGAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGTTCGTTAAGTCAGATGTGAAAGCCCTGGGCTCAACCTGGGAACTGCATTTGAAACTGGCGGACTAGAGTTTAGTAGAGGGGAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGATATCTGAAGGAACACCAGTGGCGAAGGCGACTCCCTGGACTAGAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
+## 18 CACCGGCAGCTCAAGTGGTGGCCACTTTTATTGGGCCTAAAGCGTTCGTAGCCGGCCTGATAAGTCTCTGGTGAAATCCCATAGCTTAACTGTGGGAATTGCTGGAGATACTATCAGGCTTGAGGCCGGGAGAGGCTGGAGGTACTCCCGGGGTAGGGGTGAAATCCTATAATCCCGGGAGGACCACCTGTGGCGAAGGCGTCCAGCTGGAACGGACCTGACGGTGAGTAACGAAAGCCAGGGGCGCGAACCGG
+## 19 TACCGGCGGCTCGAGTGGTGGCCGCTTTTACTGGGCTTAAAGGGTCCGTAGCTGGATCCGCAAGTCCCTTGAGAAATCCATCGGCTTAACTGATGGGCGTTCAGGGGATACTGTGGTTCTAGGGACCGGGAGAGGTGAGAGGTACTGCCGGGGTAGGAGTGAAATCCTGTAATCCCGGTGGGACGACCTATGGCGAAGGCATCTCACCAGAACGGCTCCGACAGTGAGGGACGAAAGCTGGGGGAGCAAACCGG
+## 20  TACGTAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGCAGGCGGTTTTGCAAGTCAGATGTGAAATCCCCGGGCTTAACCTGGGAACTGCATTTGAAACTACAAGGCTTGAGTGTGTCAGAGGGGGGTGGAATTCCACGTGTAGCAGTGAAATGCGTAGAGATGTGGAGGAACACCGATGGCGAAGGCAGCCCCCTGGGATAACACTGACGCTCATGCACGAAAGCGTGGGGAGCAAACAGG
+## 21  TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGCGCGTAGGCGGTTTGATCAGTCCGTCGTGAAAGCCCCGGGCTTAACCTGGGAACTGCGGTGGATACTGTCGGGCTAGAGTGTGGTAGAGGGGAGTGGAATTTCCGGTGTAGCAGTGAAATGCGTAGAGATCGGAAGGAACACCAGTGGCGAAGGCGGCTCCCTGGACCAACACTGACGCTGAGGTGCGAAAGCGTGGGGAGCAAACAGG
+## 22 TACCGGCGGCTCGAGTGGTGGCCACTATTATTGGGCTTAAAGCGTCCGTAGCAGGGTTGTTAAGTCTCTTGGGAAATCTACCGGCTCAACCGATAGGCGTTCAGGGGATACTGGCAACCTAGGGACCGGAAGAGGTGAGAGGTACTCCAGGGGTAGGAGTGAAATCCTGTAATCCTTGGGGGACCACCTGTGGCGAAGGCGTCTCACCAGGACGGCTCCGACTGTGAGGGACGAAAGCTGGGGGAGCAAACCGG
+## 23  TACGGAGGGTGCGAGCGTTAATCGGAATTACTGGGCGTAAAGCGCGCGTAGGCGGTCCGTTAAGTCAGCCGTGAAAGCCCCGGGCTTAACCTGGGAACTGCGGATGATACTGGCGGACTAGAGTGTGGCAGAGGGTGGCGGAATTTCCGGTGTAGCAGTGAAATGCGTAGAGATCGGAAGGAACACCAGTGGCGAAGGCGGCCATCTGGGTCAACACTGACGCTGAGGTGCGAAAGCGTGGGGAGCAAACAGG
 ## 24 CACCGGCAGCTCAAGTGGTGGCCGTTTTTATTGGGCCTAAAGCGTTCGTAGCCGGCCTGATAAGTCTCTGGTGAAATCCCATAGCTTAACTGTGGGAATTGCTGGAGATACTATCAGGCTTGAGATCGGGAGAGGTTAGGGGTACTCCCAGGGTAGGGGTGAAATCCTATAATCCTGGGAGGACCACCTGTGGCGAAGGCGCCTAACTGGAACGAATCTGACGGTGAGTAACGAAAGCCAGGGGCGCGAACCGG
-## 25  TACAGAGGTCCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGCGTAGGCGGTCGGGTAAGTCTGACGTGAAATCTTCAAGCTCAACTTGGAAACTGCGTCGGATACTATTCGGCTAGAGGAATGGAGGGGAGACTGGAATACTTGGTGTAGCAGTGAAATGCGTAGATATCAAGTGGAACACCAGTGGCGAAGGCGAGTCTCTGGACATTTCCTGACGCTGAGGCACGAAAGCCAGGGGAGCAAACGGG
-## 26 TACCGGCGGCTCGAGTGGTGGCCGCTTTTACTGGGCTTAAAGGGTCCGTAGCTGGATCCGCAAGTCCCTTGAGAAATCCATCGGCTTAACTGATGGGCGTTCAGGGGATACTGTGGTTCTAGGGACCGGGAGAGGTGAGAGGTACTGCCGGGGTAGGAGTGAAATCCTGTAATCCCGGTGGGACGACCTATGGCGAAGGCATCTCACCAGAACGGCTCCGACAGTGAGGGACGAAAGCTGGGGGAGCAAACCGG
-## 27  TACGTAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGCAGGCGGTTTTGCAAGTCAGATGTGAAATCCCCGGGCTTAACCTGGGAACTGCATTTGAAACTACAAGGCTTGAGTGTGTCAGAGGGGGGTGGAATTCCACGTGTAGCAGTGAAATGCGTAGAGATGTGGAGGAACACCGATGGCGAAGGCAGCCCCCTGGGATAACACTGACGCTCATGCACGAAAGCGTGGGGAGCAAACAGG
-## 28 TACCGGCAGCTCGAGTGGTAGCTGTTTTTATTGGGCCTAAAGCGTTCGTAGCCGGTTTGATAAGTCTTTGGTGAAAGCTTGTAGCTTAACTATAAGAATTGCTGGAGATACTATCAGACTTGAAGTCGGGAGAGGTTAGAGGTACTACCGGGGTAGGGGTGAAATCCTATAATCCTGGGAGGACCACCTGTGGCGAAGGCGTCTAACTAGAACGATCTTGACGGTGAGTAACGAAAGCCAGGGGCGCGAACCGG
-## 29 TACCGGCGGCTCGAGTGGTGGCCACTATTATTGGGCTTAAAGCGTCCGTAGCAGGGTTGTTAAGTCTCTTGGGAAATCTACCGGCTCAACCGATAGGCGTTCAGGGGATACTGGCAACCTAGGGACCGGAAGAGGTGAGAGGTACTCCAGGGGTAGGAGTGAAATCCTGTAATCCTTGGGGGACCACCTGTGGCGAAGGCGTCTCACCAGGACGGCTCCGACTGTGAGGGACGAAAGCTGGGGGAGCAAACCGG
-## 30 TACCGGCGGCTCGAGTGGTGGCCACTATTACTGGGCTTAAAGCGTCCGTAGCTTGGTTGTTAAGTCTTCTGGGAAATCCATCGGCTTAACCGATGGGAGTTCAGGAGATACTGGCAACCTAGGGACCGGGAGAGGTGAGAGGTACTCCAGGGGTAGGAGTGAAATCCTGTAATCCTTGGGGGACCACCTGTGGCGAAGGCGTCTCACTAGAACGGCTCCGACAGTGAGGGACGAAAGCTGGGGGAGCAAACCGG
-## 31  TACGAAGGGGGCTAGCGTTGTTCGGAATCACTGGGCGTAAAGCGCACGTAGGCGGATCTTTAAGTCAGGGGTGAAATCCCGAGGCTCAACCTCGGAACTGCCTTTGATACTGGGGGTCTAGAGTCCGGGAGAGGTGAGTGGAACTGCGAGTGTAGAGGTGAAATTCGTAGATATTCGCAAGAACACCAGTGGCGAAGGCGGCTCACTGGCCCGGTACTGACGCTGAGGTGCGAAAGCGTGGGGAGCAAACAGG
-## 32  TACGGAGGGTGCGAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGCTAGTTAAGTCAGATGTGAAAGCCCTGGGCTCAACCTGGGAACGGCATTTGAAACTGATTGGCTAGAGTTAGGTAGAGGGGAGCGGAATTTCAGGTGTAGCGGTGAAATGCGTAGATATCTGAAGGAACACCAGTGGCGAAGGCGGCTCCCTGGACCCAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
-## 33  TACAGAGGTCCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGCGTAGGCGGTTAGGTAAGTCTGATGTGAAATCTCCGGGCTCAACCCGGAAACTGCATTGGATACTATCTAGCTAGAGGTTTGGAGGGGGGACTGGAATTCTCGGTGTAGCAGTGAAATGCGTAGATATCGAGAGGAACACCAGTGGCGAAGGCGGGTCCCTGGACAACACCTGACGCTGAGGCACGAAAGTCGGGGGAGCAAACAGG
-## 34  TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGCTTGTTAAGTCAGATGTGAAAGCCCCGGGCTCAACCTGGGAACTGCATTTGAAACTGGCAAGCTAGAGTTTGGGAGAGGGGAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGAGATCTGAAGGAACACCAGTGGCGAAGGCGACTCCCTGGCCCAAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
-## 35  TACGAAGGGGGCTAGCGTTGTTCGGAATTACTGGGCGTAAAGGGCGCGTAGGCGGCCCGATCAGTCAGATGTGAAAGCCCCGGGCTCAACCTGGGAACTGCATTTGATACTGTCGGGCTTGAGTTCCGGAGAGGATGGTGGAATTCCCAGTGTAGAGGTGAAATTCGTAGATATTGGGAAGAACACCGGTGGCGAAGGCGGCCATCTGGACGGACACTGACGCTGAGGCGCGAAAGCGTGGGGAGCAAACAGG
-## 36  TACAGAGGTGGCAAGCGTTGTTCGGATTTACTGGGCGTAAAGGGTGCGTAGGCTGTTCCGTAAGTCGGATGTGAAATCCCACTGCTCAATGGTGGAACTGCATTCGAAACTGCGGAACTAGAGTACAGAAGGGGAGAGCGGAATTCTTGGTGTAGCGGTGAAATGCGTTGATATCAAGAAGAACACCGGTGGCGAAGGCGGCTCTCTGGAATGTTACTGACGCTGAGGCACGAGAGCTGGGGGAGCAAACAGG
-## 37 CACCGGCAGCTCGAGTGGTAGCCAGTTTTATTGGGCCTAAAGCGTTCGTAGCCGGTTTAATAAGTCTTTGGTGAAATCCTGCAGCTTAACTGTGGGAATTGCTGGAGATACTATTAGACTTGAGATCGGGAGAGGTTAGAGGTACTCCCAGGGTAGGGGTGAAATCCTGTAATCCTGGGAGGACCACCTGTGGCGAAGGCGTCTAACTGGAACGAATCTGACGGTGAGGGACGAAAGCCAGGGGCGCGAACCGG
-## 38  TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGTGGCTTGTTAAGTCAGATGTGAAAGCCCCGGGCTTAACCTGGGAACTGCATTTGAAACTGGCAAGCTAGAGTTGAGTAGAGGGGAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGATATCTGAAGGAACACCAGTGGCGAAGGCGACTCCCTGGACTCAAACTGACGCTGAGGCACGAAAGCGTGGGTAGCAAACAGG
-## 39 CACCGGCAGCTCTAGTGGTAGCCATTTTTATTGGGCCTAAAGCGTTCGTAGCCGGTTTGATAAGTCTCTGGTGAAATCCTATAGCTTAACTGTGGGACTTGCTGGAGATACTATTAGACTTGAGGTCGGGAGAGGTTAGCGGTACTCCCAGGGTAGGGGTGAAATCCTGTAATCCTGGGAGGACCACCTGTGGCGAAGGCGGCTAACTGGAACGAACCTGACGGTGAGGGACGAAAGCCAGGGGCGCGAACCGG
-## 40  TACGAAGGGGGCTAGCGTTGTTCGGAATCACTGGGCGTAAAGCGCACGTAGGCGGATCTTTAAGTCAGAGGTGAAATCCCAAGGCTCAACCTTGGAACTGCCTTTGATACTGGGGATCTTGAGTCCGGGAGAGGTGAGTGGAACTGCGAGTGTAGAGGTGAAATTCGTAGATATTCGCAAGAACACCAGTGGCGAAGGCGGCTCACTGGCCCGGTACTGACGCTGAGGTGCGAAAGCGTGGGGAGCAAACAGG
-## 41  TACAGAGGTCCCAAGCGTTGTTCGGATTTACTGGGCGTAAAGGGTGCGTAGGCGGTTAGGAAAGTCTGATGTGAAATCTCGGAGCTTAACTTCGAAACTGCATTGGAAACTATTTGACTTGAGTAGTGTAGGGGAGATTGGAATTCTCGGTGTAGCAGTGAAATGCGTAGATATCGAGAGGAACACCAGTGGCGAAGGCGAATCTCTGGACACTAACTGACGCTGAGGCACGAAAGCCAAGGGAGCAAACGGG
-## 42 TACAGGTAGCACGAGTGGTGTCCACGAATACTGAGTCTAAAGCGCCCGTAGCCGGCTTATCACGTCCTCTGTGAAATCTCACGGCTTAACCGTGAGGCTTGCAGGGGATACGAGTAGGCTTGGGAGTGGGGGAGGTCAGAGGTACTGCGGGGGGAGGAGTAAAATCCTGTAATCCTCGTAGGACCCTCGGTGGCGAAAGCGTCTGACCAAAACACATCCGACGGTGAGGGACGAAGGCTAGGGGAGCGAACCGG
-## 43 CACCGGCGGCCCGAGTGGTGATCGTGATTATTGGGTCTAAAGGGTCCGTAGCCGGTTTGGTCAGTCCTCCGGGAAATCTGACGGCTCAACCGTTAGGCTTTCGGGGGATACTGCCAGGCTTGGAACCGGGAGAGGTAAGAGGTACTACAGGGGTAGGAGTGAAATCTTGTAATCCCTGTGAGACCACCTGTGGCGAAGGCGTCTTACCAGAACGGGTTCGACGGTGAGGGACGAAAGCTGGGGGCACGAACCGG
-## 44  TACAGAGGTGGCGAGCGTTGTTCGGATTTACTGGGCGTAAAGGGTGCGTAGGCGGTATGGTGTGTCGGATGTGAAAGCCTGTTGCTTAACAACAGAACGGCATCCGAAACTACTATTCTAGAGTGCAGGAGAGGAAGGTGGAATTCTCGGTGTAGCGGTGAAATGCGTAGATATCGAGAGGAACACCCGTGGCGAAGGCGACCTTCTGGACTGCTACTGACGCTGAGGCACGAAGGCTGGGGGAGCAAACAGG
-## 45 TACCGGCGGCTCGAGTGGTGGCCGATATTATTGAGTCTAAAGGGTCCGTAGCCGGCTTTGCAAGTCCCCCGGGAAATCCAGCGGCTTAACCGTTGGGCTTTCGTGGGATACTACATTGCTTGGGACTGGGAGAGGTAGGAGGTACTCGGGGGGTAGGGGTGAAATCCTGTAATCCTCTGGGGACCACCGGTGGCGAAGGCGTCCTACCAGAACAGGTCCGACGGTGAGGGACGAAAGCTAGGGGTACGAACCGG
-## 46  TACAGAGGTCTCGAGCGTTGTTCGGATTTACTGGGCGTAAAGGGAGCGTAGGCGGTTCGGTGTGTTGAATGTGAAATCCCACAACTCAACTGTGGAATGGCATTCAAAACTGCCGGGCTAGAGTACTGGAGAGGAGAGCGGAATTCTTGGTGTAGCGGTGAAATGCGTAGATATCAAGAGGAACACCGGTGGCGAAGGCGGCTCTCTGGACAGATACTGACGCTGAGGCTCTAAAGTTAGGGGAGCAAACAGG
-## 47  TACAGAGGTCCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGCGTAGGCGGTCGGACAAGTCTGATGTGAAAGCTTCGAGCTTAACTCGGAAATGGCATCGGAAACTGTTCAGCTAGAGGAGTGGAGGGGGGATTGGAATTCTCGGTGTAGCAGTGAAATGCGTAGATATCGAGAGGAACACCCGTGGCGAAGGCAAATCCCTGGACACCTCCTGACGCTGAGGCACGAAAGCTAGGGGAGCAAACAGG
-## 48  TACCGGCAGCTCGAGTGGTAGCCGCGATTATTGGGCCTAAAGCGTTCGTAGCCGGATAAGTAAGTCTTTGGTTAAATCCTGCGACTTAACCGTGGGAAATCTAGAGATACTGCTTGTCTTGAGACCGGGAGAGGTTGGAGGTACTCCCAGGGTAGGGGTGAAATCCTGTAATCCTGGGGGGACCACCTGTGGCGAAGGCGTCCAACTGGAACGGGTCTGACGGTGAGGGACGAAACCTAGGGGAGCGAACCGG
+## 25 TACCGGCGGCTCGAGTGGTGGCCACTATTACTGGGCTTAAAGCGTCCGTAGCTTGGTTGTTAAGTCTTCTGGGAAATCCATCGGCTTAACCGATGGGAGTTCAGGAGATACTGGCAACCTAGGGACCGGGAGAGGTGAGAGGTACTCCAGGGGTAGGAGTGAAATCCTGTAATCCTTGGGGGACCACCTGTGGCGAAGGCGTCTCACTAGAACGGCTCCGACAGTGAGGGACGAAAGCTGGGGGAGCAAACCGG
+## 26 TACCGGCAGCTCGAGTGGTAGCTGTTTTTATTGGGCCTAAAGCGTTCGTAGCCGGTTTGATAAGTCTTTGGTGAAAGCTTGTAGCTTAACTATAAGAATTGCTGGAGATACTATCAGACTTGAAGTCGGGAGAGGTTAGAGGTACTACCGGGGTAGGGGTGAAATCCTATAATCCTGGGAGGACCACCTGTGGCGAAGGCGTCTAACTAGAACGATCTTGACGGTGAGTAACGAAAGCCAGGGGCGCGAACCGG
+## 27  TACGGAGGGTGCGAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGCTAGTTAAGTCAGATGTGAAAGCCCTGGGCTCAACCTGGGAACGGCATTTGAAACTGATTGGCTAGAGTTAGGTAGAGGGGAGCGGAATTTCAGGTGTAGCGGTGAAATGCGTAGATATCTGAAGGAACACCAGTGGCGAAGGCGGCTCCCTGGACCCAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
+## 28  TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGCTTGTTAAGTCAGATGTGAAAGCCCCGGGCTCAACCTGGGAACTGCATTTGAAACTGGCAAGCTAGAGTTTGGGAGAGGGGAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGAGATCTGAAGGAACACCAGTGGCGAAGGCGACTCCCTGGCCCAAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
+## 29  TACGAAGGGGGCTAGCGTTGTTCGGAATTACTGGGCGTAAAGGGCGCGTAGGCGGCCCGATCAGTCAGATGTGAAAGCCCCGGGCTCAACCTGGGAACTGCATTTGATACTGTCGGGCTTGAGTTCCGGAGAGGATGGTGGAATTCCCAGTGTAGAGGTGAAATTCGTAGATATTGGGAAGAACACCGGTGGCGAAGGCGGCCATCTGGACGGACACTGACGCTGAGGCGCGAAAGCGTGGGGAGCAAACAGG
+## 30 CACCGGCAGCTCGAGTGGTAGCCAGTTTTATTGGGCCTAAAGCGTTCGTAGCCGGTTTAATAAGTCTTTGGTGAAATCCTGCAGCTTAACTGTGGGAATTGCTGGAGATACTATTAGACTTGAGATCGGGAGAGGTTAGAGGTACTCCCAGGGTAGGGGTGAAATCCTGTAATCCTGGGAGGACCACCTGTGGCGAAGGCGTCTAACTGGAACGAATCTGACGGTGAGGGACGAAAGCCAGGGGCGCGAACCGG
+## 31  TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGTGGCTTGTTAAGTCAGATGTGAAAGCCCCGGGCTTAACCTGGGAACTGCATTTGAAACTGGCAAGCTAGAGTTGAGTAGAGGGGAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGATATCTGAAGGAACACCAGTGGCGAAGGCGACTCCCTGGACTCAAACTGACGCTGAGGCACGAAAGCGTGGGTAGCAAACAGG
+## 32 CACCGGCAGCTCTAGTGGTAGCCATTTTTATTGGGCCTAAAGCGTTCGTAGCCGGTTTGATAAGTCTCTGGTGAAATCCTATAGCTTAACTGTGGGACTTGCTGGAGATACTATTAGACTTGAGGTCGGGAGAGGTTAGCGGTACTCCCAGGGTAGGGGTGAAATCCTGTAATCCTGGGAGGACCACCTGTGGCGAAGGCGGCTAACTGGAACGAACCTGACGGTGAGGGACGAAAGCCAGGGGCGCGAACCGG
+## 33 TACCGGCGGCTCGAGTGGTGGCCGATATTATTGAGTCTAAAGGGTCCGTAGCCGGCTTTGCAAGTCCCCCGGGAAATCCAGCGGCTTAACCGTTGGGCTTTCGTGGGATACTACATTGCTTGGGACTGGGAGAGGTAGGAGGTACTCGGGGGGTAGGGGTGAAATCCTGTAATCCTCTGGGGACCACCGGTGGCGAAGGCGTCCTACCAGAACAGGTCCGACGGTGAGGGACGAAAGCTAGGGGTACGAACCGG
+## 34 CACCGGCGGCCCGAGTGGTGATCGTGATTATTGGGTCTAAAGGGTCCGTAGCCGGTTTGGTCAGTCCTCCGGGAAATCTGACGGCTCAACCGTTAGGCTTTCGGGGGATACTGCCAGGCTTGGAACCGGGAGAGGTAAGAGGTACTACAGGGGTAGGAGTGAAATCTTGTAATCCCTGTGAGACCACCTGTGGCGAAGGCGTCTTACCAGAACGGGTTCGACGGTGAGGGACGAAAGCTGGGGGCACGAACCGG
+## 35  TACCGGCAGCTCGAGTGGTAGCCGCGATTATTGGGCCTAAAGCGTTCGTAGCCGGATAAGTAAGTCTTTGGTTAAATCCTGCGACTTAACCGTGGGAAATCTAGAGATACTGCTTGTCTTGAGACCGGGAGAGGTTGGAGGTACTCCCAGGGTAGGGGTGAAATCCTGTAATCCTGGGGGGACCACCTGTGGCGAAGGCGTCCAACTGGAACGGGTCTGACGGTGAGGGACGAAACCTAGGGGAGCGAACCGG
+## 36 TACGAAGGGTGCAAGCGTTAATCGGACTTACTGGGCGTAAAGGGTGCGTAGGTGGTCTGTTAAGTCGGATGTGAAATCCCCGGGCTCAACCTGGGAATGGCATCCGATACTGGCGGACTTGGAGTCTTGGAGAGGGTGGTGGAATTCCTGGTGTAGCGGTGAAATGCGTAGAGATCAGGAGGAACACTAGTGGCGAAGGCGGCCACCTGGCCAAAGACTGACGCTGAGGCACGAAAGCGTGGGGAGCAAACAGG
 ```
 
 ``` r
@@ -526,9 +486,18 @@ water_ch4_joined_clean_faprotax <- water_ch4_joined %>%
     "Derxia", "UBA10450", "UBA11358", "Alsobacter", "UBA3015", "GAS474", "JAAUTS01",
     "UBA6215", "LW23", "WYBW01", "Pedosphaera", "Azospirillum", "YA12-FULL-60-10",
     "Beijerinckia", "SXTU01", "AV2", "Lenti-01", "PWTM01", "UBA95"),
-    !Family %in% c("J093", "UBA10450"),
-    !ASV %in% c("ASV_23314", "ASV_301", "ASV_3420", "ASV_2686", "ASV_2686", "ASV_3289")) # total 10560
+    !Family %in% c("J093", "UBA10450", "Rhodanobacteraceae"),
+    !ASV %in% c("ASV_468")) # total 9744
 
+water_ch4_joined_clean_faprotax$Family %>% unique()
+```
+
+```
+##  [1] "Methylomonadaceae"        "Methylococcaceae"         "Beijerinckiaceae"         "Methanotrichaceae"        "Methanospirillaceae_2121" "Methanobacteriaceae"      "Methanospirillaceae_2125" "Methanomicrobiaceae"      "Methanocellaceae"        
+## [10] "Methanosarcinaceae"       "Methanofastidiosaceae"
+```
+
+``` r
 # notes for my exclusions:
 # 1. cannot find any information for derxia being methanotroph
 # 2. UBA10450 (family) is within Chthoniobacterales (order) within Verrucomicrobiota. since this is at family level its hard to say what is function is. im finding its involved in complex carbon degradation and could maybe be a methanotroph and have other pathways to break this down but with this uncertainty and especially since no genus level identification will omit for now. most are apparently aerobic/anaerobic chemoorganotrophs
@@ -561,7 +530,7 @@ water_ch4_joined_clean_faprotax$Order %>% unique()
 ```
 
 ```
-## [1] "Methylococcales"          "Rhizobiales_505101"       "Methanotrichales"         "Methanomicrobiales"       "Methanobacteriales"       "Methanosarcinales_A_2632" "Methanocellales"          "Methanofastidiosales"
+## [1] "Methylococcales"          "Rhizobiales_505101"       "Methanotrichales"         "Methanomicrobiales"       "Methanobacteriales"       "Methanocellales"          "Methanosarcinales_A_2632" "Methanofastidiosales"
 ```
 
 ``` r
@@ -587,7 +556,8 @@ water_24_taxonomysearch <- water_physeq_ch4_df %>%
 water_24_manual <- water_24_taxonomysearch %>%
   dplyr::filter(Family %in% c("2-02-FULL-66-22", "Methanomethylophilaceae", "UBA472", 
                               "Methanomassiliicoccaceae", "Methylomonadaceae", "Methanobacteriaceae") |
-                Order %in% c("Methylococcales"))# %>% 
+                Order %in% c("Methylococcales") |
+                  Genus %in% c("Methylocella"))# %>% 
   #dplyr::filter
   # family level to also include manually (e.g., specific N-DAMO methanotroph and methanogen
   #dplyr::distinct(ASV, .keep_all = TRUE) # one ASV per row
@@ -641,15 +611,15 @@ tax_tab$CH4_Cycler <- dplyr::case_when(
 
 tax_table(water_ch4_cyclers_physeq) <- tax_table(as.matrix(tax_tab))
 
-water_ch4_cyclers_physeq # 255 total ASVs
+water_ch4_cyclers_physeq # 248 total ASVs
 ```
 
 ```
 ## phyloseq-class experiment-level object
-## otu_table()   OTU Table:          [ 255 taxa and 48 samples ]:
-## sample_data() Sample Data:        [ 48 samples by 50 sample variables ]:
-## tax_table()   Taxonomy Table:     [ 255 taxa by 10 taxonomic ranks ]:
-## phy_tree()    Phylogenetic Tree:  [ 255 tips and 254 internal nodes ]:
+## otu_table()   OTU Table:          [ 248 taxa and 48 samples ]:
+## sample_data() Sample Data:        [ 48 samples by 51 sample variables ]:
+## tax_table()   Taxonomy Table:     [ 248 taxa by 10 taxonomic ranks ]:
+## phy_tree()    Phylogenetic Tree:  [ 248 tips and 247 internal nodes ]:
 ## taxa are columns
 ```
 
@@ -862,8 +832,8 @@ sed_ch4_joined$Phylum %>% unique()
 ```
 
 ```
-##  [1] "Halobacteriota"           "Pseudomonadota"           "Methanobacteriota_A_1229" "Verrucomicrobiota"        NA                         "Omnitrophota"             "Micrarchaeota"            "Planctomycetota"          "Nitrospirota_A_437815"   
-## [10] "Margulisbacteria"
+##  [1] "Halobacteriota"           "Methanobacteriota_A_1229" "Pseudomonadota"           "Verrucomicrobiota"        NA                         "Omnitrophota"             "Planctomycetota"          "Micrarchaeota"            "Margulisbacteria"        
+## [10] "Nitrospirota_A_437815"
 ```
 
 ``` r
@@ -871,9 +841,9 @@ sed_ch4_joined$Order %>% unique()
 ```
 
 ```
-##  [1] "Methanotrichales"         "Methanomicrobiales"       "Methylococcales"          "Methanobacteriales"       "Rhizobiales_505101"       "Methanosarcinales_A_2632" "Methanocellales"          "Limisphaerales"           NA                        
-## [10] "UBA8416"                  "Chthoniobacterales"       "Pluralincolimonadales"    "LD1-PB3_B"                "SLAD01"                   "Omnitrophales"            "PWTM01"                   "JAAZAB01"                 "Norongarragalinales"     
-## [19] "Methylacidiphilales"      "Kiritimatiellales"        "Burkholderiales"          "CAIQIC01"
+##  [1] "Methanotrichales"         "Methanomicrobiales"       "Methanobacteriales"       "Methylococcales"          "Rhizobiales_505101"       "Limisphaerales"           "Methanocellales"          "Methanosarcinales_A_2632" NA                        
+## [10] "UBA8416"                  "Chthoniobacterales"       "Pluralincolimonadales"    "LD1-PB3_B"                "SLAD01"                   "PWTM01"                   "Omnitrophales"            "JAAZAB01"                 "Methylacidiphilales"     
+## [19] "Norongarragalinales"      "Kiritimatiellales"        "Burkholderiales"          "CAIQIC01"
 ```
 
 ``` r
@@ -881,12 +851,12 @@ sed_ch4_joined$Genus %>% unique()
 ```
 
 ```
-##  [1] "Methanothrix_B"          "Methanoregula"           "Methylobacter_C_601751"  "Methanobacterium_F_900"  "Methanolinea_A"          "Methyloparacoccus"       "Methanobacterium_D_1054" "Methanobacterium_B_963"  "Methylocystis"          
-## [10] "Methanobacterium_A"      "UBA4132"                 "Methanosarcina_2619"     "UBA467"                  NA                        "Methanocella_A"          "WYBW01"                  "Methylobacter_C_601048"  "AV2"                    
-## [19] "UBA288"                  "Methylotetracoccus"      "YA12-FULL-60-10"         "Alsobacter"              "Methyloterricola"        "Methylomonas"            "Methanobacterium_F_896"  "Methanoperedens_A"       "UBA3939"                
-## [28] "UBA11358"                "Methyloglobulus"         "Pedosphaera"             "Methanospirillum"        "UBA6215"                 "Methylococcus"           "MWDV01"                  "Crenothrix"              "Lenti-01"               
-## [37] "WLWN01"                  "UBA7542"                 "Beijerinckia"            "Methanolinea_B"          "Methanobacterium_C"      "Methylomagnum"           "Methanomethylovorans"    "PWTM01"                  "Methylosoma"            
-## [46] "VSJD01"                  "UBA95"                   "JAAUTS01"                "SLKG01"                  "Methanobrevibacter_A"    "BOG-1460"                "GAS474"                  "Methylocaldum"           "UBA3015"                
+##  [1] "Methanothrix_B"          "Methanoregula"           "Methanolinea_A"          "Methanobacterium_F_900"  "Methyloparacoccus"       "Methanobacterium_D_1054" "UBA467"                  "Methanobacterium_B_963"  "Methylobacter_C_601751" 
+## [10] "Methylocystis"           "Methanobacterium_A"      NA                        "UBA4132"                 "WYBW01"                  "Methylobacter_C_601048"  "Methanocella_A"          "Methanosarcina_2619"     "AV2"                    
+## [19] "UBA288"                  "YA12-FULL-60-10"         "Alsobacter"              "UBA3939"                 "Methanoperedens_A"       "UBA11358"                "Methanospirillum"        "Pedosphaera"             "UBA6215"                
+## [28] "Methylotetracoccus"      "Methylomonas"            "Methyloterricola"        "MWDV01"                  "Lenti-01"                "Methanobacterium_F_896"  "WLWN01"                  "Methyloglobulus"         "UBA7542"                
+## [37] "Beijerinckia"            "Methanolinea_B"          "Methylococcus"           "Methanomethylovorans"    "Crenothrix"              "PWTM01"                  "Methanobacterium_C"      "VSJD01"                  "JAAUTS01"               
+## [46] "SLKG01"                  "UBA95"                   "Methylomagnum"           "Methylosoma"             "Methanobrevibacter_A"    "BOG-1460"                "GAS474"                  "Methylocaldum"           "UBA3015"                
 ## [55] "DP16D-bin41"
 ```
 
@@ -895,51 +865,50 @@ sed_ch4_joined$ASV %>% unique()
 ```
 
 ```
-##   [1] "ASV_14"    "ASV_54"    "ASV_102"   "ASV_110"   "ASV_262"   "ASV_165"   "ASV_592"   "ASV_216"   "ASV_683"   "ASV_231"   "ASV_184"   "ASV_434"   "ASV_568"   "ASV_615"   "ASV_203"   "ASV_431"   "ASV_363"   "ASV_286"   "ASV_409"   "ASV_400"  
-##  [21] "ASV_415"   "ASV_302"   "ASV_517"   "ASV_321"   "ASV_352"   "ASV_559"   "ASV_650"   "ASV_1116"  "ASV_340"   "ASV_510"   "ASV_884"   "ASV_177"   "ASV_712"   "ASV_642"   "ASV_674"   "ASV_853"   "ASV_208"   "ASV_495"   "ASV_499"   "ASV_831"  
-##  [41] "ASV_580"   "ASV_494"   "ASV_2783"  "ASV_656"   "ASV_1005"  "ASV_572"   "ASV_1957"  "ASV_1069"  "ASV_3716"  "ASV_1762"  "ASV_3502"  "ASV_1233"  "ASV_634"   "ASV_806"   "ASV_662"   "ASV_1433"  "ASV_2261"  "ASV_2551"  "ASV_1229"  "ASV_786"  
-##  [61] "ASV_919"   "ASV_2179"  "ASV_2182"  "ASV_1130"  "ASV_2044"  "ASV_3329"  "ASV_2263"  "ASV_1399"  "ASV_1063"  "ASV_1626"  "ASV_1900"  "ASV_940"   "ASV_2834"  "ASV_2525"  "ASV_1018"  "ASV_2152"  "ASV_2861"  "ASV_3238"  "ASV_3463"  "ASV_1512" 
-##  [81] "ASV_2717"  "ASV_2740"  "ASV_3333"  "ASV_3112"  "ASV_3078"  "ASV_5033"  "ASV_6554"  "ASV_2442"  "ASV_2228"  "ASV_1969"  "ASV_1402"  "ASV_3717"  "ASV_2021"  "ASV_2065"  "ASV_2572"  "ASV_6185"  "ASV_1809"  "ASV_2676"  "ASV_5191"  "ASV_12068"
-## [101] "ASV_2331"  "ASV_5762"  "ASV_8704"  "ASV_1765"  "ASV_2539"  "ASV_3245"  "ASV_5812"  "ASV_2366"  "ASV_4270"  "ASV_4480"  "ASV_13112" "ASV_1308"  "ASV_2746"  "ASV_4832"  "ASV_4736"  "ASV_2057"  "ASV_8076"  "ASV_2691"  "ASV_5704"  "ASV_4603" 
-## [121] "ASV_1855"  "ASV_3646"  "ASV_4541"  "ASV_4382"  "ASV_4385"  "ASV_10663" "ASV_10561" "ASV_7020"  "ASV_2961"  "ASV_3857"  "ASV_5490"  "ASV_3084"  "ASV_2730"  "ASV_3141"  "ASV_4071"  "ASV_1865"  "ASV_2703"  "ASV_4868"  "ASV_2471"  "ASV_7659" 
-## [141] "ASV_9646"  "ASV_5986"  "ASV_5100"  "ASV_15401" "ASV_2045"  "ASV_6333"  "ASV_4642"  "ASV_5431"  "ASV_2432"  "ASV_6703"  "ASV_6755"  "ASV_4179"  "ASV_5578"  "ASV_6331"  "ASV_15867" "ASV_5114"  "ASV_4564"  "ASV_6633"  "ASV_4272"  "ASV_2284" 
-## [161] "ASV_4211"  "ASV_4390"  "ASV_9335"  "ASV_10183" "ASV_8142"  "ASV_11418" "ASV_6715"  "ASV_8598"  "ASV_10635" "ASV_4143"  "ASV_7809"  "ASV_8516"  "ASV_5943"  "ASV_1479"  "ASV_11806" "ASV_4825"  "ASV_3184"  "ASV_4403"  "ASV_4639"  "ASV_4696" 
-## [181] "ASV_5398"  "ASV_15341" "ASV_11854" "ASV_4364"  "ASV_11223" "ASV_5014"  "ASV_3464"  "ASV_5280"  "ASV_9916"  "ASV_12837" "ASV_7441"  "ASV_9250"  "ASV_6110"  "ASV_5614"  "ASV_7186"  "ASV_822"   "ASV_4227"  "ASV_14113" "ASV_1801"  "ASV_6648" 
-## [201] "ASV_8322"  "ASV_4057"  "ASV_2690"  "ASV_3398"  "ASV_3800"  "ASV_6182"  "ASV_2916"  "ASV_9038"  "ASV_13733" "ASV_9821"  "ASV_1357"  "ASV_2874"  "ASV_3370"  "ASV_3731"  "ASV_4416"  "ASV_12006" "ASV_12229" "ASV_11032" "ASV_13133" "ASV_5124" 
-## [221] "ASV_9267"  "ASV_12797" "ASV_6302"  "ASV_6913"  "ASV_10200" "ASV_4634"  "ASV_7707"  "ASV_7175"  "ASV_5284"  "ASV_2959"  "ASV_6306"  "ASV_7121"  "ASV_19804" "ASV_2664"  "ASV_5391"  "ASV_5923"  "ASV_8036"  "ASV_8393"  "ASV_12926" "ASV_9846" 
-## [241] "ASV_14973" "ASV_8804"  "ASV_6851"  "ASV_8281"  "ASV_7899"  "ASV_8492"  "ASV_8300"  "ASV_976"   "ASV_1755"  "ASV_5258"  "ASV_7697"  "ASV_13440" "ASV_4087"  "ASV_7654"  "ASV_8304"  "ASV_9237"  "ASV_11373" "ASV_8798"  "ASV_14184" "ASV_6812" 
-## [261] "ASV_6857"  "ASV_10578" "ASV_5453"  "ASV_11325" "ASV_14944" "ASV_14946" "ASV_10191" "ASV_9448"  "ASV_14976" "ASV_3467"  "ASV_44"    "ASV_10610" "ASV_6258"  "ASV_8120"  "ASV_4774"  "ASV_4069"  "ASV_6701"  "ASV_8702"  "ASV_13089" "ASV_3959" 
-## [281] "ASV_10021" "ASV_13667" "ASV_6792"  "ASV_6917"  "ASV_12785" "ASV_3522"  "ASV_1008"  "ASV_11199" "ASV_10199" "ASV_8554"  "ASV_9781"  "ASV_10276" "ASV_12048" "ASV_5977"  "ASV_11336" "ASV_11788" "ASV_15736" "ASV_8886"  "ASV_16395" "ASV_16396"
-## [301] "ASV_5896"  "ASV_9756"  "ASV_16375" "ASV_10799" "ASV_16969" "ASV_468"   "ASV_10035" "ASV_5254"  "ASV_10354" "ASV_12696" "ASV_17257" "ASV_2677"  "ASV_6759"  "ASV_11575" "ASV_11777" "ASV_3190"  "ASV_7243"  "ASV_11849" "ASV_16981" "ASV_16982"
-## [321] "ASV_13099" "ASV_13761" "ASV_15876" "ASV_17622" "ASV_12832" "ASV_17000" "ASV_16331" "ASV_16332" "ASV_12438" "ASV_6697"  "ASV_12509" "ASV_15794" "ASV_16287" "ASV_16825" "ASV_11017" "ASV_11957" "ASV_9492"  "ASV_16922" "ASV_9479"  "ASV_7811" 
-## [341] "ASV_951"   "ASV_11746" "ASV_12016" "ASV_9006"  "ASV_17274" "ASV_6530"  "ASV_9210"  "ASV_11229" "ASV_13351" "ASV_14930" "ASV_17563" "ASV_10639" "ASV_12267" "ASV_1663"  "ASV_1677"  "ASV_17006" "ASV_17473" "ASV_17616" "ASV_4105"  "ASV_25026"
-## [361] "ASV_13756" "ASV_6870"  "ASV_10476" "ASV_6645"  "ASV_14757" "ASV_8460"  "ASV_9778"  "ASV_7180"  "ASV_12452" "ASV_1252"  "ASV_19448" "ASV_10611" "ASV_23510" "ASV_7032"  "ASV_16217" "ASV_17270" "ASV_11825" "ASV_16425" "ASV_18313" "ASV_19077"
-## [381] "ASV_7017"  "ASV_7355"  "ASV_9139"  "ASV_9739"  "ASV_17540" "ASV_6643"  "ASV_18343" "ASV_6853"  "ASV_10182" "ASV_7365"  "ASV_18862" "ASV_8789"  "ASV_11932" "ASV_10644" "ASV_16971" "ASV_11828" "ASV_9867"  "ASV_12211" "ASV_12218" "ASV_13672"
-## [401] "ASV_14822" "ASV_10495" "ASV_18058" "ASV_14745" "ASV_11170" "ASV_13623" "ASV_17636" "ASV_20892" "ASV_8122"  "ASV_13375" "ASV_19109" "ASV_19962" "ASV_21000" "ASV_21009" "ASV_21011" "ASV_6704"  "ASV_13674" "ASV_27038" "ASV_15397" "ASV_13301"
-## [421] "ASV_16856" "ASV_5547"  "ASV_32339" "ASV_14352" "ASV_14797" "ASV_22190" "ASV_18882" "ASV_6749"  "ASV_19573" "ASV_20517" "ASV_10136" "ASV_15192" "ASV_25193" "ASV_25194" "ASV_11412" "ASV_14058" "ASV_3305"  "ASV_13612" "ASV_4563"  "ASV_13637"
-## [441] "ASV_15913" "ASV_17573" "ASV_19917" "ASV_3075"  "ASV_9765"  "ASV_9500"  "ASV_6586"  "ASV_20720" "ASV_16289" "ASV_20635" "ASV_8213"  "ASV_9249"  "ASV_12287" "ASV_16965" "ASV_16968" "ASV_12024" "ASV_11602" "ASV_13077" "ASV_13717" "ASV_15802"
-## [461] "ASV_12765" "ASV_16341" "ASV_17483" "ASV_13001" "ASV_16177" "ASV_15385" "ASV_12500" "ASV_26725" "ASV_12001" "ASV_12168" "ASV_20796" "ASV_12736" "ASV_14512" "ASV_17529" "ASV_18073" "ASV_465"   "ASV_11184" "ASV_12994" "ASV_20831" "ASV_13980"
-## [481] "ASV_15210" "ASV_9853"  "ASV_13591" "ASV_13613" "ASV_21643" "ASV_12507" "ASV_18272" "ASV_18999" "ASV_25157" "ASV_25165" "ASV_12519" "ASV_12706" "ASV_14967" "ASV_15618" "ASV_1945"  "ASV_21821" "ASV_22202" "ASV_22203" "ASV_22217" "ASV_23244"
-## [501] "ASV_23728" "ASV_11700" "ASV_29564" "ASV_14066" "ASV_19718" "ASV_7494"  "ASV_8468"  "ASV_17280" "ASV_36729" "ASV_29827" "ASV_10454" "ASV_12372" "ASV_13676" "ASV_13755" "ASV_14474" "ASV_13437" "ASV_376"   "ASV_22941" "ASV_13607" "ASV_22725"
-## [521] "ASV_22727" "ASV_24358" "ASV_24362" "ASV_26154" "ASV_26163" "ASV_16266" "ASV_10277" "ASV_25297" "ASV_23413" "ASV_25450" "ASV_19748" "ASV_23685" "ASV_25384" "ASV_13702" "ASV_18629" "ASV_20727" "ASV_23255" "ASV_11983" "ASV_17288" "ASV_17952"
-## [541] "ASV_22792" "ASV_21710" "ASV_21738" "ASV_21741" "ASV_23109" "ASV_23112" "ASV_24771" "ASV_7156"  "ASV_11349" "ASV_16416" "ASV_18949" "ASV_18720" "ASV_16206" "ASV_24992" "ASV_25048" "ASV_27049" "ASV_29587" "ASV_29597" "ASV_10606" "ASV_12027"
-## [561] "ASV_12732" "ASV_22994" "ASV_11994" "ASV_1674"  "ASV_27421" "ASV_357"   "ASV_7610"  "ASV_12434" "ASV_22966" "ASV_24596" "ASV_28856" "ASV_11486" "ASV_19481" "ASV_24394" "ASV_10909" "ASV_27205" "ASV_1367"  "ASV_14329" "ASV_17475" "ASV_21844"
-## [581] "ASV_27559" "ASV_30260" "ASV_30263" "ASV_37654" "ASV_37660" "ASV_37671" "ASV_38100" "ASV_15179" "ASV_38686" "ASV_119"   "ASV_34017" "ASV_4168"  "ASV_16664" "ASV_17159" "ASV_23157" "ASV_24799" "ASV_26708" "ASV_29853" "ASV_33473" "ASV_18054"
-## [601] "ASV_24568" "ASV_26415" "ASV_26419" "ASV_21768" "ASV_13296" "ASV_15124" "ASV_1711"  "ASV_28507" "ASV_31529" "ASV_17520" "ASV_38217" "ASV_20738" "ASV_20764" "ASV_27178" "ASV_12888" "ASV_1510"  "ASV_19569" "ASV_26371" "ASV_26383" "ASV_26394"
-## [621] "ASV_10257" "ASV_15202" "ASV_15936" "ASV_20254" "ASV_27376" "ASV_27377" "ASV_27379" "ASV_27383" "ASV_30048" "ASV_33695" "ASV_33714" "ASV_33719" "ASV_828"   "ASV_21722" "ASV_26623" "ASV_27077" "ASV_33070" "ASV_34118" "ASV_20585" "ASV_26853"
-## [641] "ASV_22027" "ASV_30220" "ASV_21758" "ASV_29322" "ASV_26238" "ASV_26241" "ASV_1600"  "ASV_26652" "ASV_25332" "ASV_25341" "ASV_27449" "ASV_24935" "ASV_26867" "ASV_22813" "ASV_24424" "ASV_36880" "ASV_8857"  "ASV_17321" "ASV_18001" "ASV_22244"
-## [661] "ASV_31410" "ASV_37573" "ASV_37603" "ASV_26173" "ASV_37713" "ASV_33766" "ASV_33778" "ASV_38716" "ASV_38725" "ASV_19439" "ASV_31961" "ASV_31995" "ASV_42666" "ASV_26199" "ASV_32002" "ASV_31604" "ASV_35800" "ASV_35818" "ASV_42102" "ASV_42147"
-## [681] "ASV_42151" "ASV_33345" "ASV_33352" "ASV_33358" "ASV_33361" "ASV_33385" "ASV_38114" "ASV_38148" "ASV_38172" "ASV_38179" "ASV_44900" "ASV_24956" "ASV_34029" "ASV_34046" "ASV_34087" "ASV_37120" "ASV_39119" "ASV_39164" "ASV_39181" "ASV_39194"
-## [701] "ASV_39209" "ASV_8274"  "ASV_44334" "ASV_29263" "ASV_37097" "ASV_43685" "ASV_33421" "ASV_8424"  "ASV_39089" "ASV_46020" "ASV_46052" "ASV_36855" "ASV_36857" "ASV_43368" "ASV_45078" "ASV_9672"  "ASV_31921" "ASV_31925" "ASV_31933" "ASV_31935"
-## [721] "ASV_35698" "ASV_35726" "ASV_42044" "ASV_33301" "ASV_33314" "ASV_18045" "ASV_22894" "ASV_36204" "ASV_20394" "ASV_35741" "ASV_42072" "ASV_38663" "ASV_45474" "ASV_45485" "ASV_24737" "ASV_24742" "ASV_32319" "ASV_32322" "ASV_36680" "ASV_46189"
-## [741] "ASV_32711" "ASV_32712" "ASV_37240" "ASV_43847" "ASV_43865" "ASV_45988" "ASV_37188" "ASV_43778" "ASV_35836" "ASV_23067" "ASV_36787" "ASV_38531" "ASV_38534" "ASV_30119" "ASV_38575" "ASV_38578" "ASV_19639" "ASV_29388" "ASV_29402" "ASV_37295"
-## [761] "ASV_37326" "ASV_43905" "ASV_21535" "ASV_31674" "ASV_31675" "ASV_42262" "ASV_32800" "ASV_32802" "ASV_43972"
+##   [1] "ASV_14"    "ASV_54"    "ASV_102"   "ASV_592"   "ASV_262"   "ASV_286"   "ASV_165"   "ASV_517"   "ASV_302"   "ASV_216"   "ASV_683"   "ASV_352"   "ASV_231"   "ASV_110"   "ASV_184"   "ASV_434"   "ASV_340"   "ASV_568"   "ASV_615"   "ASV_712"  
+##  [21] "ASV_203"   "ASV_431"   "ASV_363"   "ASV_853"   "ASV_208"   "ASV_495"   "ASV_831"   "ASV_400"   "ASV_415"   "ASV_494"   "ASV_580"   "ASV_2783"  "ASV_1069"  "ASV_1957"  "ASV_572"   "ASV_1233"  "ASV_559"   "ASV_650"   "ASV_662"   "ASV_2261" 
+##  [41] "ASV_409"   "ASV_510"   "ASV_884"   "ASV_2179"  "ASV_177"   "ASV_1130"  "ASV_2044"  "ASV_642"   "ASV_2263"  "ASV_674"   "ASV_321"   "ASV_940"   "ASV_499"   "ASV_2834"  "ASV_1018"  "ASV_2525"  "ASV_1116"  "ASV_2861"  "ASV_3463"  "ASV_656"  
+##  [61] "ASV_2717"  "ASV_3333"  "ASV_2228"  "ASV_3502"  "ASV_3112"  "ASV_1762"  "ASV_2065"  "ASV_6185"  "ASV_2331"  "ASV_3717"  "ASV_634"   "ASV_1765"  "ASV_5191"  "ASV_3245"  "ASV_4736"  "ASV_8704"  "ASV_2539"  "ASV_1308"  "ASV_4480"  "ASV_786"  
+##  [81] "ASV_4832"  "ASV_2746"  "ASV_8076"  "ASV_2691"  "ASV_1005"  "ASV_1063"  "ASV_2961"  "ASV_3857"  "ASV_3329"  "ASV_3716"  "ASV_4071"  "ASV_4385"  "ASV_10663" "ASV_3141"  "ASV_2471"  "ASV_4603"  "ASV_1900"  "ASV_1865"  "ASV_2730"  "ASV_6703" 
+## [101] "ASV_2703"  "ASV_7659"  "ASV_1433"  "ASV_15401" "ASV_806"   "ASV_6333"  "ASV_5431"  "ASV_5986"  "ASV_2152"  "ASV_2740"  "ASV_2551"  "ASV_6331"  "ASV_4179"  "ASV_4272"  "ASV_3238"  "ASV_4564"  "ASV_5578"  "ASV_5114"  "ASV_10183" "ASV_1229" 
+## [121] "ASV_7809"  "ASV_8516"  "ASV_9335"  "ASV_11418" "ASV_8598"  "ASV_8142"  "ASV_5280"  "ASV_919"   "ASV_2182"  "ASV_4639"  "ASV_4696"  "ASV_4143"  "ASV_1969"  "ASV_6554"  "ASV_11806" "ASV_4825"  "ASV_4403"  "ASV_12068" "ASV_4364"  "ASV_1626" 
+## [141] "ASV_2021"  "ASV_2690"  "ASV_1402"  "ASV_5812"  "ASV_9916"  "ASV_15341" "ASV_2676"  "ASV_5943"  "ASV_9821"  "ASV_5014"  "ASV_7441"  "ASV_12837" "ASV_5762"  "ASV_9250"  "ASV_1399"  "ASV_9038"  "ASV_7707"  "ASV_4227"  "ASV_13112" "ASV_5923" 
+## [161] "ASV_3398"  "ASV_2874"  "ASV_3370"  "ASV_3731"  "ASV_14113" "ASV_13733" "ASV_5704"  "ASV_3800"  "ASV_5124"  "ASV_9267"  "ASV_4416"  "ASV_6302"  "ASV_6913"  "ASV_13133" "ASV_2366"  "ASV_4270"  "ASV_10200" "ASV_4634"  "ASV_8322"  "ASV_5614" 
+## [181] "ASV_7175"  "ASV_14973" "ASV_13440" "ASV_4087"  "ASV_5391"  "ASV_2664"  "ASV_3646"  "ASV_4541"  "ASV_6306"  "ASV_8393"  "ASV_1855"  "ASV_2057"  "ASV_5284"  "ASV_7899"  "ASV_1512"  "ASV_8804"  "ASV_10561" "ASV_3078"  "ASV_5033"  "ASV_7020" 
+## [201] "ASV_8281"  "ASV_4382"  "ASV_9237"  "ASV_9846"  "ASV_2959"  "ASV_12926" "ASV_5258"  "ASV_7697"  "ASV_4069"  "ASV_6701"  "ASV_6857"  "ASV_8492"  "ASV_3522"  "ASV_44"    "ASV_5100"  "ASV_6812"  "ASV_6792"  "ASV_7243"  "ASV_10191" "ASV_9448" 
+## [221] "ASV_11325" "ASV_11373" "ASV_3084"  "ASV_3959"  "ASV_4774"  "ASV_8304"  "ASV_9646"  "ASV_10578" "ASV_2045"  "ASV_8120"  "ASV_10610" "ASV_14184" "ASV_6258"  "ASV_12785" "ASV_2432"  "ASV_4868"  "ASV_6917"  "ASV_10199" "ASV_8554"  "ASV_14944"
+## [241] "ASV_14946" "ASV_2442"  "ASV_2572"  "ASV_10276" "ASV_12048" "ASV_5254"  "ASV_4390"  "ASV_11788" "ASV_15736" "ASV_6755"  "ASV_10635" "ASV_15867" "ASV_9756"  "ASV_6715"  "ASV_10799" "ASV_11336" "ASV_11575" "ASV_3190"  "ASV_6759"  "ASV_9492" 
+## [261] "ASV_5896"  "ASV_12438" "ASV_6697"  "ASV_8886"  "ASV_1809"  "ASV_13099" "ASV_13761" "ASV_15876" "ASV_17257" "ASV_16969" "ASV_468"   "ASV_10476" "ASV_11957" "ASV_12832" "ASV_17000" "ASV_4211"  "ASV_13756" "ASV_16331" "ASV_16332" "ASV_11849"
+## [281] "ASV_2284"  "ASV_7017"  "ASV_12509" "ASV_16287" "ASV_16825" "ASV_16395" "ASV_16396" "ASV_3184"  "ASV_14757" "ASV_6645"  "ASV_8460"  "ASV_9778"  "ASV_10644" "ASV_16971" "ASV_6110"  "ASV_11746" "ASV_16922" "ASV_5398"  "ASV_11223" "ASV_17473"
+## [301] "ASV_25026" "ASV_4105"  "ASV_822"   "ASV_11229" "ASV_11854" "ASV_12267" "ASV_1663"  "ASV_17006" "ASV_17616" "ASV_10611" "ASV_12006" "ASV_12229" "ASV_1357"  "ASV_14058" "ASV_18058" "ASV_23510" "ASV_2916"  "ASV_10639" "ASV_4057"  "ASV_7365" 
+## [321] "ASV_17540" "ASV_6643"  "ASV_6182"  "ASV_7186"  "ASV_18343" "ASV_6853"  "ASV_17274" "ASV_6530"  "ASV_6870"  "ASV_7811"  "ASV_12452" "ASV_5490"  "ASV_7032"  "ASV_10182" "ASV_12797" "ASV_1479"  "ASV_17270" "ASV_11032" "ASV_11825" "ASV_16425"
+## [341] "ASV_4642"  "ASV_9139"  "ASV_9739"  "ASV_17622" "ASV_6648"  "ASV_18862" "ASV_11932" "ASV_11170" "ASV_13351" "ASV_14930" "ASV_17563" "ASV_11828" "ASV_9867"  "ASV_12211" "ASV_12218" "ASV_15385" "ASV_6704"  "ASV_14352" "ASV_14797" "ASV_22190"
+## [361] "ASV_6586"  "ASV_11602" "ASV_13077" "ASV_13717" "ASV_15802" "ASV_7654"  "ASV_9781"  "ASV_13674" "ASV_14512" "ASV_18999" "ASV_19804" "ASV_29564" "ASV_7121"  "ASV_8036"  "ASV_13375" "ASV_21000" "ASV_21009" "ASV_10021" "ASV_10454" "ASV_13667"
+## [381] "ASV_16856" "ASV_25193" "ASV_25194" "ASV_6633"  "ASV_6851"  "ASV_8300"  "ASV_14822" "ASV_5547"  "ASV_10136" "ASV_22725" "ASV_22727" "ASV_13301" "ASV_13672" "ASV_1755"  "ASV_14745" "ASV_32339" "ASV_19573" "ASV_9765"  "ASV_11412" "ASV_1008" 
+## [401] "ASV_11199" "ASV_20720" "ASV_13612" "ASV_4563"  "ASV_6749"  "ASV_13637" "ASV_15913" "ASV_17573" "ASV_19917" "ASV_3075"  "ASV_976"   "ASV_9500"  "ASV_12024" "ASV_13089" "ASV_16289" "ASV_21741" "ASV_9249"  "ASV_16965" "ASV_16968" "ASV_13623"
+## [421] "ASV_1801"  "ASV_8122"  "ASV_12765" "ASV_16341" "ASV_17483" "ASV_13001" "ASV_16177" "ASV_26725" "ASV_5977"  "ASV_10035" "ASV_13676" "ASV_13755" "ASV_14474" "ASV_8702"  "ASV_19748" "ASV_11017" "ASV_12016" "ASV_13591" "ASV_13613" "ASV_21643"
+## [441] "ASV_12736" "ASV_17529" "ASV_12519" "ASV_12706" "ASV_21821" "ASV_23244" "ASV_1367"  "ASV_14976" "ASV_1677"  "ASV_22203" "ASV_22217" "ASV_23728" "ASV_3467"  "ASV_11777" "ASV_1252"  "ASV_13980" "ASV_15210" "ASV_16217" "ASV_19718" "ASV_8468" 
+## [461] "ASV_12507" "ASV_12994" "ASV_11983" "ASV_12027" "ASV_18073" "ASV_3464"  "ASV_8798"  "ASV_23413" "ASV_12696" "ASV_13607" "ASV_24362" "ASV_26154" "ASV_26163" "ASV_2677"  "ASV_7494"  "ASV_12001" "ASV_12168" "ASV_20796" "ASV_29827" "ASV_5453" 
+## [481] "ASV_23685" "ASV_25384" "ASV_10354" "ASV_13437" "ASV_376"   "ASV_9210"  "ASV_17280" "ASV_36729" "ASV_11184" "ASV_14066" "ASV_20831" "ASV_22941" "ASV_9006"  "ASV_16266" "ASV_13702" "ASV_18629" "ASV_20727" "ASV_23255" "ASV_16981" "ASV_16982"
+## [501] "ASV_18313" "ASV_25297" "ASV_25450" "ASV_15794" "ASV_21710" "ASV_23109" "ASV_23112" "ASV_24771" "ASV_7180"  "ASV_11349" "ASV_16416" "ASV_18272" "ASV_25165" "ASV_18949" "ASV_18720" "ASV_12500" "ASV_16206" "ASV_12372" "ASV_17288" "ASV_34017"
+## [521] "ASV_357"   "ASV_10606" "ASV_20585" "ASV_26853" "ASV_12434" "ASV_28856" "ASV_27049" "ASV_29587" "ASV_29597" "ASV_9479"  "ASV_16375" "ASV_17475" "ASV_37654" "ASV_37660" "ASV_37671" "ASV_14967" "ASV_15618" "ASV_19109" "ASV_19962" "ASV_21011"
+## [541] "ASV_21844" "ASV_22202" "ASV_27559" "ASV_30260" "ASV_30263" "ASV_7355"  "ASV_1510"  "ASV_15179" "ASV_15192" "ASV_17520" "ASV_19569" "ASV_22966" "ASV_24596" "ASV_26383" "ASV_26394" "ASV_3305"  "ASV_38217" "ASV_7610"  "ASV_9853"  "ASV_22792"
+## [561] "ASV_26238" "ASV_26241" "ASV_12732" "ASV_22994" "ASV_465"   "ASV_27077" "ASV_21768" "ASV_13296" "ASV_15124" "ASV_19448" "ASV_24358" "ASV_28507" "ASV_31529" "ASV_38686" "ASV_15397" "ASV_24992" "ASV_30220" "ASV_8789"  "ASV_16664" "ASV_33473"
+## [581] "ASV_19481" "ASV_24394" "ASV_10495" "ASV_11994" "ASV_1674"  "ASV_27421" "ASV_38100" "ASV_951"   "ASV_18054" "ASV_20517" "ASV_21722" "ASV_24568" "ASV_26419" "ASV_26623" "ASV_20738" "ASV_20764" "ASV_27178" "ASV_21758" "ASV_29322" "ASV_10277"
+## [601] "ASV_15202" "ASV_19077" "ASV_20254" "ASV_27376" "ASV_27377" "ASV_27383" "ASV_30048" "ASV_33695" "ASV_33714" "ASV_34118" "ASV_25332" "ASV_27449" "ASV_10909" "ASV_1600"  "ASV_18882" "ASV_20635" "ASV_21738" "ASV_23157" "ASV_24799" "ASV_26652"
+## [621] "ASV_26708" "ASV_7156"  "ASV_8213"  "ASV_12287" "ASV_17636" "ASV_20892" "ASV_33345" "ASV_33352" "ASV_33358" "ASV_33385" "ASV_24935" "ASV_26867" "ASV_22813" "ASV_24424" "ASV_36880" "ASV_8857"  "ASV_24956" "ASV_32800" "ASV_32802" "ASV_119"  
+## [641] "ASV_39089" "ASV_4168"  "ASV_46020" "ASV_46052" "ASV_32711" "ASV_32712" "ASV_37240" "ASV_43865" "ASV_24742" "ASV_38575" "ASV_38578" "ASV_17952" "ASV_26199" "ASV_32002" "ASV_25048" "ASV_26173" "ASV_37713" "ASV_11700" "ASV_27038" "ASV_37120"
+## [661] "ASV_44334" "ASV_8274"  "ASV_14329" "ASV_18001" "ASV_1945"  "ASV_34029" "ASV_34046" "ASV_34087" "ASV_39119" "ASV_39164" "ASV_39181" "ASV_39194" "ASV_39209" "ASV_11486" "ASV_12888" "ASV_18045" "ASV_19439" "ASV_22894" "ASV_26371" "ASV_29263"
+## [681] "ASV_31961" "ASV_31995" "ASV_33421" "ASV_36204" "ASV_37097" "ASV_42666" "ASV_43685" "ASV_35836" "ASV_24737" "ASV_33070" "ASV_1711"  "ASV_35698" "ASV_35726" "ASV_42044" "ASV_22244" "ASV_31410" "ASV_37603" "ASV_8424"  "ASV_22027" "ASV_45988"
+## [701] "ASV_17159" "ASV_29853" "ASV_9672"  "ASV_31604" "ASV_35800" "ASV_35818" "ASV_42147" "ASV_42151" "ASV_33766" "ASV_33778" "ASV_38716" "ASV_38725" "ASV_26415" "ASV_31921" "ASV_31925" "ASV_31933" "ASV_31935" "ASV_32319" "ASV_32322" "ASV_36680"
+## [721] "ASV_33301" "ASV_33314" "ASV_37188" "ASV_43778" "ASV_10257" "ASV_20394" "ASV_35741" "ASV_42072" "ASV_27379" "ASV_33719" "ASV_38663" "ASV_45474" "ASV_45485" "ASV_828"   "ASV_25341" "ASV_30119" "ASV_23067" "ASV_36787" "ASV_36857" "ASV_43368"
+## [741] "ASV_38531" "ASV_38534" "ASV_25157" "ASV_27205" "ASV_33361" "ASV_38114" "ASV_38148" "ASV_38172" "ASV_38179" "ASV_44900" "ASV_19639" "ASV_29388" "ASV_29402" "ASV_37295" "ASV_37326" "ASV_43905" "ASV_21535" "ASV_31674" "ASV_31675" "ASV_42262"
 ```
 
 ``` r
 # filter out NA at order level
 sed_ch4_joined <- sed_ch4_joined %>% 
-  dplyr::filter(!is.na(Family)) # 23628
+  dplyr::filter(!is.na(Family)) # 23496
 
 # create dataframe for simplified distinct ASV to verify
 simplified_af <- sed_ch4_joined %>% 
@@ -951,32 +920,32 @@ simplified_af
 ##                                   function_group  Kingdom                   Phylum               Class                    Order                   Family                  Genus      Species       ASV
 ## 1              acetoclastic_methanogenesis.value  Archaea           Halobacteriota     Methanosarcinia         Methanotrichales        Methanotrichaceae         Methanothrix_B   soehngenii    ASV_14
 ## 2  methanogenesis_by_CO2_reduction_with_H2.value  Archaea           Halobacteriota     Methanomicrobia       Methanomicrobiales Methanospirillaceae_2121          Methanoregula  sp002502245    ASV_54
-## 3                            methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales        Methylomonadaceae Methylobacter_C_601751  sp002862125   ASV_110
-## 4          hydrogenotrophic_methanogenesis.value  Archaea Methanobacteriota_A_1229     Methanobacteria       Methanobacteriales      Methanobacteriaceae Methanobacterium_F_900      flexile   ASV_165
-## 5                            methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylococcaceae      Methyloparacoccus         <NA>   ASV_216
+## 3          hydrogenotrophic_methanogenesis.value  Archaea Methanobacteriota_A_1229     Methanobacteria       Methanobacteriales      Methanobacteriaceae Methanobacterium_F_900      flexile   ASV_165
+## 4                            methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales         Methylococcaceae      Methyloparacoccus         <NA>   ASV_216
+## 5                            methanotrophy.value Bacteria           Pseudomonadota Gammaproteobacteria          Methylococcales        Methylomonadaceae Methylobacter_C_601751  sp002862125   ASV_110
 ## 6                            methanotrophy.value Bacteria           Pseudomonadota Alphaproteobacteria       Rhizobiales_505101         Beijerinckiaceae          Methylocystis         <NA>   ASV_184
-## 7              acetoclastic_methanogenesis.value  Archaea           Halobacteriota     Methanosarcinia Methanosarcinales_A_2632       Methanosarcinaceae    Methanosarcina_2619         <NA>   ASV_321
-## 8          hydrogenotrophic_methanogenesis.value  Archaea           Halobacteriota       Methanocellia          Methanocellales         Methanocellaceae         Methanocella_A    arvoryzae   ASV_884
-## 9          hydrogenotrophic_methanogenesis.value  Archaea           Halobacteriota     Methanomicrobia       Methanomicrobiales      Methanomicrobiaceae                   <NA>         <NA>   ASV_580
-## 10                           methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae           Limisphaerales                 UBA11358                 WYBW01  sp011525685   ASV_494
-## 11                           methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae           Limisphaerales                     J093                   <NA>         <NA>  ASV_2261
+## 7                            methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae           Limisphaerales                 UBA11358                 WYBW01  sp011525685   ASV_494
+## 8          hydrogenotrophic_methanogenesis.value  Archaea           Halobacteriota     Methanomicrobia       Methanomicrobiales      Methanomicrobiaceae                   <NA>         <NA>   ASV_580
+## 9                            methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae           Limisphaerales                     J093                   <NA>         <NA>  ASV_2261
+## 10         hydrogenotrophic_methanogenesis.value  Archaea           Halobacteriota       Methanocellia          Methanocellales         Methanocellaceae         Methanocella_A    arvoryzae   ASV_884
+## 11             acetoclastic_methanogenesis.value  Archaea           Halobacteriota     Methanosarcinia Methanosarcinales_A_2632       Methanosarcinaceae    Methanosarcina_2619         <NA>   ASV_321
 ## 12                           methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae           Limisphaerales                      AV2                    AV2  sp003218935  ASV_3333
 ## 13                           methanotrophy.value Bacteria        Verrucomicrobiota     Kiritimatiellia                  UBA8416          YA12-FULL-60-10        YA12-FULL-60-10  sp001803315  ASV_6185
 ## 14                           methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae       Chthoniobacterales                 UBA10450                   <NA>         <NA>  ASV_4736
-## 15         hydrogenotrophic_methanogenesis.value  Archaea           Halobacteriota     Methanosarcinia Methanosarcinales_A_2632      Methanoperedenaceae      Methanoperedens_A  sp002487355  ASV_4603
-## 16                           methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae           Limisphaerales                  UBA3939                UBA3939         <NA>  ASV_4385
-## 17                           methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae           Limisphaerales          Pedosphaeraceae            Pedosphaera         <NA>  ASV_5114
-## 18         hydrogenotrophic_methanogenesis.value  Archaea           Halobacteriota     Methanomicrobia       Methanomicrobiales Methanospirillaceae_2125       Methanospirillum psychrodurum  ASV_4564
+## 15                           methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae           Limisphaerales                  UBA3939                UBA3939         <NA>  ASV_4385
+## 16         hydrogenotrophic_methanogenesis.value  Archaea           Halobacteriota     Methanosarcinia Methanosarcinales_A_2632      Methanoperedenaceae      Methanoperedens_A  sp002487355  ASV_4603
+## 17         hydrogenotrophic_methanogenesis.value  Archaea           Halobacteriota     Methanomicrobia       Methanomicrobiales Methanospirillaceae_2125       Methanospirillum psychrodurum  ASV_4564
+## 18                           methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae           Limisphaerales          Pedosphaeraceae            Pedosphaera         <NA>  ASV_5114
 ## 19                           methanotrophy.value Bacteria             Omnitrophota              Koll11    Pluralincolimonadales   Pluralincolimonadaceae                UBA6215         <NA>  ASV_8142
 ## 20                           methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae           Limisphaerales                   MWDV01                 MWDV01         <NA>  ASV_7707
 ## 21                           methanotrophy.value Bacteria        Verrucomicrobiota     Kiritimatiellia                LD1-PB3_B                 Lenti-01               Lenti-01         <NA>  ASV_8393
-## 22                           methanotrophy.value Bacteria        Verrucomicrobiota     Kiritimatiellia                   SLAD01                   WLWN01                 WLWN01         <NA> ASV_16969
+## 22                           methanotrophy.value Bacteria        Verrucomicrobiota     Kiritimatiellia                   SLAD01                   WLWN01                 WLWN01         <NA>  ASV_5254
 ## 23                           methanotrophy.value Bacteria        Verrucomicrobiota     Kiritimatiellia                   PWTM01                   PWTM01                 PWTM01  sp003563855 ASV_13755
 ## 24                           methanotrophy.value Bacteria        Verrucomicrobiota     Kiritimatiellia                 JAAZAB01                 JAAZAB01                 VSJD01  sp008636095 ASV_22966
-## 25         hydrogenotrophic_methanogenesis.value  Archaea            Micrarchaeota        Micrarchaeia      Norongarragalinales     Norongarragalinaceae                  UBA95  sp002499405 ASV_10909
-## 26                           methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae      Methylacidiphilales                 JAAUTS01               JAAUTS01  sp012031345 ASV_15124
-## 27                           methanotrophy.value Bacteria        Verrucomicrobiota     Kiritimatiellia                   SLAD01                   SLAD01                 SLKG01         <NA> ASV_26623
-## 28                           methanotrophy.value Bacteria        Verrucomicrobiota     Kiritimatiellia        Kiritimatiellales            Pontiellaceae                   <NA>         <NA> ASV_35818
+## 25                           methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae      Methylacidiphilales                 JAAUTS01               JAAUTS01  sp012031345 ASV_15124
+## 26                           methanotrophy.value Bacteria        Verrucomicrobiota     Kiritimatiellia                   SLAD01                   SLAD01                 SLKG01         <NA> ASV_26623
+## 27         hydrogenotrophic_methanogenesis.value  Archaea            Micrarchaeota        Micrarchaeia      Norongarragalinales     Norongarragalinaceae                  UBA95  sp002499405 ASV_10909
+## 28                           methanotrophy.value Bacteria        Verrucomicrobiota     Kiritimatiellia        Kiritimatiellales            Pontiellaceae                   <NA>         <NA> ASV_44334
 ## 29                           methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae           Limisphaerales                 BOG-1460               BOG-1460  sp003159675 ASV_39209
 ## 30                           methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae      Methylacidiphilales                   GAS474                 GAS474         <NA>  ASV_9672
 ## 31                           methanotrophy.value Bacteria        Verrucomicrobiota    Verrucomicrobiae      Methylacidiphilales                  UBA3015                UBA3015         <NA> ASV_43778
@@ -984,32 +953,32 @@ simplified_af
 ##                                                                                                                                                                                                                                                           ASVseqs
 ## 1  CACCGGCGGCTCGAGTGGTAACCGTTATTATTGGGTCTAAAGGGTCTGTAGCCGGCCGGATAAGTCTCTTGGGAAATCTGGCAGCTTAACTGTCAGGCTTTCAGGGGATACTGTCTGGCTCGAGGCCGGGAGAGGTGAGAGGTACTTCAGGGGTAGGGGTGAAATCTTGTAATCCTTGAAGGACCACCAGTGGCGAAGGCGTCTCACCAGAACGGACCTGACGGCAAGGGACGAAAGCTAGGGGCACGAACCGG
 ## 2  TACCGGCGGCTCGAGTGGTGGCCACTATTACTGGGCTTAAAGCGTTCGTAGCTGGTCTGTTAAGTCTCTGGGGAAATCTACTGGCTTAACCAATAGGCGTCTCAGGGATACTGGCAGACTAGGGACCGGGAGAGGTGAGAGGTACTCCAGGGGTAGGAGTGAAATCCTGTAATCCTTGGGGGACCACCTGTGGCGAAGGCGTCTCACCAGAACGGCTCCGACAGTGAGGGACGAAAGCTGGGGGAGCAAACCGG
-## 3   TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGTTCGTTAAGTCAGATGTGAAAGCCCCGGGCTTAACCTGGGAACTGCATTTGAAACTGGCGGACTAGAGTTGAGTAGAGGGGAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGATATCTGAAGGAACACCAGTGGCGAAGGCGACTCCCTGGACTCAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
-## 4  CACCGGCAGCTCTAGTGGTAGCCATTTTTATTGGGCCTAAAGCGTTCGTAGCCGGTTTGATAAGTCTCTGGTGAAATCCTATAGCTTAACTGTGGGACTTGCTGGAGATACTATTAGACTTGAGGTCGGGAGAGGTTAGCGGTACTCCCAGGGTAGGGGTGAAATCCTGTAATCCTGGGAGGACCACCTGTGGCGAAGGCGGCTAACTGGAACGAACCTGACGGTGAGGGACGAAAGCCAGGGGCGCGAACCGG
-## 5   TACGGAGGGTGCGAGCGTTAATCGGAATTACTGGGCGTAAAGCGCGCGTAGGCGGTTCGTTAAGTCCGCTGTGAAAGCCCTGGGCTTAACCTGGGAACGGCAGAGGATACTGGCGAGCTAGAGTATGGTAGAGGAGAGTGGAATTTCCGGTGTAGCAGTGAAATGCATAGAGATCGGAAGGAACACCAGTGGCGAAGGCGACTCTCTGGACCAATACTGACGCTGAGGTGCGAAAGCGTGGGGAGCAAACAGG
+## 3  CACCGGCAGCTCTAGTGGTAGCCATTTTTATTGGGCCTAAAGCGTTCGTAGCCGGTTTGATAAGTCTCTGGTGAAATCCTATAGCTTAACTGTGGGACTTGCTGGAGATACTATTAGACTTGAGGTCGGGAGAGGTTAGCGGTACTCCCAGGGTAGGGGTGAAATCCTGTAATCCTGGGAGGACCACCTGTGGCGAAGGCGGCTAACTGGAACGAACCTGACGGTGAGGGACGAAAGCCAGGGGCGCGAACCGG
+## 4   TACGGAGGGTGCGAGCGTTAATCGGAATTACTGGGCGTAAAGCGCGCGTAGGCGGTTCGTTAAGTCCGCTGTGAAAGCCCTGGGCTTAACCTGGGAACGGCAGAGGATACTGGCGAGCTAGAGTATGGTAGAGGAGAGTGGAATTTCCGGTGTAGCAGTGAAATGCATAGAGATCGGAAGGAACACCAGTGGCGAAGGCGACTCTCTGGACCAATACTGACGCTGAGGTGCGAAAGCGTGGGGAGCAAACAGG
+## 5   TACGGAGGGTGCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGTAGGCGGTTCGTTAAGTCAGATGTGAAAGCCCCGGGCTTAACCTGGGAACTGCATTTGAAACTGGCGGACTAGAGTTGAGTAGAGGGGAGTGGAATTTCAGGTGTAGCGGTGAAATGCGTAGATATCTGAAGGAACACCAGTGGCGAAGGCGACTCCCTGGACTCAAACTGACGCTGAGGTACGAAAGCGTGGGTAGCAAACAGG
 ## 6   TACGAAGGGGGCTAGCGTTGTTCGGAATCACTGGGCGTAAAGCGCACGTAGGCGGATCTTTAAGTCAGGGGTGAAATCCCGAGGCTCAACCTCGGAACTGCCTTTGATACTGGAGGTCTCGAGTCCGGGAGAGGTGAGTGGAACTGCGAGTGTAGAGGTGAAATTCGTAGATATTCGCAAGAACACCAGTGGCGAAGGCGGCTCACTGGCCCGGAACTGACGCTGAGGTGCGAAAGCGTGGGGAGCAAACAGG
-## 7  CACCGGCGGCCCGAGTGGTGATCGTGATTATTGGGTCTAAAGGGTCCGTAGCCGGTTTGGTCAGTCCTCCGGGAAATCTGACAGCTCAACTGTTAGGCTTTCGGGGGATACTGCCAGACTTGGAACCGGGAGAGGTAAGAGGTACTACAGGGGTAGGAGTGAAATCTTGTAATCCCTGTGGGACCACCTGTGGCGAAGGCGTCTTACCAGAACGGGTTCGACGGTGAGGGACGAAAGCTGGGGGCACGAACCGG
-## 8  TACCGGCGGCTCGAGTGGTGGCCGATATTATTGAGTCTAAAGGGTCCGTAGCCGGCTTTGCAAGTCTCTCGGGAAATCCAGCGGCTTAACCGTTGGTCGTCCGGGGGGTACTACATTGCTTGGGACTGGGAGAGGTAGGAGGTACTCAGGGGGTAGGAGTGAAATCCTGTAATCCTTTGGGGACCACCGGTGGCGAAGGCGTCCTACCAGAACAGGTCCGACGGTGAGGGACGAAAGCTAGGGGCACGAACCGG
-## 9  TACCGGCGGCTCGAGTGGTGGCCACTATTACTGGGCTTAAAGCGTCCGTAGCCGGGTTGTTAAGTCTCCTGGGAAATCCAACGGCTCAACCGTTGGGCGTTCAGGGGATACTGGCAATCTAGGGATCGGGGGAGGTGAGAGGTACTCTAGGGGTAGGAGTGAAATCCTGTAATCCTTGGGGGACCACCTGTGGCGAAGGCGTCTCACCAGAACGACTCCGACGGTGAGGGACGAAAGCTGGGGGAGCAAACCGG
-## 10  TACAGAGGTCCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGCGTAGGCGGTCGGGTAAGTCTGACGTGAAATCTTCAAGCTCAACTTGGAAACTGCGTCGGATACTATTCGGCTAGAGGAATGGAGGGGAGACTGGAATACTTGGTGTAGCAGTGAAATGCGTAGATATCAAGTGGAACACCAGTGGCGAAGGCGAGTCTCTGGACATTTCCTGACGCTGAGGCACGAAAGCCAGGGGAGCAAACGGG
-## 11  TACAGAGGTTCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGCGTAGGCGGTCGGGTAAGTCTGATGTGAAAGCTCCGGGCTCAACCCGGAAATGTCATCGGATACTATCCGACTCGAGGGTTGGAGGGGGGACTGGAATTCTCGGTGTAGCAGTGAAATGCGTAGATATCGAGAGGAACACCCGTGGCGAAGGCAAGTCCCTGGAAAACTCCTGACGCTGAGGCACGAAAGCTAGGGGAGCAAACAGG
+## 7   TACAGAGGTCCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGCGTAGGCGGTCGGGTAAGTCTGACGTGAAATCTTCAAGCTCAACTTGGAAACTGCGTCGGATACTATTCGGCTAGAGGAATGGAGGGGAGACTGGAATACTTGGTGTAGCAGTGAAATGCGTAGATATCAAGTGGAACACCAGTGGCGAAGGCGAGTCTCTGGACATTTCCTGACGCTGAGGCACGAAAGCCAGGGGAGCAAACGGG
+## 8  TACCGGCGGCTCGAGTGGTGGCCACTATTACTGGGCTTAAAGCGTCCGTAGCCGGGTTGTTAAGTCTCCTGGGAAATCCAACGGCTCAACCGTTGGGCGTTCAGGGGATACTGGCAATCTAGGGATCGGGGGAGGTGAGAGGTACTCTAGGGGTAGGAGTGAAATCCTGTAATCCTTGGGGGACCACCTGTGGCGAAGGCGTCTCACCAGAACGACTCCGACGGTGAGGGACGAAAGCTGGGGGAGCAAACCGG
+## 9   TACAGAGGTTCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGCGTAGGCGGTCGGGTAAGTCTGATGTGAAAGCTCCGGGCTCAACCCGGAAATGTCATCGGATACTATCCGACTCGAGGGTTGGAGGGGGGACTGGAATTCTCGGTGTAGCAGTGAAATGCGTAGATATCGAGAGGAACACCCGTGGCGAAGGCAAGTCCCTGGAAAACTCCTGACGCTGAGGCACGAAAGCTAGGGGAGCAAACAGG
+## 10 TACCGGCGGCTCGAGTGGTGGCCGATATTATTGAGTCTAAAGGGTCCGTAGCCGGCTTTGCAAGTCTCTCGGGAAATCCAGCGGCTTAACCGTTGGTCGTCCGGGGGGTACTACATTGCTTGGGACTGGGAGAGGTAGGAGGTACTCAGGGGGTAGGAGTGAAATCCTGTAATCCTTTGGGGACCACCGGTGGCGAAGGCGTCCTACCAGAACAGGTCCGACGGTGAGGGACGAAAGCTAGGGGCACGAACCGG
+## 11 CACCGGCGGCCCGAGTGGTGATCGTGATTATTGGGTCTAAAGGGTCCGTAGCCGGTTTGGTCAGTCCTCCGGGAAATCTGACAGCTCAACTGTTAGGCTTTCGGGGGATACTGCCAGACTTGGAACCGGGAGAGGTAAGAGGTACTACAGGGGTAGGAGTGAAATCTTGTAATCCCTGTGGGACCACCTGTGGCGAAGGCGTCTTACCAGAACGGGTTCGACGGTGAGGGACGAAAGCTGGGGGCACGAACCGG
 ## 12  TACAGAGGTCCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGCGTAGGTGGTCGGGTAAGTCTGATGTGAAATCCCGGAGCTCAACTCCGGAACGGCATTGGATACTATTCGGCTGGAGGGTTGGAGGGGGGACTGGAATTCTCGGTGTAGCAGTGAAATGCGTAGATATCGAGAGGAACACCGGTGGCGAAGGCGAGTCCCTGGACAACTCCTGACACTGAGGCACGAAAGCTAGGGGAGCAAACAGG
 ## 13  TACAGAGGTGGCGAGCGTTGTTCGGATTTACTGGGCGTAAAGGGTGCGTAGGTGGTTTCGTGTGTCGGATGTGAAATCCCACTGCTCAACGGTGGAACTGCATTCGAAACTGCGGAGCTCGAGTACAGGAAGGGAGAGCGGAATTCTTGGTGTAGCGGTGAAATGCGTTGATATCAAGAAGAACACCGGTGGCGAAGGCGGCTCTCTGGAATGTTACTGACACTGAGGCACGAAAGCTGGGGGAGCAAACAGG
 ## 14  TACAGAGACGGCAAGCGTTGCTCGGATTCATTGGGCGTAAAGGGTGCGTAGGCGGTTCGCTAAGTCGGATGTGAAATCTCACAGCCTAACTGTGATAGGTCATTCGAAACTGGCGAGCTGGAGGACTGGAGGGGAGACTGGAATAGCTGGTGTAGCGGTGAAATGCGTAGAGATCAGCTAGAACACCGGTGGCGAAGGCGGGTCTCTGGACAGTTCCTGACGCTGAGGCACGAAAGCCAGGGGAGCAAACGGG
-## 15 CACCGGCGGCCCGAGTGGTAGCCGTTATTATTGGGTTTAAAGGGTCCGTAGCCGGCCTATTAAGTCTCTTGGGAAATCTGGCGACTCAATCGTCAGTCGTCCAAGAGATACTGGTAGGCTTGGGACCGGGAGAGGTGGGAGGTACTCCAGGGGTAGGGGTGAAATCTCGTAATCCTTGGGGGACCACCGATGGCGAAGGCATCCCACCAGAACGGGTCCGACGGTGAGGGACGAAAGCTGGGGGCACGAACCGG
-## 16  TACAGAGGTCCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGCGTAGGCGGTCGGGTAAGTCTGATGTGAAATCTCGGAGCTCAACTCCGAAACGGCATCGGATACTATTCGGCTTGAGGTGTGGAGGGGGGACTGGAATTCTCGGTGTAGCAGTGAAATGCGTAGATATCGAGAGGAACACCAGTGGCGAAGGCGAGTCCCTGGACACCACCTGACGCTGAGGCACGAAAGCTAGGGGAGCAAACAGG
-## 17  TACAGAGGTCCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGCGTAGGCGGTAGGGTAAGTCCGATGTGAAATCTCTGGGCTCAACTCAGAAAGGGCATCAGAAACTACTCTGCTAGAGGATTGGAGGGGGGACTGGAATTCTCGGTGTAGCAGTGAAATGCGTAGATATCGAGAGGAACACCGGTGGCGAAGGCGAGTCCCTGGACAATTCCTGACGCTGAGGCACGAAAGCTAGGGGAGCAAACAGG
-## 18 TACCGGCGGCTCGAGTGGTGGCCGCTTTTACTGGGCTTAAAGGGTCCGTAGCTGGATTGACAAGTCCCTTGAGAAATCTATCGGCTTAACTGATAGGCGTTCAGGGGATACTGTTATTCTAGGGACCGGGAGAGGTGAGAGGTACTGCCGGGGTAGGAGTGAAATCCTGTAATCCCGGTGGGACGACCTATGGCGAAGGCATCTCACCAGAACGGCTCCGACAGTGAGGGACGAAAGCTGGGGGAGCAAACCGG
+## 15  TACAGAGGTCCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGCGTAGGCGGTCGGGTAAGTCTGATGTGAAATCTCGGAGCTCAACTCCGAAACGGCATCGGATACTATTCGGCTTGAGGTGTGGAGGGGGGACTGGAATTCTCGGTGTAGCAGTGAAATGCGTAGATATCGAGAGGAACACCAGTGGCGAAGGCGAGTCCCTGGACACCACCTGACGCTGAGGCACGAAAGCTAGGGGAGCAAACAGG
+## 16 CACCGGCGGCCCGAGTGGTAGCCGTTATTATTGGGTTTAAAGGGTCCGTAGCCGGCCTATTAAGTCTCTTGGGAAATCTGGCGACTCAATCGTCAGTCGTCCAAGAGATACTGGTAGGCTTGGGACCGGGAGAGGTGGGAGGTACTCCAGGGGTAGGGGTGAAATCTCGTAATCCTTGGGGGACCACCGATGGCGAAGGCATCCCACCAGAACGGGTCCGACGGTGAGGGACGAAAGCTGGGGGCACGAACCGG
+## 17 TACCGGCGGCTCGAGTGGTGGCCGCTTTTACTGGGCTTAAAGGGTCCGTAGCTGGATTGACAAGTCCCTTGAGAAATCTATCGGCTTAACTGATAGGCGTTCAGGGGATACTGTTATTCTAGGGACCGGGAGAGGTGAGAGGTACTGCCGGGGTAGGAGTGAAATCCTGTAATCCCGGTGGGACGACCTATGGCGAAGGCATCTCACCAGAACGGCTCCGACAGTGAGGGACGAAAGCTGGGGGAGCAAACCGG
+## 18  TACAGAGGTCCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGCGTAGGCGGTAGGGTAAGTCCGATGTGAAATCTCTGGGCTCAACTCAGAAAGGGCATCAGAAACTACTCTGCTAGAGGATTGGAGGGGGGACTGGAATTCTCGGTGTAGCAGTGAAATGCGTAGATATCGAGAGGAACACCGGTGGCGAAGGCGAGTCCCTGGACAATTCCTGACGCTGAGGCACGAAAGCTAGGGGAGCAAACAGG
 ## 19  TACGGAGGTGGCAGGCGTTACTCGGATTGATTGGGTGTAAAGGGCGTGTAGGTGGTGAATTAAGTCGAATGTGAAATCCCTTGGCTTAACCAAGGAACTGCGTTCGAAACTGATTTGCTTGAGGGACGGAGAGGAAAGCGGAATTCCCGGTGTAACAGTGAAATGTGTAGATATCGGGAGGAACACCAGTGGCGAAGGCGGCTTTCTGGACGTCACCTGACACTGAAACGCGAGAGCATGGGGAGCAAACAGG
 ## 20  TACAGAGGTCCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGCGTAGGCGGTTGAATAAGTCTGACGTGAAATCCTGGAGCTTAACTCCGGAACGGCGTCGGAAACTGTTCAGCTTGAGGATTGGAGAGGGGACTGGAATTCTCGGTGTAGCAGTGAAATGCGTAGATATCGAGAGGAACACCAGTGGCGAAGGCGAGTCCCTGGACAATACCTGACGCTGAGGCACGAAAGCTAGGGGAGCAAACAGG
 ## 21  TACAGAGGTCTCGAGCGTTGTTCGGATTTACTGGGCGTAAAGGGAGCGTAGGCGGTTCGGTGTGTTGAATGTGAAAGCCCACAACTCAACTGTGGAATGGCATTCAAAACTACCGGGCTAGAGTCCTGGAGAGGAGAGCGGAATTCTTGGTGTAGCGGTGAAATGCGTAGATATCAAGAGGAACACCGGTGGCGAAGGCGGCTCTCTGGACAGATACTGACGCTGAGGCTCTAAAGTTAGGGGAGCAAACAGG
-## 22  TACAGAGGTGGCGAGCGTTGTTCGGATTTACTGGGCGTAAAGGGTGTGTAGGTGGTCTTGTGTGTCGGATGTGAAATCCCACGGCTCAACTGTGGAACTGCATCCGAAACTGCAGGACTTGAGTGCAGGATGGGAGAGCGGAATTCTCGGTGTAGCGGTGAAATGTGTTGATATCGAGAGGAACACCGGTGGCGAAGGCGGCTCTCTGGAATGCTACTGACGCTGAGACACGAAAGCTGGGGGAGCAAACAGG
+## 22  TACAGAGGTGGCGAGCGTTGTTCGGATTTACTGGGCGTAAAGGGTGTGTAGGTGGTCCGGTATGTCGGATGTGAAATCCCACGGCTCAACTGTGGAACTGCATCCGAAACTGCCGGACTTGAGTGCAGGATGGGAGAGCGGAATTCTCGGTGTAGCGGTGAAATGTGTTGATATCGAGAGGAACACCGGTGGCGAAGGCGGCTCTCTGGAATGCTACTGACGCTGAGACACGAAAGCTGGGGGAGCAAACAGG
 ## 23  TACAGAGGTGGCGAGCGTTGTTCGGATTTACTGGGCGTAAAGGGTGCGTAGGCGGTATGGTGTGTCGGATGTGAAAGCCTGTTGCTTAACAACAGAACGGCATCCGAAACTACTATTCTAGAGTGCAGGAGAGGAAGGTGGAATTCTCGGTGTAGCGGTGAAATGCGTAGATATCGAGAGGAACACCCGTGGCGAAGGCGACCTTCTGGACTGCTACTGACGCTGAGGCACGAAGGCTGGGGGAGCAAACAGG
 ## 24  TACAGAGGTGGCTAGCGTTGTTCGGATTTACTGGGCGTAAAGGGTGCGTAGGCGGTCATGTATGTCAGATGTGAAAGCTCACTGCTTAACGGTGAAAGTGCATTTGAAACTGCAAGACTGGAGTACCGGAAAGGGGCGTGGAATTCTTGGTGTAGCGGTGAAATGCGTAGATATCAAGAAGAACACCGGTGGCGAAGGCGACGCTCTGGACGGATACTGACGCTGAGGCACGAAAGCTAGGGGAGCAAACAGG
-## 25 TACAGGTAGCACGAGTGGTGTCCACGAATACTGAGTCTAAAGCGCCCGTAGCCGGCTTATCACGTCCTCTGTGAAATCTCACGGCTTAACCGTGAGGCTTGCAGGGGATACGAGTAGGCTTGGGAGTGGGGGAGGTCAGAGGTACTGCGGGGGGAGGAGTAAAATCCTGTAATCCTCGTAGGACCCTCGGTGGCGAAAGCGTCTGACCAAAACACATCCGACGGTGAGGGACGAAGGCTAGGGGAGCGAACCGG
-## 26  TACAGAGGTCCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGCGTAGGAGGCCGGGAAAGTCTGATGTGAAATCCCACCGCTTAACGGTGGAATGGCATTGGATACTGCCCGGCTGGAGGACTGGAGGGGAAAGCGGAATTCCTGGTGTAGCGGTGAAATGCGTAGATATCAGGAGGAACACCAACGGCGAAGGCAGCTTTCTGGACAGTTCCTGACTCTGAGGCACGAAGGCCAGGGGAGCAAACGGG
-## 27  TACAGAGGTGCCAAGCGTTGTTCGGATTTACTGGGCGTAAAGGGTGCGTAGGCGGTTCCGTATGTCGGATGTGAAATCTCCCGGCTTAACCGAGAAATGGCATCCGAAACTACGGTCCTAGAGTACTGGAGAGGAGAGCGGAATTCTCGGTGTAGCGGTGAAATGCGTAGATATCGAGAGGAACGCCGGTGGCGAAGGCGGCTCTCTGGACAGATACTGACGCTGAGGCACGAAAGCTGGGGGAGCAAACAGG
-## 28  TACAGAGGTGGCGAACGTTGTTCGGATTTACTGGGCGTAAAGGGTCCGTAGGCGGTTTGGTGTGTCGGATGTGAAATCTCACAGCTCAACTGTGGAATTGCATTCGAAACTGCCGAACTAGAGTACTGGAGGGGAGAAGGGAATACTTGGTGTAGCGGTGAAATGCGTGGATATCAAGTAGAACACCGGAGGCGAAGGCGCTTCTCTGGACAGATACTGACGCTAATGGACGAAAGCCAGGGGAGCGAAAGGG
+## 25  TACAGAGGTCCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGCGTAGGAGGCCGGGAAAGTCTGATGTGAAATCCCACCGCTTAACGGTGGAATGGCATTGGATACTGCCCGGCTGGAGGACTGGAGGGGAAAGCGGAATTCCTGGTGTAGCGGTGAAATGCGTAGATATCAGGAGGAACACCAACGGCGAAGGCAGCTTTCTGGACAGTTCCTGACTCTGAGGCACGAAGGCCAGGGGAGCAAACGGG
+## 26  TACAGAGGTGCCAAGCGTTGTTCGGATTTACTGGGCGTAAAGGGTGCGTAGGCGGTTCCGTATGTCGGATGTGAAATCTCCCGGCTTAACCGAGAAATGGCATCCGAAACTACGGTCCTAGAGTACTGGAGAGGAGAGCGGAATTCTCGGTGTAGCGGTGAAATGCGTAGATATCGAGAGGAACGCCGGTGGCGAAGGCGGCTCTCTGGACAGATACTGACGCTGAGGCACGAAAGCTGGGGGAGCAAACAGG
+## 27 TACAGGTAGCACGAGTGGTGTCCACGAATACTGAGTCTAAAGCGCCCGTAGCCGGCTTATCACGTCCTCTGTGAAATCTCACGGCTTAACCGTGAGGCTTGCAGGGGATACGAGTAGGCTTGGGAGTGGGGGAGGTCAGAGGTACTGCGGGGGGAGGAGTAAAATCCTGTAATCCTCGTAGGACCCTCGGTGGCGAAAGCGTCTGACCAAAACACATCCGACGGTGAGGGACGAAGGCTAGGGGAGCGAACCGG
+## 28  TACAGAGGTGGCGAACGTTGTTCGGATTTACTGGGCGTAAAGGGTCCGTAGGCGGTTTGGTGTGTCGGATGTGAAATCTCACAGCTCAACTGTGGAATTGCATTCGAAACTGCCGAACTAGAGTACTGGAGGGGAGAAGGGAATACTTGGTGTAGCGGTGAAATGCGTGGATATCAAGTAGAACACCGGAGGCGAAGGCGCTTCTCTGGACAGATACTGACGCTAATGGACGAAAGCCAGGGGAGTGAAAGGG
 ## 29  TACAGAGGTCCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGCGCGTAGGTGGCAAAGTAAGTCTGATGTGAAATCTCGGAGCCTAACTCCGAAACTGCATCGGATACTATTTGGCTAGAGGGTTGGAGGGGGGACTGGAATTCTCGGTGTAGCAGTGAAATGCGTAGATATCGGGAGGAACACCAGTGGCGAAGGCGGCCTTCTGGGCCGTACCTGACGCTCAGACGCGAAAGCTAGGGGAGCAAACGGG
 ## 30  TACAGAGGTCCCAAGCGTTGTTCGGATTCACTGGGCGTAAAGGGTGTGTAGGAGGTTCGATAAGTCTGATGTGAAATCCCGTCGCTCAACGACGGAACTGCATTGGATACTGTCGAGCTAGAGGGTCTGAGGGGGAAGCGGAATTCTTGGTGTAGCGGTGAAATGCGTAGATATCAAGAGGAACACCCGTGGCTAACGCGGCTTCCTGGAAGACTCCTGACTCTGAAACACGAAAGCCAGGGTAGCGAATGGG
 ## 31  TACAGAGGTCTCAAGCGTTGTTCGGATTTACTGGGCGTAAAGCGTGTGTAGGGGGTCGAGAAAGTCAGATGTGAAAGTTTGCCGCTTAACGGCAAGATTGCATTTGATACTGCTCGGCTAGAGGATCGGAGAGGAGAGTGGAATTCTTGGTGTAGCGGTGAAATGCGTAGATATCAAGAGGAACGCCAACGGCGAAAGCAGCTCTCTGGAAGATTCCTGACCCTGAGACACGAAGGCTAGGGTAGCAAACGGG
@@ -1024,9 +993,20 @@ sed_ch4_joined_clean_faprotax <- sed_ch4_joined %>%
     !Genus %in% c("AV2", "Alsobacter", "Beijerinckia", "BOG-1460", "DP16D-bin41", "MWDV01", "SLKG01", "UBA7542", 	
                   "WLWN01", "UBA11358",  "UBA3015", "GAS474", "JAAUTS01","UBA6215", "LW23", "WYBW01", 
                   "Pedosphaera", "YA12-FULL-60-10", "UBA10450", "UBA3939", "PWTM01", "UBA95", "Lenti-01"),
-    !Family %in% c("Pontiellaceae","J093", "UBA10450", "JAAZAB01", "UBA11358"),
-    !ASV %in% c("ASV_3646", "ASV_468", "ASV_24935", "ASV_3646", "ASV_468")) # total 13200
+    !Family %in% c("Pontiellaceae","J093", "UBA10450", "JAAZAB01", "UBA11358"))
+    #!ASV %in% c("ASV_3646", "ASV_468", "ASV_24935", "ASV_3646", "ASV_468")) # total 13200
 
+sed_ch4_joined_clean_faprotax$Genus %>% unique()
+```
+
+```
+##  [1] "Methanothrix_B"          "Methanoregula"           "Methanolinea_A"          "Methanobacterium_F_900"  "Methyloparacoccus"       "Methanobacterium_D_1054" "UBA467"                  "Methanobacterium_B_963"  "Methylobacter_C_601751" 
+## [10] "Methylocystis"           "Methanobacterium_A"      NA                        "UBA4132"                 "Methylobacter_C_601048"  "Methanocella_A"          "Methanosarcina_2619"     "UBA288"                  "Methanoperedens_A"      
+## [19] "Methanospirillum"        "Methylotetracoccus"      "Methylomonas"            "Methyloterricola"        "Methanobacterium_F_896"  "Methyloglobulus"         "Methanolinea_B"          "Methylococcus"           "Methanomethylovorans"   
+## [28] "Crenothrix"              "Methanobacterium_C"      "Methylomagnum"           "Methylosoma"             "Methanobrevibacter_A"    "Methylocaldum"
+```
+
+``` r
 # notes for my exclusions:
 # 1. cannot find any information for derxia being methanotroph
 # 2. UBA10450 (family) is within Chthoniobacterales (order) within Verrucomicrobiota. since this is at family level its hard to say what is function is. im finding its involved in complex carbon degradation and could maybe be a methanotroph and have other pathways to break this down but with this uncertainty and especially since no genus level identification will omit for now. most are apparently aerobic/anaerobic chemoorganotrophs
@@ -1062,7 +1042,7 @@ sed_ch4_joined_clean_faprotax$Family %>% unique()
 ```
 
 ```
-##  [1] "Methanotrichaceae"        "Methanospirillaceae_2121" "Methylomonadaceae"        "Methanobacteriaceae"      "Methylococcaceae"         "Beijerinckiaceae"         "Methanosarcinaceae"       "Methanocellaceae"         "Methanomicrobiaceae"     
+##  [1] "Methanotrichaceae"        "Methanospirillaceae_2121" "Methanobacteriaceae"      "Methylococcaceae"         "Methylomonadaceae"        "Beijerinckiaceae"         "Methanomicrobiaceae"      "Methanocellaceae"         "Methanosarcinaceae"      
 ## [10] "Methanoperedenaceae"      "Methanospirillaceae_2125"
 ```
 
@@ -1104,7 +1084,7 @@ sed_ch4_cyclers_complete_df <- dplyr::bind_rows(
 )
 
 # unique asv counts
-test<- sed_ch4_cyclers_complete_df$ASV %>% unique() # correclty 347
+test<- sed_ch4_cyclers_complete_df$ASV %>% unique() # correclty 341
 # list of all our CH4 cycler ASVs to filter phyloseq 
 ch4_asv_list <- sed_ch4_cyclers_complete_df$ASV
 
@@ -1132,15 +1112,15 @@ tax_tab$CH4_Cycler <- dplyr::case_when(
 
 tax_table(sed_ch4_cyclers_physeq) <- tax_table(as.matrix(tax_tab))
 
-sed_ch4_cyclers_physeq # 347 total ASVs, 44 samples
+sed_ch4_cyclers_physeq # 341 total ASVs, 44 samples
 ```
 
 ```
 ## phyloseq-class experiment-level object
-## otu_table()   OTU Table:          [ 347 taxa and 44 samples ]:
-## sample_data() Sample Data:        [ 44 samples by 47 sample variables ]:
-## tax_table()   Taxonomy Table:     [ 347 taxa by 10 taxonomic ranks ]:
-## phy_tree()    Phylogenetic Tree:  [ 347 tips and 346 internal nodes ]:
+## otu_table()   OTU Table:          [ 341 taxa and 44 samples ]:
+## sample_data() Sample Data:        [ 44 samples by 48 sample variables ]:
+## tax_table()   Taxonomy Table:     [ 341 taxa by 10 taxonomic ranks ]:
+## phy_tree()    Phylogenetic Tree:  [ 341 tips and 340 internal nodes ]:
 ## taxa are rows
 ```
 
@@ -1261,10 +1241,10 @@ water_ch4_cyclers_df %>%
 ## # A tibble: 4 × 3
 ##   group                        shapiro_p     n
 ##   <fct>                            <dbl> <int>
-## 1 Methanogen Surface Water   0.00000185     24
-## 2 Methanotroph Surface Water 0.000267       24
-## 3 Methanogen Bottom Water    0.000000393    24
-## 4 Methanotroph Bottom Water  0.000445       24
+## 1 Methanogen Surface Water   0.0000202      24
+## 2 Methanotroph Surface Water 0.0000304      24
+## 3 Methanogen Bottom Water    0.000000400    24
+## 4 Methanotroph Bottom Water  0.0000474      24
 ```
 
 Based on our data with the qq plots we see that the points more or less fit the line. but when we investigate further with the density histograms, the data lacks a clear unimodal distribution. Now, let's check this out further with a Shapiro-Wilk test. When we run our Shapiro-Wilk test to also test for a normal distribution if p > 0.05 the data is likely normal but if p < 0.05 then the data is not normal.
@@ -1272,10 +1252,10 @@ Based on our data with the qq plots we see that the points more or less fit the 
 # A tibble: 4 × 3
   group                        shapiro_p     n
   <fct>                            <dbl> <int>
-1 Methanogen Surface Water   0.00000185     24
-2 Methanotroph Surface Water 0.000267       24
-3 Methanogen Bottom Water    0.000000393    24
-4 Methanotroph Bottom Water  0.000445       24
+1 Methanogen Surface Water   0.0000202      24
+2 Methanotroph Surface Water 0.0000304      24
+3 Methanogen Bottom Water    0.000000400    24
+4 Methanotroph Bottom Water  0.0000474      24
 
 The data is not normal! 
 
@@ -1357,16 +1337,19 @@ sed_ch4_cyclers_df %>%
 ## # A tibble: 2 × 3
 ##   group                 shapiro_p     n
 ##   <fct>                     <dbl> <int>
-## 1 Methanogen Sediment      0.137     23
-## 2 Methanotroph Sediment    0.0184    23
+## 1 Methanogen Sediment      0.136     23
+## 2 Methanotroph Sediment    0.0681    23
 ```
 
-Based on our data with the qq plots and the density histograms, data does not seem to be clearly normally distributed. Shapiro-Wilk test to also test for a normal distribution if p > 0.05 the data is likely normal but if p < 0.05 then the data is not normal.
+Based on our data with the qq plots and the density histograms, data is normally distriburted but to be consistent with water we will proceed as normal. 
 
+Shapiro-Wilk test to also test for a normal distribution if p > 0.05 the data is likely normal but if p < 0.05 then the data is not normal.
+
+# A tibble: 2 × 3
   group                 shapiro_p     n
   <fct>                     <dbl> <int>
-1 Methanogen Sediment      0.137     23
-2 Methanotroph Sediment    0.0184    23
+1 Methanogen Sediment      0.136     23
+2 Methanotroph Sediment    0.0681    23
 
 Methanotrophs are not normally distributed but but methanogens are which is interesting. but will still go with two-sample Wilcoxon tests
 
@@ -1388,14 +1371,14 @@ wc_total_abund
 ## # A tibble: 8 × 5
 ##   solar_progress Depth_Class   CH4_Cycler   ch4_water_sd mean_ch4_water
 ##   <fct>          <fct>         <chr>               <dbl>          <dbl>
-## 1 FPV            Surface Water Methanogen          2254.          1425.
-## 2 FPV            Surface Water Methanotroph      365892.        440032.
-## 3 FPV            Bottom Water  Methanogen          8166.         10629 
-## 4 FPV            Bottom Water  Methanotroph      332914.        465437.
-## 5 Open           Surface Water Methanogen          1429.          1300.
-## 6 Open           Surface Water Methanotroph       96759.        121706.
-## 7 Open           Bottom Water  Methanogen         30058.         19524.
-## 8 Open           Bottom Water  Methanotroph      116271.        173996.
+## 1 FPV            Surface Water Methanogen          1590.          1257.
+## 2 FPV            Surface Water Methanotroph      295635.        307997.
+## 3 FPV            Bottom Water  Methanogen          6307.          8714.
+## 4 FPV            Bottom Water  Methanotroph      275536.        324671.
+## 5 Open           Surface Water Methanogen           959.           948.
+## 6 Open           Surface Water Methanotroph       61818.         74534.
+## 7 Open           Bottom Water  Methanogen         22539.         14864 
+## 8 Open           Bottom Water  Methanotroph       78908.        109406.
 ```
 
 ``` r
@@ -1416,14 +1399,14 @@ methanogen_surface_sum
 ## # A tibble: 8 × 4
 ##   solar_progress JDate sd_meth mean_meth
 ##   <fct>          <dbl>   <dbl>     <dbl>
-## 1 FPV              172    816.      471 
-## 2 FPV              193   4073.     3651.
-## 3 FPV              234    346.     1176.
-## 4 FPV              255    349.      403.
-## 5 Open             172    197.      551.
-## 6 Open             193    406.     1548.
-## 7 Open             234    793.      803 
-## 8 Open             255   2756.     2300.
+## 1 FPV              172    621.      358.
+## 2 FPV              193   2642.     2905 
+## 3 FPV              234    361.     1307.
+## 4 FPV              255    397.      458 
+## 5 Open             172    208       585 
+## 6 Open             193    136.      978.
+## 7 Open             234    804.      746.
+## 8 Open             255   1914.     1484.
 ```
 
 ``` r
@@ -1431,7 +1414,7 @@ max(methanogen_surface_sum$mean_meth)
 ```
 
 ```
-## [1] 3650.667
+## [1] 2905
 ```
 
 ``` r
@@ -1442,7 +1425,7 @@ methanogen_surface_data <- water_ch4_cyclers_df %>%
 methanogen_surface_data$Pond <- as.factor(methanogen_surface_data$Pond)
 
 surface_methanogen_model <- lmerTest::lmer(total_abundance ~ solar_progress + JDate + (1|Pond), data = methanogen_surface_data)
-summary(surface_methanogen_model) #0.876
+summary(surface_methanogen_model) #0.579
 ```
 
 ```
@@ -1450,23 +1433,23 @@ summary(surface_methanogen_model) #0.876
 ## Formula: total_abundance ~ solar_progress + JDate + (1 | Pond)
 ##    Data: methanogen_surface_data
 ## 
-## REML criterion at convergence: 392.5
+## REML criterion at convergence: 377.3
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -0.7472 -0.4816 -0.2644  0.0634  3.5357 
+## -0.9497 -0.4626 -0.2375  0.0793  3.3534 
 ## 
 ## Random effects:
 ##  Groups   Name        Variance Std.Dev.
 ##  Pond     (Intercept)       0     0    
-##  Residual             3731396  1932    
+##  Residual             1805752  1344    
 ## Number of obs: 24, groups:  Pond, 6
 ## 
 ## Fixed effects:
 ##                     Estimate Std. Error        df t value Pr(>|t|)
-## (Intercept)        1331.8819  2631.8216   21.0000   0.506    0.618
-## solar_progressOpen -124.7500   788.6059   21.0000  -0.158    0.876
-## JDate                 0.4369    12.0472   21.0000   0.036    0.971
+## (Intercept)        1159.1028  1830.8377   21.0000   0.633    0.534
+## solar_progressOpen -309.0000   548.5970   21.0000  -0.563    0.579
+## JDate                 0.4593     8.3807   21.0000   0.055    0.957
 ## 
 ## Correlation of Fixed Effects:
 ##             (Intr) slr_pO
@@ -1477,21 +1460,21 @@ summary(surface_methanogen_model) #0.876
 ```
 
 ``` r
-emmeans::emmeans(surface_methanogen_model, pairwise ~ solar_progress) # 0.8820
+emmeans::emmeans(surface_methanogen_model, pairwise ~ solar_progress) # 0.6033
 ```
 
 ```
 ## $emmeans
 ##  solar_progress emmean  SE df lower.CL upper.CL
-##  FPV              1425 558  4     -123     2973
-##  Open             1300 558  4     -248     2849
+##  FPV              1257 388  4      180     2334
+##  Open              948 388  4     -129     2025
 ## 
 ## Degrees-of-freedom method: kenward-roger 
 ## Confidence level used: 0.95 
 ## 
 ## $contrasts
 ##  contrast   estimate  SE df t.ratio p.value
-##  FPV - Open      125 789  4   0.158  0.8820
+##  FPV - Open      309 549  4   0.563  0.6033
 ## 
 ## Degrees-of-freedom method: kenward-roger
 ```
@@ -1508,12 +1491,12 @@ methanogen_surface <- methanogen_surface_sum %>%
   geom_point(size = 3, shape = 1, color = "black")+
   labs(y= "Surface Methanogen<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
   scale_y_continuous(
-    limits = c(NA, 8250),
+    limits = c(NA, 6000),
     # breaks = c(0, 2500, 5000, 7500),
     # limits = c(NA, 8e3),
     # breaks = breaks_extended(n = 4),
-    breaks = c(0, 4000, 8000),
-    labels = label_number(scale_cut = cut_short_scale())) +
+    breaks = c(0, 3000, 6000),
+  labels = label_number(scale_cut = cut_short_scale())) +
   theme(axis.text.x =  element_text(size = 8,colour = "black"),
          axis.text.y =  element_text(size = 8,colour = "black"),
          axis.title.x = element_blank(),
@@ -1536,9 +1519,9 @@ methanogen_surface_box <- methanogen_surface_data %>%
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = c("black", "black"))+
   scale_y_continuous(
-    limits = c(NA, 8250),
+    limits = c(NA, 6000),
     #breaks = c(0, 2500, 5000, 7500),
-     breaks = c(0, 4000, 8000),
+     breaks = c(0, 3000, 6000),
     labels = label_number(scale_cut = cut_short_scale())) +
   theme_classic()+
   theme(axis.text.x = element_text(size = 8,colour = "black"),
@@ -1548,7 +1531,7 @@ methanogen_surface_box <- methanogen_surface_data %>%
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
         legend.position = "none") +
- annotate("text", x = 2, y = 8000, label = "p = 0.882", size = 2.822,  fontface = "italic") #.882
+ annotate("text", x = 2, y = 6000, label = "p = 0.60", size = 2.822,  fontface = "italic") #.6033
 methanogen_surface_box
 ```
 
@@ -1562,8 +1545,8 @@ methanotroph_surface_sum <- water_ch4_cyclers_df %>%
   dplyr::filter(Depth_Class == "Surface Water",
                 CH4_Cycler == "Methanotroph") %>% 
   group_by(solar_progress, JDate) %>%
-  dplyr::summarize(sd_meth = sd(total_abundance),
-                   mean_meth = mean(total_abundance),
+  dplyr::summarize(sd_meth = sd(total_abundance/1e5),
+                   mean_meth = mean(total_abundance/1e5), # max does exceed 1mil
                    .groups = "drop")
 methanotroph_surface_sum
 ```
@@ -1572,14 +1555,14 @@ methanotroph_surface_sum
 ## # A tibble: 8 × 4
 ##   solar_progress JDate sd_meth mean_meth
 ##   <fct>          <dbl>   <dbl>     <dbl>
-## 1 FPV              172  28224.    89489.
-## 2 FPV              193 201570.   270093.
-## 3 FPV              234 189093.   508583 
-## 4 FPV              255 343644.   891961.
-## 5 Open             172   8769.    24869.
-## 6 Open             193  77017.   146454.
-## 7 Open             234  69930.   210918 
-## 8 Open             255 115026.   104584.
+## 1 FPV              172  0.130      0.468
+## 2 FPV              193  1.16       1.54 
+## 3 FPV              234  1.53       3.55 
+## 4 FPV              255  3.15       6.76 
+## 5 Open             172  0.0621     0.130
+## 6 Open             193  0.459      0.850
+## 7 Open             234  0.501      1.34 
+## 8 Open             255  0.710      0.658
 ```
 
 ``` r
@@ -1587,7 +1570,7 @@ max(methanotroph_surface_sum$mean_meth)
 ```
 
 ```
-## [1] 891960.7
+## [1] 6.76476
 ```
 
 ``` r
@@ -1606,8 +1589,8 @@ methanotroph_surface_sum_text
 ## # A tibble: 2 × 3
 ##   solar_progress sd_meth mean_meth
 ##   <fct>            <dbl>     <dbl>
-## 1 FPV              3.66       4.40
-## 2 Open             0.968      1.22
+## 1 FPV              2.96      3.08 
+## 2 Open             0.618     0.745
 ```
 
 ``` r
@@ -1615,7 +1598,7 @@ max(methanotroph_surface_sum_text$mean_meth)
 ```
 
 ```
-## [1] 4.400316
+## [1] 3.079966
 ```
 
 ``` r
@@ -1625,16 +1608,16 @@ methanotroph_surface_data <- water_ch4_cyclers_df %>%
                 CH4_Cycler == "Methanotroph") 
 methanotroph_surface_data$Pond <- as.factor(methanotroph_surface_data$Pond)
 
-max(methanotroph_surface_data$total_abundance)
+max(methanotroph_surface_data$total_abundance/1e6)
 ```
 
 ```
-## [1] 1267346
+## [1] 1.027419
 ```
 
 ``` r
 surface_methanotroph_model <- lmer(total_abundance ~ solar_progress + JDate + (1|Pond), data = methanotroph_surface_data)
-summary(surface_methanotroph_model) # 0.000217 ***
+summary(surface_methanotroph_model) # 0.000924 ***
 ```
 
 ```
@@ -1642,23 +1625,23 @@ summary(surface_methanotroph_model) # 0.000217 ***
 ## Formula: total_abundance ~ solar_progress + JDate + (1 | Pond)
 ##    Data: methanotroph_surface_data
 ## 
-## REML criterion at convergence: 589.6
+## REML criterion at convergence: 580.7
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -1.4464 -0.5916 -0.2391  0.5196  2.9401 
+## -1.2753 -0.6016 -0.2559  0.5651  3.2658 
 ## 
 ## Random effects:
 ##  Groups   Name        Variance  Std.Dev.
 ##  Pond     (Intercept) 0.000e+00      0  
-##  Residual             4.446e+10 210864  
+##  Residual             2.914e+10 170698  
 ## Number of obs: 24, groups:  Pond, 6
 ## 
 ## Fixed effects:
 ##                      Estimate Std. Error         df t value Pr(>|t|)    
-## (Intercept)        -6.268e+05  2.873e+05  1.348e+37  -2.182 0.029140 *  
-## solar_progressOpen -3.183e+05  8.608e+04  1.348e+37  -3.698 0.000217 ***
-## JDate               4.997e+03  1.315e+03  1.348e+37   3.800 0.000145 ***
+## (Intercept)        -5.252e+05  2.326e+05  5.177e+36  -2.258 0.023935 *  
+## solar_progressOpen -2.335e+05  6.969e+04  5.177e+36  -3.350 0.000808 ***
+## JDate               3.902e+03  1.065e+03  5.177e+36   3.666 0.000247 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
@@ -1671,21 +1654,21 @@ summary(surface_methanotroph_model) # 0.000217 ***
 ```
 
 ``` r
-emmeans::emmeans(surface_methanotroph_model, pairwise ~ solar_progress) # 0.0209
+emmeans::emmeans(surface_methanotroph_model, pairwise ~ solar_progress) # 0.0296
 ```
 
 ```
 ## $emmeans
 ##  solar_progress emmean    SE df lower.CL upper.CL
-##  FPV            440032 60900  4   271026   609037
-##  Open           121706 60900  4   -47300   290712
+##  FPV            307997 49300  4   171183   444810
+##  Open            74534 49300  4   -62279   211347
 ## 
 ## Degrees-of-freedom method: kenward-roger 
 ## Confidence level used: 0.95 
 ## 
 ## $contrasts
 ##  contrast   estimate    SE df t.ratio p.value
-##  FPV - Open   318325 86100  4   3.698  0.0209
+##  FPV - Open   233463 69700  4   3.350  0.0286
 ## 
 ## Degrees-of-freedom method: kenward-roger
 ```
@@ -1703,15 +1686,15 @@ methanotroph_surface <- methanotroph_surface_sum %>%
   geom_point(size = 3, shape = 1, color = "black")+
   labs(y= "Surface Methanotroph<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
   scale_y_continuous(
-    limits = c(0, 1.27e6),
-    breaks = c(0, 6.25e5, 1.25e6),
-    labels = c("0", "625K", "1.25M"))+
+    limits = c(0, NA),
+    breaks = c(0, 5e5, 1e6),
+    labels = c("0", "500K", "1M"))+
   # scale_y_continuous(
   #    limits = c(0, NA),
   #   # breaks = c(0, 7.5e5, 1.5e6),
   #   # labels = c("0", "750K", "1.5M"))+
-  #   labels = label_number(scale_cut = cut_short_scale())) +
-  #   #labels = label_number(scale_cut = cut_short_scale(), accuracy = 0.01)) +
+    # labels = label_number(scale_cut = cut_short_scale())) +
+    #labels = label_number(scale_cut = cut_short_scale(), accuracy = 0.01)) +
   theme(axis.text.x =  element_text(size = 8,colour = "black"),
          axis.text.y =  element_text(size = 8,colour = "black"),
          axis.title.x = element_blank(),
@@ -1733,9 +1716,9 @@ methanotroph_surface_box <- methanotroph_surface_data %>%
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = c("black", "black"))+
   scale_y_continuous(
-    limits = c(0, 1.27e6),
-    breaks = c(0, 6.25e5, 1.25e6),
-    labels = c("0", "625K", "1.25M"))+
+    limits = c(0, NA),
+    breaks = c(0, 5e5, 1e6),
+    labels = c("0", "500K", "1M"))+
   # scale_y_continuous(
   #   limits = c(0, 1.27e6),
   #   breaks = c(0, 2.5e5, 7.5e5, 1.25e6),
@@ -1757,7 +1740,7 @@ methanotroph_surface_box <- methanotroph_surface_data %>%
   #                    label.y.npc = 0.9,
   #                    fontface = "italic")
   #label.y = c(8000, 100000, 500000, 400000, 400000), # get pvalue
- annotate("text", x = 2, y = 1.25e6, label = "p = 0.021", size = 2.822,  fontface = "italic") # add p value
+ annotate("text", x = 2, y = 1e6, label = "p = 0.03", size = 2.822,  fontface = "italic") # add p value
 methanotroph_surface_box
 ```
 
@@ -1771,8 +1754,8 @@ methanogen_bottom_sum <- water_ch4_cyclers_df %>%
   dplyr::filter(Depth_Class == "Bottom Water",
                 CH4_Cycler == "Methanogen") %>% 
   group_by(solar_progress, JDate) %>% 
-  dplyr::summarize(sd_meth = sd(total_abundance),
-                   mean_meth = mean(total_abundance))
+  dplyr::summarize(sd_meth = sd(total_abundance/1e5),
+                   mean_meth = mean(total_abundance/1e5))
 methanogen_bottom_sum
 ```
 
@@ -1781,14 +1764,14 @@ methanogen_bottom_sum
 ## # Groups:   solar_progress [2]
 ##   solar_progress JDate sd_meth mean_meth
 ##   <fct>          <dbl>   <dbl>     <dbl>
-## 1 FPV              172   5250.    10675 
-## 2 FPV              193  10774.    19957.
-## 3 FPV              234   1688.     4191.
-## 4 FPV              255   3826.     7693 
-## 5 Open             172  21787.    14914.
-## 6 Open             193   5465.    20209.
-## 7 Open             234  57993.    40207.
-## 8 Open             255   2409.     2767.
+## 1 FPV              172  0.0395    0.0831
+## 2 FPV              193  0.0931    0.153 
+## 3 FPV              234  0.0121    0.0400
+## 4 FPV              255  0.0371    0.0727
+## 5 Open             172  0.157     0.111 
+## 6 Open             193  0.0295    0.154 
+## 7 Open             234  0.437     0.306 
+## 8 Open             255  0.0207    0.0236
 ```
 
 ``` r
@@ -1796,7 +1779,7 @@ max(methanogen_bottom_sum$mean_meth)
 ```
 
 ```
-## [1] 40207.33
+## [1] 0.3057067
 ```
 
 ``` r
@@ -1807,7 +1790,7 @@ methanogen_bottom_data <- water_ch4_cyclers_df %>%
 methanogen_bottom_data$Pond <- as.factor(methanogen_bottom_data$Pond)
 
 bottom_methanogen_model <- lmer(total_abundance ~ solar_progress + JDate + (1|Pond), data = methanogen_bottom_data)
-summary(bottom_methanogen_model) # 0.514
+summary(bottom_methanogen_model) # 0.536
 ```
 
 ```
@@ -1815,46 +1798,46 @@ summary(bottom_methanogen_model) # 0.514
 ## Formula: total_abundance ~ solar_progress + JDate + (1 | Pond)
 ##    Data: methanogen_bottom_data
 ## 
-## REML criterion at convergence: 494.2
+## REML criterion at convergence: 482.5
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -1.3395 -0.3363 -0.1738  0.1338  3.7360 
+## -1.2668 -0.3415 -0.1913  0.1340  3.7474 
 ## 
 ## Random effects:
 ##  Groups   Name        Variance  Std.Dev.
-##  Pond     (Intercept) 131347254 11461   
-##  Residual             403215864 20080   
+##  Pond     (Intercept)  64847986  8053   
+##  Residual             235745079 15354   
 ## Number of obs: 24, groups:  Pond, 6
 ## 
 ## Fixed effects:
 ##                    Estimate Std. Error       df t value Pr(>|t|)
-## (Intercept)        24108.39   28147.13    19.89   0.857    0.402
-## solar_progressOpen  8895.25   12440.56     4.00   0.715    0.514
-## JDate                -63.13     125.23    17.00  -0.504    0.621
+## (Intercept)        16861.01   21429.49    19.71   0.787    0.441
+## solar_progressOpen  6149.83    9084.21     4.00   0.677    0.536
+## JDate                -38.16      95.76    17.00  -0.398    0.695
 ## 
 ## Correlation of Fixed Effects:
 ##             (Intr) slr_pO
-## slr_prgrssO -0.221       
-## JDate       -0.950  0.000
+## slr_prgrssO -0.212       
+## JDate       -0.954  0.000
 ```
 
 ``` r
-emmeans::emmeans(bottom_methanogen_model, pairwise ~ solar_progress) # 0.514
+emmeans::emmeans(bottom_methanogen_model, pairwise ~ solar_progress) # 0.5355
 ```
 
 ```
 ## $emmeans
 ##  solar_progress emmean   SE df lower.CL upper.CL
-##  FPV             10629 8800  4   -13795    35053
-##  Open            19524 8800  4    -4900    43948
+##  FPV              8714 6420  4    -9120    26549
+##  Open            14864 6420  4    -2971    32699
 ## 
 ## Degrees-of-freedom method: kenward-roger 
 ## Confidence level used: 0.95 
 ## 
 ## $contrasts
-##  contrast   estimate    SE df t.ratio p.value
-##  FPV - Open    -8895 12400  4  -0.715  0.5141
+##  contrast   estimate   SE df t.ratio p.value
+##  FPV - Open    -6150 9080  4  -0.677  0.5355
 ## 
 ## Degrees-of-freedom method: kenward-roger
 ```
@@ -1864,7 +1847,7 @@ max(methanogen_bottom_data$total_abundance)
 ```
 
 ```
-## [1] 107153
+## [1] 80986
 ```
 
 ``` r
@@ -1879,8 +1862,8 @@ methanogen_bottom <- methanogen_bottom_sum %>%
   geom_point(size = 3, shape = 1, color = "black")+
   labs(y= "Bottom Methanogen<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
   scale_y_continuous(
-    limits = c(NA, 1.1e5),
-    breaks = c(0, 5e4, 1e5),
+  limits = c(NA, 8e4),
+  breaks = c(0, 4e4, 8e4),
     labels = label_number(scale_cut = cut_short_scale())) +
   theme(axis.text.x =  element_text(size = 8,colour = "black"),
          axis.text.y =  element_text(size = 8,colour = "black"),
@@ -1905,8 +1888,8 @@ methanogen_bottom_box <- methanogen_bottom_data %>%
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = c("black", "black"))+
   scale_y_continuous(
-    limits = c(NA, 1.1e5),
-    breaks = c(0, 5e4, 1e5),
+  limits = c(NA, 8.1e4),
+  breaks = c(0, 4e4, 8e4),
     labels = label_number(scale_cut = cut_short_scale())) +
   theme_classic()+
   theme(axis.text.x = element_text(size = 8,colour = "black"),
@@ -1923,7 +1906,7 @@ methanogen_bottom_box <- methanogen_bottom_data %>%
   #                    label.y.npc = 0.9,
   #                    fontface = "italic")
                      #label.y = c(8000, 100000, 500000, 400000, 400000), # get pvalue
- annotate("text", x = 2, y = 1e5, label = "p = 0.514", size = 2.822,  fontface = "italic")
+ annotate("text", x = 2, y = 8e4, label = "p = 0.54", size = 2.822,  fontface = "italic")
 methanogen_bottom_box
 ```
 
@@ -1937,8 +1920,8 @@ methanotroph_bottom_sum <- water_ch4_cyclers_df %>%
   dplyr::filter(Depth_Class == "Bottom Water",
                 CH4_Cycler == "Methanotroph") %>% 
   group_by(solar_progress, JDate) %>% 
-  dplyr::summarize(sd_meth = sd(total_abundance),
-                   mean_meth = mean(total_abundance))
+  dplyr::summarize(sd_meth = sd(total_abundance/1e5),
+                   mean_meth = mean(total_abundance/1e5))
 methanotroph_bottom_sum
 ```
 
@@ -1947,14 +1930,14 @@ methanotroph_bottom_sum
 ## # Groups:   solar_progress [2]
 ##   solar_progress JDate sd_meth mean_meth
 ##   <fct>          <dbl>   <dbl>     <dbl>
-## 1 FPV              172  91714.   226583.
-## 2 FPV              193 306960.   370899.
-## 3 FPV              234 285142.   532995.
-## 4 FPV              255 462386.   731272.
-## 5 Open             172  84954.   187324.
-## 6 Open             193  39734.   149482.
-## 7 Open             234 171205.   278711 
-## 8 Open             255  74231.    80469
+## 1 FPV              172   0.822     1.46 
+## 2 FPV              193   2.20      2.30 
+## 3 FPV              234   1.91      3.57 
+## 4 FPV              255   4.20      5.65 
+## 5 Open             172   0.731     1.27 
+## 6 Open             193   0.332     0.862
+## 7 Open             234   1.17      1.71 
+## 8 Open             255   0.503     0.533
 ```
 
 ``` r
@@ -1962,7 +1945,7 @@ max(methanotroph_bottom_sum$mean_meth)
 ```
 
 ```
-## [1] 731271.7
+## [1] 5.652857
 ```
 
 ``` r
@@ -1981,8 +1964,8 @@ methanotroph_bottom_sum_text
 ## # A tibble: 2 × 3
 ##   solar_progress sd_meth mean_meth
 ##   <fct>            <dbl>     <dbl>
-## 1 FPV               3.33      4.65
-## 2 Open              1.16      1.74
+## 1 FPV              2.76       3.25
+## 2 Open             0.789      1.09
 ```
 
 ``` r
@@ -1990,7 +1973,7 @@ max(methanotroph_bottom_sum_text$mean_meth)
 ```
 
 ```
-## [1] 4.654371
+## [1] 3.246711
 ```
 
 ``` r
@@ -2001,7 +1984,7 @@ methanotroph_bottom_data <- water_ch4_cyclers_df %>%
 methanotroph_bottom_data$Pond <- as.factor(methanotroph_bottom_data$Pond)
 
 bottom_methanotroph_model <- lmerTest::lmer(total_abundance ~ solar_progress + JDate + (1|Pond), data = methanotroph_bottom_data)
-summary(bottom_methanotroph_model) # 0.00272 **
+summary(bottom_methanotroph_model) # 0.0679 
 ```
 
 ```
@@ -2009,50 +1992,48 @@ summary(bottom_methanotroph_model) # 0.00272 **
 ## Formula: total_abundance ~ solar_progress + JDate + (1 | Pond)
 ##    Data: methanotroph_bottom_data
 ## 
-## REML criterion at convergence: 594.7
+## REML criterion at convergence: 585.8
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -1.3802 -0.6653 -0.1485  0.4918  2.6934 
+## -1.1969 -0.5777 -0.1677  0.4445  3.0592 
 ## 
 ## Random effects:
 ##  Groups   Name        Variance  Std.Dev.
-##  Pond     (Intercept) 0.000e+00      0  
-##  Residual             5.671e+10 238139  
+##  Pond     (Intercept) 2.009e+09  44827  
+##  Residual             3.570e+10 188937  
 ## Number of obs: 24, groups:  Pond, 6
 ## 
 ## Fixed effects:
-##                      Estimate Std. Error         df t value Pr(>|t|)   
-## (Intercept)        -9.465e+04  3.245e+05  1.184e+32  -0.292  0.77049   
-## solar_progressOpen -2.914e+05  9.722e+04  1.184e+32  -2.998  0.00272 **
-## JDate               2.623e+03  1.485e+03  1.184e+32   1.766  0.07734 . 
+##                      Estimate Std. Error         df t value Pr(>|t|)  
+## (Intercept)        -1.401e+05  2.587e+05  1.349e+03  -0.541   0.5883  
+## solar_progressOpen -2.153e+05  8.538e+04  4.000e+00  -2.521   0.0653 .
+## JDate               2.177e+03  1.178e+03  1.481e+18   1.847   0.0647 .
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
 ## Correlation of Fixed Effects:
 ##             (Intr) slr_pO
-## slr_prgrssO -0.150       
-## JDate       -0.977  0.000
-## optimizer (nloptwrap) convergence code: 0 (OK)
-## boundary (singular) fit: see help('isSingular')
+## slr_prgrssO -0.165       
+## JDate       -0.972  0.000
 ```
 
 ``` r
-emmeans::emmeans(bottom_methanotroph_model, pairwise ~ solar_progress) # 0.0400
+emmeans::emmeans(bottom_methanotroph_model, pairwise ~ solar_progress) # 0.0679
 ```
 
 ```
 ## $emmeans
 ##  solar_progress emmean    SE df lower.CL upper.CL
-##  FPV            465437 68700  4   274571   656304
-##  Open           173996 68700  4   -16870   364863
+##  FPV            324671 60400  4   157056   492286
+##  Open           109406 60400  4   -58208   277022
 ## 
 ## Degrees-of-freedom method: kenward-roger 
 ## Confidence level used: 0.95 
 ## 
 ## $contrasts
 ##  contrast   estimate    SE df t.ratio p.value
-##  FPV - Open   291441 97200  4   2.998  0.0400
+##  FPV - Open   215265 85400  4   2.521  0.0653
 ## 
 ## Degrees-of-freedom method: kenward-roger
 ```
@@ -2069,14 +2050,13 @@ methanotroph_bottom <- methanotroph_bottom_sum %>%
   geom_point(size = 3, shape = 1, color = "black")+
   labs(y= "Bottom Methanotroph<br>Abundance (Cells mL<sup>-1</sup>)", x = "Day of Year")+
   scale_y_continuous(
-    breaks = c(0, 6.25e5, 1.25e6),
-    labels = c("0", "625K", "1.25M"))+
+    breaks = c(0, 5e5, 1e6),
+    labels = c("0", "500K", "1M"))+
   # scale_y_continuous(
   #   breaks = c(0, 2.5e5, 7.5e5, 1.25e6),
   #   labels = c("0", "250K", "750K", "1.25M"))+
   # labels = label_number(scale_cut = cut_short_scale(), accuracy = 0.01)) +
   # scale_y_continuous(
-  #   
   #   limits = c(0, 1.25e6),
   #   breaks = c(0, 5e5, 1e6, 1.25e6),
   #   labels = label_number(scale_cut = cut_short_scale())) +
@@ -2101,8 +2081,8 @@ methanotroph_bottom_box <- methanotroph_bottom_data %>%
   scale_fill_manual(values = solar_colors) +
   scale_color_manual(values = c("black", "black"))+
   scale_y_continuous(
-    breaks = c(0, 6.25e5, 1.25e6),
-    labels = c("0", "625K", "1.25M"))+
+    breaks = c(0, 5e5, 1e6),
+    labels = c("0", "500K", "1M"))+
   # scale_y_continuous(
   #   breaks = c(0, 2.5e5, 7.5e5, 1.25e6),
   #   labels = c("0","250K", "750K", "1.25M"))+
@@ -2122,7 +2102,7 @@ methanotroph_bottom_box <- methanotroph_bottom_data %>%
   #                    label.y.npc = 0.9,
   #                    fontface = "italic")
   #                    #label.y = c(8000, 100000, 500000, 400000, 400000), # get pvalue
- annotate("text", x = 2, y = 1.25e6, label = "p = 0.040", size = 2.822,  fontface = "italic") # add p value
+ annotate("text", x = 2, y = 1e6, label = "p = 0.07", size = 2.822,  fontface = "italic") # add p value
 methanotroph_bottom_box
 ```
 
@@ -2141,10 +2121,10 @@ sed_ch4_cyclers_df %>%
 ## # Groups:   solar_progress [2]
 ##   solar_progress CH4_Cycler   sd_meth mean_meth
 ##   <fct>          <chr>          <dbl>     <dbl>
-## 1 FPV            Methanogen    0.0534    0.189 
-## 2 FPV            Methanotroph  0.0241    0.0598
-## 3 Open           Methanogen    0.0456    0.205 
-## 4 Open           Methanotroph  0.0253    0.0663
+## 1 FPV            Methanogen    0.0399    0.146 
+## 2 FPV            Methanotroph  0.0134    0.0385
+## 3 Open           Methanogen    0.0351    0.155 
+## 4 Open           Methanotroph  0.0141    0.0444
 ```
 
 ``` r
@@ -2152,24 +2132,28 @@ sed_ch4_cyclers_df %>%
 # calculate stats
 # 1a. calcualte abundance
 methanogen_sed_sum <- sed_ch4_cyclers_df %>%
-  #dplyr::filter(CH4_Cycler == "Methanogen") %>% 
+  dplyr::filter(CH4_Cycler == "Methanogen") %>% 
  # group_by(solar_progress) %>% # when this is commented out then roughly 20% of community is methanogens
  # group_by(solar_progress) %>%  # when this is run then fpv has 18.9% methanogens and controls have more with 20.5%
-  group_by(solar_progress, CH4_Cycler) %>% 
+  group_by(solar_progress, JDate) %>% 
   dplyr::summarize(sd_meth = sd(rel_abundance),
                    mean_meth = mean(rel_abundance))
 methanogen_sed_sum
 ```
 
 ```
-## # A tibble: 4 × 4
+## # A tibble: 8 × 4
 ## # Groups:   solar_progress [2]
-##   solar_progress CH4_Cycler   sd_meth mean_meth
-##   <fct>          <chr>          <dbl>     <dbl>
-## 1 FPV            Methanogen    0.0534    0.189 
-## 2 FPV            Methanotroph  0.0241    0.0598
-## 3 Open           Methanogen    0.0456    0.205 
-## 4 Open           Methanotroph  0.0253    0.0663
+##   solar_progress JDate sd_meth mean_meth
+##   <fct>          <dbl>   <dbl>     <dbl>
+## 1 FPV              172  0.0287     0.153
+## 2 FPV              193  0.0334     0.180
+## 3 FPV              234  0.0240     0.147
+## 4 FPV              255  0.0364     0.105
+## 5 Open             172  0.0184     0.162
+## 6 Open             193  0.0149     0.157
+## 7 Open             234  0.0356     0.165
+## 8 Open             255  0.0633     0.134
 ```
 
 ``` r
@@ -2177,7 +2161,15 @@ max(methanogen_sed_sum$mean_meth)
 ```
 
 ```
-## [1] 0.2048874
+## [1] 0.1803245
+```
+
+``` r
+min(methanogen_sed_sum$mean_meth)
+```
+
+```
+## [1] 0.1046341
 ```
 
 ``` r
@@ -2187,7 +2179,7 @@ methanogen_sed_data <- sed_ch4_cyclers_df %>%
 methanogen_sed_data$Pond <- as.factor(methanogen_sed_data$Pond)
 
 sed_methanogen_model <- lmer(rel_abundance ~ solar_progress + JDate + (1|Pond), data = methanogen_sed_data)
-summary(sed_methanogen_model) # 0.6678 
+summary(sed_methanogen_model) # 0.7598
 ```
 
 ```
@@ -2195,48 +2187,48 @@ summary(sed_methanogen_model) # 0.6678
 ## Formula: rel_abundance ~ solar_progress + JDate + (1 | Pond)
 ##    Data: methanogen_sed_data
 ## 
-## REML criterion at convergence: -54.6
+## REML criterion at convergence: -64.9
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -1.9470 -0.4706 -0.1411  0.7823  1.5193 
+## -1.9877 -0.4323 -0.1066  0.7566  1.4539 
 ## 
 ## Random effects:
 ##  Groups   Name        Variance  Std.Dev.
-##  Pond     (Intercept) 0.0009758 0.03124 
-##  Residual             0.0013865 0.03724 
+##  Pond     (Intercept) 0.0005100 0.02258 
+##  Residual             0.0008464 0.02909 
 ## Number of obs: 23, groups:  Pond, 6
 ## 
 ## Fixed effects:
 ##                      Estimate Std. Error         df t value Pr(>|t|)    
-## (Intercept)         0.3145977  0.0539666 19.7289652   5.829 1.11e-05 ***
-## solar_progressOpen  0.0138530  0.0298995  3.9028301   0.463   0.6678    
-## JDate              -0.0005788  0.0002347 15.9472385  -2.466   0.0254 *  
+## (Intercept)         0.2378562  0.0418242 19.5467847   5.687 1.58e-05 ***
+## solar_progressOpen  0.0072479  0.0221030  3.8980053   0.328   0.7598    
+## JDate              -0.0004243  0.0001833 15.9481887  -2.314   0.0343 *  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
 ## Correlation of Fixed Effects:
 ##             (Intr) slr_pO
-## slr_prgrssO -0.265       
-## JDate       -0.919 -0.017
+## slr_prgrssO -0.252       
+## JDate       -0.926 -0.018
 ```
 
 ``` r
-emmeans::emmeans(sed_methanogen_model, pairwise ~ solar_progress) # 0.667
+emmeans::emmeans(sed_methanogen_model, pairwise ~ solar_progress) # 0.7596
 ```
 
 ```
 ## $emmeans
 ##  solar_progress emmean     SE   df lower.CL upper.CL
-##  FPV             0.192 0.0213 4.10    0.133    0.250
-##  Open            0.205 0.0210 3.89    0.146    0.264
+##  FPV             0.148 0.0158 4.11    0.104    0.191
+##  Open            0.155 0.0155 3.88    0.111    0.198
 ## 
 ## Degrees-of-freedom method: kenward-roger 
 ## Confidence level used: 0.95 
 ## 
 ## $contrasts
 ##  contrast   estimate     SE   df t.ratio p.value
-##  FPV - Open  -0.0139 0.0299 3.99  -0.463  0.6674
+##  FPV - Open -0.00725 0.0221 3.99  -0.328  0.7596
 ## 
 ## Degrees-of-freedom method: kenward-roger
 ```
@@ -2248,15 +2240,19 @@ methanogen_sed <- methanogen_sed_sum %>%
   geom_line()+
   geom_point()+
   theme_classic()+
-  geom_errorbar(aes(x = JDate, ymin = mean_meth - sd_meth, ymax = mean_meth + sd_meth), width = 0, color = "black")+
+  geom_errorbar(aes(x = JDate, ymin = mean_meth*100 - sd_meth*100, 
+                    ymax = mean_meth*100 + sd_meth*100), width = 0, color = "black")+
   geom_point(size = 3, shape = 16)+
   geom_point(size = 3, shape = 1, color = "black")+
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = solar_colors)+
   scale_y_continuous(
-    limits = c(.08*100, .3*100),
-    breaks = c(0.1*100, .2*100, .30*100))+
-    #labels = label_number(scale_cut = cut_short_scale())) +
+    breaks = scales::pretty_breaks(n = 3),
+   labels = label_number(scale_cut = cut_short_scale())) +
+  # scale_y_continuous(
+  #   limits = c(.1*100, .22*100),
+  #   breaks = c(0.1*100, .15*100, .20*100))+
+ #labels = label_number(scale_cut = cut_short_scale())) +
   labs(y= "Sediment Methanogen<br> Abundance (%)", x = "Day of Year")+
   theme(axis.text.x =  element_text(size = 8,colour = "black"),
          axis.text.y =  element_text(size = 8,colour = "black"),
@@ -2266,13 +2262,7 @@ methanogen_sed <- methanogen_sed_sum %>%
 methanogen_sed
 ```
 
-```
-## Error in `geom_line()`:
-## ! Problem while computing aesthetics.
-## ℹ Error occurred in the 1st layer.
-## Caused by error:
-## ! object 'JDate' not found
-```
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-9.png)<!-- -->
 
 ``` r
 # 3. box plot
@@ -2283,8 +2273,11 @@ methanogen_sed_box <- methanogen_sed_data %>%
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = c("black", "black"))+
   scale_y_continuous(
-    limits = c(.08*100, .3*100),
-    breaks = c(0.1*100, .2*100, .30*100))+
+    breaks = scales::pretty_breaks(n = 3),
+    labels = label_number(scale_cut = cut_short_scale())) +
+  # scale_y_continuous(
+  #   limits = c(.08*100, .3*100),
+  #   breaks = c(0.1*100, .2*100, .30*100))+
   theme_classic()+
   theme(axis.text.x = element_text(size = 8,colour = "black"),
         axis.title.x = element_blank(),
@@ -2293,11 +2286,11 @@ methanogen_sed_box <- methanogen_sed_data %>%
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
         legend.position = "none") +
- annotate("text", x = 2, y = .3, label = "p = 0.667", size = 2.822,  fontface = "italic")
+ annotate("text", x = 2, y = 22, label = "p = 0.76", size = 2.822,  fontface = "italic")
 methanogen_sed_box
 ```
 
-![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-9.png)<!-- -->
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-10.png)<!-- -->
 
 ``` r
 ##### sediment methanotrophs #####
@@ -2316,16 +2309,16 @@ methanotroph_sed_sum
 ```
 ## # A tibble: 8 × 4
 ## # Groups:   solar_progress [2]
-##   solar_progress JDate  sd_meth mean_meth
-##   <fct>          <dbl>    <dbl>     <dbl>
-## 1 FPV              172 0.0316      0.0813
-## 2 FPV              193 0.0172      0.0640
-## 3 FPV              234 0.000996    0.0504
-## 4 FPV              255 0.0157      0.0404
-## 5 Open             172 0.00406     0.0622
-## 6 Open             193 0.0112      0.104 
-## 7 Open             234 0.00672     0.0536
-## 8 Open             255 0.0165      0.0453
+##   solar_progress JDate sd_meth mean_meth
+##   <fct>          <dbl>   <dbl>     <dbl>
+## 1 FPV              172 0.0177     0.0493
+## 2 FPV              193 0.00849    0.0417
+## 3 FPV              234 0.00177    0.0347
+## 4 FPV              255 0.0108     0.0270
+## 5 Open             172 0.00343    0.0431
+## 6 Open             193 0.00603    0.0645
+## 7 Open             234 0.00375    0.0373
+## 8 Open             255 0.0117     0.0326
 ```
 
 ``` r
@@ -2333,7 +2326,15 @@ max(methanotroph_sed_sum$mean_meth)
 ```
 
 ```
-## [1] 0.1039081
+## [1] 0.06449011
+```
+
+``` r
+min(methanotroph_sed_sum$mean_meth)
+```
+
+```
+## [1] 0.02704562
 ```
 
 ``` r
@@ -2343,7 +2344,7 @@ methanotroph_sed_data <- sed_ch4_cyclers_df %>%
 methanotroph_sed_data$Pond <- as.factor(methanotroph_sed_data$Pond)
 
 sed_methanotroph_model <- lmerTest::lmer(rel_abundance ~ solar_progress + JDate + (1|Pond), data = methanotroph_sed_data)
-summary(sed_methanotroph_model) # 0.39913 
+summary(sed_methanotroph_model) # 0.18701
 ```
 
 ```
@@ -2351,23 +2352,23 @@ summary(sed_methanotroph_model) # 0.39913
 ## Formula: rel_abundance ~ solar_progress + JDate + (1 | Pond)
 ##    Data: methanotroph_sed_data
 ## 
-## REML criterion at convergence: -84.4
+## REML criterion at convergence: -107.8
 ## 
 ## Scaled residuals: 
 ##      Min       1Q   Median       3Q      Max 
-## -1.21367 -0.82879 -0.02729  0.65345  2.06768 
+## -1.30294 -0.71987  0.03116  0.73635  1.96980 
 ## 
 ## Random effects:
 ##  Groups   Name        Variance  Std.Dev.
 ##  Pond     (Intercept) 0.0000000 0.00000 
-##  Residual             0.0004054 0.02014 
+##  Residual             0.0001258 0.01121 
 ## Number of obs: 23, groups:  Pond, 6
 ## 
 ## Fixed effects:
 ##                      Estimate Std. Error         df t value Pr(>|t|)    
-## (Intercept)         0.1514843  0.0274953 20.0000000   5.509 2.16e-05 ***
-## solar_progressOpen  0.0072444  0.0084083 20.0000000   0.862  0.39913    
-## JDate              -0.0004332  0.0001267 20.0000000  -3.418  0.00272 ** 
+## (Intercept)         8.969e-02  1.531e-02  2.000e+01   5.857 9.93e-06 ***
+## solar_progressOpen  6.332e-03  4.683e-03  2.000e+01   1.352  0.19140    
+## JDate              -2.419e-04  7.057e-05  2.000e+01  -3.427  0.00267 ** 
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
@@ -2380,28 +2381,28 @@ summary(sed_methanotroph_model) # 0.39913
 ```
 
 ``` r
-emmeans::lsmeans(sed_methanotroph_model, pairwise ~ solar_progress) #0.4401
+emmeans::lsmeans(sed_methanotroph_model, pairwise ~ solar_progress) #0.2464
 ```
 
 ```
 ## $lsmeans
 ##  solar_progress lsmean      SE   df lower.CL upper.CL
-##  FPV            0.0594 0.00612 4.22   0.0427   0.0761
-##  Open           0.0666 0.00581 3.67   0.0499   0.0834
+##  FPV            0.0383 0.00341 4.22   0.0290   0.0475
+##  Open           0.0446 0.00324 3.67   0.0353   0.0539
 ## 
 ## Degrees-of-freedom method: kenward-roger 
 ## Confidence level used: 0.95 
 ## 
 ## $contrasts
-##  contrast   estimate      SE   df t.ratio p.value
-##  FPV - Open -0.00724 0.00845 3.94  -0.858  0.4401
+##  contrast   estimate     SE   df t.ratio p.value
+##  FPV - Open -0.00633 0.0047 3.94  -1.346  0.2504
 ## 
 ## Degrees-of-freedom method: kenward-roger
 ```
 
 ``` r
 # 2. plot sed methanotrophs overtime 
-methanotroph_sed<- methanotroph_sed_sum %>% 
+methanotroph_sed <- methanotroph_sed_sum %>% 
   ggplot(aes(x = JDate, y = mean_meth*100, fill = solar_progress, color = solar_progress)) +
   geom_line()+
   geom_point()+
@@ -2409,7 +2410,7 @@ methanotroph_sed<- methanotroph_sed_sum %>%
   geom_errorbar(aes(x = JDate, ymin = mean_meth*100 - sd_meth*100, 
                     ymax = mean_meth*100 + sd_meth*100), width = 0, color = "black")+
   geom_point(size = 3, shape = 16)+
-  geom_point(size = 3, shape = 1, color = "black")+
+  geom_point(size = 3, shape = 1, color = "black") +
   labs(y= "Sediment Methanotroph<br>Abundance (%)", x = "Day of Year")+
   theme(axis.text.x =  element_text(size = 8,colour = "black"),
          axis.text.y =  element_text(size = 8,colour = "black"),
@@ -2418,14 +2419,13 @@ methanotroph_sed<- methanotroph_sed_sum %>%
   scale_fill_manual(values = solar_colors)+
   scale_color_manual(values = solar_colors)+
   scale_y_continuous(
-    limits = c(0.02*100, .15*100),
-    breaks = c(0.05*100, 0.10*100, 0.15*100),
+    breaks = scales::pretty_breaks(n = 3),
     labels = label_number(scale_cut = cut_short_scale())) +
   theme(legend.position = "none")
 methanotroph_sed
 ```
 
-![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-10.png)<!-- -->
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-11.png)<!-- -->
 
 ``` r
 # box plot
@@ -2434,10 +2434,9 @@ methanotroph_sed_box <- methanotroph_sed_data %>%
   geom_boxplot(outlier.shape = NA, color = "black") +
   geom_jitter(aes(color = solar_progress, fill = solar_progress), width = 0.2, size = 2, shape = 21) +
   scale_fill_manual(values = solar_colors)+
-  scale_color_manual(values = c("black", "black"))+
+  scale_color_manual(values = c("black", "black")) +
   scale_y_continuous(
-    limits = c(0.02*100, .15*100),
-    breaks = c(0.05*100, 0.10*100, 0.15*100),
+    breaks = scales::pretty_breaks(n = 3),
     labels = label_number(scale_cut = cut_short_scale())) +
   theme_classic()+
   theme(axis.text.x = element_text(size = 8, colour = "black"),
@@ -2454,11 +2453,11 @@ methanotroph_sed_box <- methanotroph_sed_data %>%
   #                    label.y.npc = 0.9,
   #                    fontface = "italic")
   #                    #label.y = c(8000, 100000, 500000, 400000, 400000), # get pvalue
- annotate("text", x = 2, y = .15, label = "p = 0.440", size = 2.822,  fontface = "italic") # add p value
+ annotate("text", x = 2, y = 8, label = "p = 0.25", size = 2.822,  fontface = "italic") # add p value
 methanotroph_sed_box
 ```
 
-![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-11.png)<!-- -->
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-12.png)<!-- -->
 
 ``` r
 ## plot all together
@@ -2473,31 +2472,28 @@ fig2 <- methanotroph_surface + methanotroph_surface_box + methanogen_surface + m
 fig2
 ```
 
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-13.png)<!-- -->
+
+``` r
+fig2 <- methanotroph_surface + methanotroph_surface_box + 
+  methanogen_surface + methanogen_surface_box + 
+  methanotroph_bottom + methanotroph_bottom_box + 
+  methanogen_bottom + methanogen_bottom_box +
+  methanotroph_sed + methanotroph_sed_box + 
+  methanogen_sed + methanogen_sed_box +
+  plot_layout(nrow = 6, ncol = 2, widths = c(10, 4)) +
+  plot_annotation(tag_levels = "A", 
+                  tag_suffix = ".") &
+  theme(
+    plot.tag = element_text(size = 8)); fig2
 ```
-## Error in `geom_line()`:
-## ! Problem while computing aesthetics.
-## ℹ Error occurred in the 1st layer.
-## Caused by error:
-## ! object 'JDate' not found
-```
+
+![](Microbial_Analyses_files/figure-html/fig-2-ch4-cycler-abundance-14.png)<!-- -->
 
 ``` r
 #export the figure
 ggsave(fig2, width = 6.5, height = 8.5, units = "in", filename = "figures/Fig_2/fig2.png") # could only save at height 8.5, orignally h = 8
 ```
-<<<<<<< HEAD
-=======
-
-```
-## Error in `geom_line()`:
-## ! Problem while computing aesthetics.
-## ℹ Error occurred in the 1st layer.
-## Caused by error:
-## ! object 'JDate' not found
-```
-
-
->>>>>>> 1bc6f19 (reknit files)
 We have created main text `fig2` which shows the abundance of water column (absolute abundance) and sediment (relative abundance) methanotrophs and methanogens over time between FPV and Open ponds. 
 
 Each row corresponds to depth (surface water, bottom water, or sediments) and methane cycler (methanotroph or methanogen). The left panel demonstrates the temporal relationships while the right panel is a box plot comparison with linear mixed effects statistical analysis between FPV and Open ponds.
@@ -2552,8 +2548,8 @@ fig3a_water_pcoa <-
   scale_color_manual(values = solar_colors) +
   labs(color = "Treatment",
        shape = "Pond",
-       x = "Axis.1 [27.4%]",
-       y = "Axis.2 [11.3%]",
+       x = "Axis.1 [25.9%]",
+       y = "Axis.2 [10.9%]",
        title = expression("Water")) +  # CH"[4]*" Cyclers
   guides(
     color = guide_legend(
@@ -2620,7 +2616,7 @@ fig3a_water_pcoa
 #     legend.box.just = "center",
 #     legend.box.background = element_rect(size = 0.2, linetype = "solid", color = "black"),
 #     legend.margin = margin(1, 2, 1, 1))
-#
+
 # Plot it
 # s1a_water_pcoa
 ```
@@ -2667,8 +2663,8 @@ fig3b_sed_pcoa <-
   scale_color_manual(values = solar_colors) +
   labs(color = "Treatment",
        shape = "Pond",
-       x = "Axis.1 [32.5%]",
-       y = "Axis.2 [15.8%]",
+       x = "Axis.1 [32.1%]",
+       y = "Axis.2 [15%]",
        title = expression("Sediment")) + #  CH"[4]*" Cyclers
   guides(
     color = guide_legend(
@@ -2760,13 +2756,8 @@ plot_fig3
 ![](Microbial_Analyses_files/figure-html/fig-3-1.png)<!-- -->
 
 ``` r
-<<<<<<< HEAD
 ggsave(plot_fig3, width = 6, height = 3.5, dpi = 300,
         filename = "figures/Fig_3.png")
-=======
-ggsave(plot_fig3, width = 6.5, height = 4.5, dpi = 300,
-        filename = "figures/Fig_3/Fig_3.png")
->>>>>>> 1bc6f19 (reknit files)
 ```
 
 
@@ -2820,9 +2811,9 @@ adonis2(water_bray ~ solar_progress, data = water_metadata, by = "terms")
 ## 
 ## adonis2(formula = water_bray ~ solar_progress, data = water_metadata, by = "terms")
 ##                Df SumOfSqs      R2      F Pr(>F)    
-## solar_progress  1    1.701 0.12801 6.7528  0.001 ***
-## Residual       46   11.587 0.87199                  
-## Total          47   13.288 1.00000                  
+## solar_progress  1   1.6055 0.11599 6.0359  0.001 ***
+## Residual       46  12.2357 0.88401                  
+## Total          47  13.8412 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -2840,9 +2831,9 @@ adonis2(water_bray ~ Depth_Class, data = water_metadata, by = "terms")
 ## 
 ## adonis2(formula = water_bray ~ Depth_Class, data = water_metadata, by = "terms")
 ##             Df SumOfSqs      R2      F Pr(>F)
-## Depth_Class  1   0.3635 0.02736 1.2939  0.185
-## Residual    46  12.9247 0.97264              
-## Total       47  13.2883 1.00000
+## Depth_Class  1   0.3712 0.02682 1.2676  0.199
+## Residual    46  13.4700 0.97318              
+## Total       47  13.8412 1.00000
 ```
 
 ``` r
@@ -2858,9 +2849,9 @@ adonis2(water_bray ~ Pond, data = water_metadata, by = "terms")
 ## 
 ## adonis2(formula = water_bray ~ Pond, data = water_metadata, by = "terms")
 ##          Df SumOfSqs      R2      F Pr(>F)    
-## Pond      5   3.7591 0.28289 3.3137  0.001 ***
-## Residual 42   9.5291 0.71711                  
-## Total    47  13.2883 1.00000                  
+## Pond      5   3.8474 0.27797 3.2338  0.001 ***
+## Residual 42   9.9938 0.72203                  
+## Total    47  13.8412 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -2877,10 +2868,10 @@ adonis2(water_bray ~ JDate, data = water_metadata, by = "terms")
 ## Number of permutations: 999
 ## 
 ## adonis2(formula = water_bray ~ JDate, data = water_metadata, by = "terms")
-##          Df SumOfSqs      R2      F Pr(>F)    
-## JDate     1   1.1474 0.08635 4.3472  0.001 ***
-## Residual 46  12.1409 0.91365                  
-## Total    47  13.2883 1.00000                  
+##          Df SumOfSqs    R2      F Pr(>F)    
+## JDate     1   1.0658 0.077 3.8376  0.001 ***
+## Residual 46  12.7754 0.923                  
+## Total    47  13.8412 1.000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -2899,13 +2890,13 @@ water_permanova <- adonis2(water_bray ~ solar_progress * Pond * JDate, data = wa
 ## 
 ## adonis2(formula = water_bray ~ solar_progress * Pond * JDate, data = water_metadata, by = "terms")
 ##                      Df SumOfSqs      R2      F Pr(>F)    
-## solar_progress        1   1.7010 0.12801 9.4196  0.001 ***
-## Pond                  4   2.0581 0.15488 2.8493  0.001 ***
-## JDate                 1   1.1474 0.08635 6.3538  0.001 ***
-## solar_progress:JDate  1   0.7829 0.05892 4.3356  0.001 ***
-## Pond:JDate            4   1.0979 0.08262 1.5199  0.041 *  
-## Residual             36   6.5009 0.48922                  
-## Total                47  13.2883 1.00000                  
+## solar_progress        1   1.6055 0.11599 8.4287  0.001 ***
+## Pond                  4   2.2419 0.16197 2.9424  0.001 ***
+## JDate                 1   1.0658 0.07700 5.5954  0.001 ***
+## solar_progress:JDate  1   0.8822 0.06374 4.6313  0.001 ***
+## Pond:JDate            4   1.1885 0.08586 1.5598  0.031 *  
+## Residual             36   6.8573 0.49543                  
+## Total                47  13.8412 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -2943,9 +2934,9 @@ adonis2(sed_bray ~ solar_progress, data = sed_metadata, by = "terms")
 ## 
 ## adonis2(formula = sed_bray ~ solar_progress, data = sed_metadata, by = "terms")
 ##                Df SumOfSqs      R2      F Pr(>F)    
-## solar_progress  1  0.36873 0.13547 6.5814  0.001 ***
-## Residual       42  2.35309 0.86453                  
-## Total          43  2.72182 1.00000                  
+## solar_progress  1  0.37478 0.13284 6.4339  0.001 ***
+## Residual       42  2.44655 0.86716                  
+## Total          43  2.82133 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -2962,10 +2953,10 @@ adonis2(sed_bray ~ Pond, data = sed_metadata, by = "terms")
 ## Number of permutations: 999
 ## 
 ## adonis2(formula = sed_bray ~ Pond, data = sed_metadata, by = "terms")
-##          Df SumOfSqs     R2      F Pr(>F)    
-## Pond      5   1.1451 0.4207 5.5194  0.001 ***
-## Residual 38   1.5767 0.5793                  
-## Total    43   2.7218 1.0000                  
+##          Df SumOfSqs      R2      F Pr(>F)    
+## Pond      5   1.2062 0.42751 5.6754  0.001 ***
+## Residual 38   1.6152 0.57249                  
+## Total    43   2.8213 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -2982,10 +2973,10 @@ adonis2(sed_bray ~ JDate, data = sed_metadata, by = "terms")
 ## Number of permutations: 999
 ## 
 ## adonis2(formula = sed_bray ~ JDate, data = sed_metadata, by = "terms")
-##          Df SumOfSqs      R2      F Pr(>F)   
-## JDate     1  0.30828 0.11326 5.3646  0.003 **
-## Residual 42  2.41354 0.88674                 
-## Total    43  2.72182 1.00000                 
+##          Df SumOfSqs      R2     F Pr(>F)   
+## JDate     1  0.30672 0.10872 5.123  0.003 **
+## Residual 42  2.51461 0.89128                
+## Total    43  2.82133 1.00000                
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -3004,13 +2995,13 @@ sediment_permanova <- adonis2(sed_bray ~ solar_progress * Pond * JDate, data = s
 ## 
 ## adonis2(formula = sed_bray ~ solar_progress * Pond * JDate, data = sed_metadata, by = "terms")
 ##                      Df SumOfSqs      R2       F Pr(>F)    
-## solar_progress        1  0.36873 0.13547 12.0145  0.001 ***
-## Pond                  4  0.77635 0.28523  6.3241  0.001 ***
-## JDate                 1  0.29080 0.10684  9.4751  0.001 ***
-## solar_progress:JDate  1  0.08192 0.03010  2.6694  0.018 *  
-## Pond:JDate            4  0.22193 0.08154  1.8078  0.011 *  
-## Residual             32  0.98209 0.36082                   
-## Total                43  2.72182 1.00000                   
+## solar_progress        1  0.37478 0.13284 11.7068  0.001 ***
+## Pond                  4  0.83138 0.29467  6.4923  0.001 ***
+## JDate                 1  0.28949 0.10261  9.0425  0.001 ***
+## solar_progress:JDate  1  0.08303 0.02943  2.5935  0.017 *  
+## Pond:JDate            4  0.21821 0.07734  1.7041  0.014 *  
+## Residual             32  1.02445 0.36311                   
+## Total                43  2.82133 1.00000                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -3068,8 +3059,8 @@ permutest(betadispr_water_pond) # not significant p = 0.256
 ## 
 ## Response: Distances
 ##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.10942 0.021885 1.1958    999  0.323
-## Residuals 42 0.76864 0.018301
+## Groups     5 0.07464 0.014928 0.7228    999  0.616
+## Residuals 42 0.86740 0.020653
 ```
 
 ``` r
@@ -3084,8 +3075,8 @@ permutest(betadispr_water_solar) # significant p = 0.011 **
 ## 
 ## Response: Distances
 ##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)   
-## Groups     1 0.13603 0.136034 10.227    999  0.002 **
-## Residuals 46 0.61184 0.013301                        
+## Groups     1 0.10739 0.107395 7.6513    999  0.005 **
+## Residuals 46 0.64566 0.014036                        
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -3101,9 +3092,9 @@ permutest(betadispr_water_depth) # not significant p = 0.417
 ## Number of permutations: 999
 ## 
 ## Response: Distances
-##           Df  Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     1 0.00863 0.0086305 0.6155    999  0.432
-## Residuals 46 0.64501 0.0140220
+##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)
+## Groups     1 0.01266 0.012658 0.9291    999  0.338
+## Residuals 46 0.62670 0.013624
 ```
 
 ``` r
@@ -3118,8 +3109,8 @@ permutest(betadispr_water_JDate) # significant p = 0.006 **
 ## 
 ## Response: Distances
 ##           Df  Sum Sq  Mean Sq      F N.Perm Pr(>F)   
-## Groups     3 0.23049 0.076829 5.2557    999  0.006 **
-## Residuals 44 0.64320 0.014618                        
+## Groups     3 0.24863 0.082875 5.6392    999  0.003 **
+## Residuals 44 0.64663 0.014696                        
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -3147,9 +3138,9 @@ permutest(betadispr_sed_pond) # not significant p = 0.661
 ## Number of permutations: 999
 ## 
 ## Response: Distances
-##           Df   Sum Sq   Mean Sq    F N.Perm Pr(>F)
-## Groups     5 0.024577 0.0049153 0.66    999   0.68
-## Residuals 38 0.282986 0.0074470
+##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
+## Groups     5 0.020235 0.0040471 0.5669    999  0.742
+## Residuals 38 0.271266 0.0071386
 ```
 
 ``` r
@@ -3163,9 +3154,9 @@ permutest(betadispr_sed_solar) # not significant p = 0.673
 ## Number of permutations: 999
 ## 
 ## Response: Distances
-##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     1 0.005441 0.0054409 1.5015    999  0.216
-## Residuals 42 0.152191 0.0036236
+##           Df  Sum Sq   Mean Sq      F N.Perm Pr(>F)
+## Groups     1 0.00547 0.0054703 1.5548    999  0.201
+## Residuals 42 0.14777 0.0035183
 ```
 
 ``` r
@@ -3180,8 +3171,8 @@ permutest(betadispr_sed_JDate) # not significant p = 0.162
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     3 0.010688 0.0035626 1.7276    999  0.172
-## Residuals 40 0.082486 0.0020622
+## Groups     3 0.008772 0.0029239 1.3218    999  0.273
+## Residuals 40 0.088482 0.0022121
 ```
 With betadispr we find the PERMANOVA results are are valid as pond, treatment, and date are not significant but significant in the PERMANOVA. Thus our PERMANOVA result is reliable and the differences between groups are due to location/centroids of groups rather than differences in variation within groups 
 
@@ -3201,7 +3192,7 @@ Note as of this step the results do change in that methanobacteriales is not dif
 # filter out for ASVs with zero variances; recommended to remove them as they are sparse and lowly abundant 
 
 # remove bad taxa 
-bad_taxa <- c("ASV_1071", "ASV_11590", "ASV_642", "ASV_231", "ASV_4564", "ASV_7355", "ASV_1920", "ASV_11514", "ASV_4168", "ASV_4105", "ASV_3231", "ASV_2424", "ASV_2964", "ASV_2205", "ASV_7156", "ASV_10120", "ASV_4270", "ASV_8273", "ASV_3557", "ASV_7055", "ASV_2530", "ASV_4099", "ASV_1677", "ASV_10767", "ASV_1252")
+bad_taxa <- c("ASV_1071", "ASV_642", "ASV_231", "ASV_8273", "ASV_7156", "ASV_10120", "ASV_3557", "ASV_7055", "ASV_4270", "ASV_2964", "ASV_2205", "ASV_1677", "ASV_1252", "ASV_10767", "ASV_2530", "ASV_4099", "ASV_7355", "ASV_3231", "ASV_2424", "ASV_4105", "ASV_1920", "ASV_11514", "ASV_4168", "ASV_4564")
 
 water_ch4_phy_bc <- water_ch4_cyclers_physeq %>%
   subset_taxa(., !(ASV %in% bad_taxa)) %>% 
@@ -3212,23 +3203,23 @@ water_ch4_phy_bc <- water_ch4_cyclers_physeq %>%
 water_ch4_cyclers_physeq@sam_data$solar_progress <- factor(water_ch4_cyclers_physeq@sam_data$solar_progress, levels = c("No FPV", "FPV"))
 
 # run ancombc2 for water all methane cyclers
-# water_ch4_asv_output <- ancombc2(data = water_ch4_phy_bc,
-#                                  tax_level = "ASV", # Test for each phylum
-#                                  fix_formula = "solar_progress", 
-#                                  p_adj_method = "fdr", 
-#                                  pseudo_sens = TRUE, # Run sensitivity test to make sure taxa isn't sensitive to psuedo-count choice
-#                                  prv_cut = 0.05, # Prevalence filter of 1%
-#                                  group = NULL, # Use Comp_Group_Hier as groups when doing pairwise comparisons
-#                                  struc_zero = FALSE, # Do not detect structural zeroes
-#                                  alpha = 0.05, # Significance threshold of 0.05
-#                                  n_cl = 10, # Use 10 threads
-#                                  verbose = FALSE, # Don't print verbose output
-#                                  s0_perc = 0.05,
-#                                  global = FALSE, # Run a global test (sorta like an ANOVA to first find if a given ASV is sig diff)
-#                                  pairwise = FALSE) # Run pairwise tests between groups (sorta like a post-hoc test like Tukey)
+water_ch4_asv_output <- ancombc2(data = water_ch4_phy_bc,
+                                 tax_level = "ASV", # Test for each phylum
+                                 fix_formula = "solar_progress",
+                                 p_adj_method = "fdr",
+                                 pseudo_sens = TRUE, # Run sensitivity test to make sure taxa isn't sensitive to psuedo-count choice
+                                 prv_cut = 0.05, # Prevalence filter of 1%
+                                 group = NULL, # Use Comp_Group_Hier as groups when doing pairwise comparisons
+                                 struc_zero = FALSE, # Do not detect structural zeroes
+                                 alpha = 0.05, # Significance threshold of 0.05
+                                 n_cl = 10, # Use 10 threads
+                                 verbose = FALSE, # Don't print verbose output
+                                 s0_perc = 0.05,
+                                 global = FALSE, # Run a global test (sorta like an ANOVA to first find if a given ASV is sig diff)
+                                 pairwise = FALSE) # Run pairwise tests between groups (sorta like a post-hoc test like Tukey)
 
 
-# save(water_ch4_asv_output, file = "data/03_diff_abund/water_ch4_asv_output.RData")
+save(water_ch4_asv_output, file = "data/03_diff_abund/water_ch4_asv_output.RData")
 
 load("data/03_diff_abund/water_ch4_asv_output.RData")
 
@@ -3269,15 +3260,10 @@ water_ch4_asv_output$res %>%
 ```
 
 ```
-##        ASV  Comparison       lfc x_fold_change     direction      q_value  q_nonSci
-## 1   ASV_32 FPV vs Open  2.477154    11.9073299 higher in FPV 6.057357e-07 0.0000006
-## 2   ASV_13 FPV vs Open  1.394334     4.0322885 higher in FPV 7.973926e-03 0.0079739
-## 3  ASV_141 FPV vs Open  1.376570     3.9612925 higher in FPV 7.825837e-04 0.0007826
-## 4   ASV_44 FPV vs Open  1.148298     3.1528228 higher in FPV 2.066414e-02 0.0206641
-## 5  ASV_828 FPV vs Open -1.091829     0.3356022  lower in FPV 5.041203e-03 0.0050412
-## 6 ASV_1367 FPV vs Open -1.107348     0.3304342  lower in FPV 1.661333e-03 0.0016613
-## 7  ASV_976 FPV vs Open -1.146310     0.3178074  lower in FPV 7.825837e-04 0.0007826
-## 8 ASV_1479 FPV vs Open -1.176384     0.3083918  lower in FPV 6.897261e-04 0.0006897
+## Error in `dplyr::transmute()`:
+## ℹ In argument: `lfc = lfc_solar_progressFPV`.
+## Caused by error:
+## ! object 'lfc_solar_progressFPV' not found
 ```
 
 ``` r
@@ -3446,14 +3432,14 @@ diff_abund_df %>%
 ## # Groups:   ASV [4]
 ##   ASV     solar_progress   shapiro_p     n
 ##   <chr>   <fct>                <dbl> <int>
-## 1 ASV_13  FPV            0.00379        24
-## 2 ASV_13  Open           0.0000864      24
-## 3 ASV_141 FPV            0.000194       24
-## 4 ASV_141 Open           0.000000116    24
-## 5 ASV_32  FPV            0.0140         24
-## 6 ASV_32  Open           0.00000226     24
-## 7 ASV_44  FPV            0.00000159     24
-## 8 ASV_44  Open           0.00000494     24
+## 1 ASV_13  FPV            0.00216        24
+## 2 ASV_13  Open           0.0000859      24
+## 3 ASV_141 FPV            0.000211       24
+## 4 ASV_141 Open           0.000000115    24
+## 5 ASV_32  FPV            0.0130         24
+## 6 ASV_32  Open           0.00000180     24
+## 7 ASV_44  FPV            0.00000114     24
+## 8 ASV_44  Open           0.00000505     24
 ```
 
 ``` r
@@ -3559,14 +3545,14 @@ asv_13_sum
 ## # A tibble: 8 × 4
 ##   solar_progress JDate sd_meth mean_meth
 ##   <fct>          <dbl>   <dbl>     <dbl>
-## 1 FPV              172  43367.    37551.
-## 2 FPV              193  34196.    37932.
-## 3 FPV              234  50486.   158445.
-## 4 FPV              255 139832.   252638 
-## 5 Open             172  29269.    15858.
-## 6 Open             193   6470.     7814.
-## 7 Open             234  38584.    79229.
-## 8 Open             255  45124.    34335
+## 1 FPV              172  25268.    21225.
+## 2 FPV              193  18873.    20898.
+## 3 FPV              234  26462.    90344.
+## 4 FPV              255  85699.   149533.
+## 5 Open             172  16551.     8872 
+## 6 Open             193   3538.     4231.
+## 7 Open             234  21567.    43551.
+## 8 Open             255  25481.    19204.
 ```
 
 ``` r
@@ -3584,23 +3570,23 @@ summary(asv_13_data_model) #0.000119
 ## Formula: total_abundance ~ solar_progress + JDate + (1 | Pond)
 ##    Data: asv_13_data
 ## 
-## REML criterion at convergence: 1151.2
+## REML criterion at convergence: 1104.6
 ## 
 ## Scaled residuals: 
 ##      Min       1Q   Median       3Q      Max 
-## -1.92417 -0.59736  0.01618  0.45218  2.95610 
+## -1.91818 -0.56794  0.03968  0.46054  2.99311 
 ## 
 ## Random effects:
 ##  Groups   Name        Variance  Std.Dev.
 ##  Pond     (Intercept) 0.000e+00     0   
-##  Residual             5.151e+09 71768   
+##  Residual             1.829e+09 42763   
 ## Number of obs: 48, groups:  Pond, 6
 ## 
 ## Fixed effects:
 ##                     Estimate Std. Error        df t value Pr(>|t|)    
-## (Intercept)        -217852.3    69141.4      45.0  -3.151 0.002893 ** 
-## solar_progressOpen  -87332.6    20717.7      45.0  -4.215 0.000119 ***
-## JDate                 1590.1      316.5      45.0   5.024 8.49e-06 ***
+## (Intercept)        -128382.2    41198.1      45.0  -3.116 0.003187 ** 
+## solar_progressOpen  -51535.6    12344.7      45.0  -4.175 0.000135 ***
+## JDate                  931.5      188.6      45.0   4.940 1.12e-05 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
@@ -3618,16 +3604,16 @@ emmeans::emmeans(asv_13_data_model, pairwise ~ solar_progress) #0.0135
 
 ```
 ## $emmeans
-##  solar_progress emmean    SE df lower.CL upper.CL
-##  FPV            121642 14600  4    80968   162315
-##  Open            34309 14600  4    -6365    74983
+##  solar_progress emmean   SE df lower.CL upper.CL
+##  FPV             70500 8730  4    46264    94736
+##  Open            18964 8730  4    -5271    43200
 ## 
 ## Degrees-of-freedom method: kenward-roger 
 ## Confidence level used: 0.95 
 ## 
 ## $contrasts
 ##  contrast   estimate    SE df t.ratio p.value
-##  FPV - Open    87333 20700  4   4.215  0.0135
+##  FPV - Open    51536 12300  4   4.175  0.0140
 ## 
 ## Degrees-of-freedom method: kenward-roger
 ```
@@ -3721,14 +3707,14 @@ asv_32_sum
 ## # A tibble: 8 × 4
 ##   solar_progress JDate sd_meth mean_meth
 ##   <fct>          <dbl>   <dbl>     <dbl>
-## 1 FPV              172  40085.    62903.
-## 2 FPV              193 104708.   138664.
-## 3 FPV              234 102865.   145374.
-## 4 FPV              255  97439.   154261.
-## 5 Open             172  22703.    15372.
-## 6 Open             193  10444.    15458.
-## 7 Open             234  49385.    47175 
-## 8 Open             255   4693.     5114
+## 1 FPV              172  22627.    34792.
+## 2 FPV              193  58313.    76504.
+## 3 FPV              234  56329.    82379.
+## 4 FPV              255  58222.    89481.
+## 5 Open             172  12319.     8318.
+## 6 Open             193   5641.     8360.
+## 7 Open             234  27779.    26197.
+## 8 Open             255   2693.     2833.
 ```
 
 ``` r
@@ -3746,30 +3732,30 @@ summary(asv_32_data_model) #0.0334
 ## Formula: total_abundance ~ solar_progress + JDate + (1 | Pond)
 ##    Data: asv_32_data
 ## 
-## REML criterion at convergence: 1141.6
+## REML criterion at convergence: 1090.7
 ## 
 ## Scaled residuals: 
 ##      Min       1Q   Median       3Q      Max 
-## -1.69774 -0.64370 -0.08453  0.34131  2.41519 
+## -1.62625 -0.64855 -0.08477  0.34187  2.35688 
 ## 
 ## Random effects:
 ##  Groups   Name        Variance  Std.Dev.
-##  Pond     (Intercept) 1.150e+09 33911   
-##  Residual             3.726e+09 61040   
+##  Pond     (Intercept) 3.507e+08 18726   
+##  Residual             1.205e+09 34715   
 ## Number of obs: 48, groups:  Pond, 6
 ## 
 ## Fixed effects:
-##                      Estimate Std. Error         df t value Pr(>|t|)  
-## (Intercept)          21829.88   61978.96      43.58   0.352   0.7264  
-## solar_progressOpen -104520.38   32819.27       4.00  -3.185   0.0334 *
-## JDate                  484.64     269.18      41.00   1.800   0.0792 .
+##                     Estimate Std. Error        df t value Pr(>|t|)  
+## (Intercept)          7807.88   35148.73     43.84   0.222   0.8252  
+## solar_progressOpen -59362.12   18281.46      4.00  -3.247   0.0315 *
+## JDate                 294.99     153.09     41.00   1.927   0.0609 .
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
 ## Correlation of Fixed Effects:
 ##             (Intr) slr_pO
-## slr_prgrssO -0.265       
-## JDate       -0.927  0.000
+## slr_prgrssO -0.260       
+## JDate       -0.930  0.000
 ```
 
 ``` r
@@ -3779,15 +3765,15 @@ emmeans::emmeans(asv_32_data_model, pairwise ~ solar_progress) #0.0334
 ```
 ## $emmeans
 ##  solar_progress emmean    SE df lower.CL upper.CL
-##  FPV            125300 23200  4    60868   189733
-##  Open            20780 23200  4   -43652    85212
+##  FPV             70789 12900  4    34898   106680
+##  Open            11427 12900  4   -24464    47318
 ## 
 ## Degrees-of-freedom method: kenward-roger 
 ## Confidence level used: 0.95 
 ## 
 ## $contrasts
 ##  contrast   estimate    SE df t.ratio p.value
-##  FPV - Open   104520 32800  4   3.185  0.0334
+##  FPV - Open    59362 18300  4   3.247  0.0315
 ## 
 ## Degrees-of-freedom method: kenward-roger
 ```
@@ -3882,14 +3868,14 @@ asv_44_sum
 ## # A tibble: 8 × 4
 ##   solar_progress JDate sd_meth mean_meth
 ##   <fct>          <dbl>   <dbl>     <dbl>
-## 1 FPV              172  36846.    16535.
-## 2 FPV              193  57884.    31288.
-## 3 FPV              234  52765.    83462.
-## 4 FPV              255 208727.   192130.
-## 5 Open             172  32851.    16932.
-## 6 Open             193  12375.     9755 
-## 7 Open             234  20410.    20290.
-## 8 Open             255   1846.     2358.
+## 1 FPV              172  42706.    19082.
+## 2 FPV              193  65613.    35134.
+## 3 FPV              234  57859.    94634.
+## 4 FPV              255 250714.   228125 
+## 5 Open             172  35791.    18546.
+## 6 Open             193  13368.    10564.
+## 7 Open             234  22744.    22425.
+## 8 Open             255   2031.     2582
 ```
 
 ``` r
@@ -3907,29 +3893,29 @@ summary(asv_44_data_model) #0.1708
 ## Formula: total_abundance ~ solar_progress + JDate + (1 | Pond)
 ##    Data: asv_44_data
 ## 
-## REML criterion at convergence: 1164.1
+## REML criterion at convergence: 1179.8
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -1.4479 -0.4133 -0.1590  0.2722  3.6857 
+## -1.4293 -0.4013 -0.1500  0.2860  3.7755 
 ## 
 ## Random effects:
 ##  Groups   Name        Variance  Std.Dev.
-##  Pond     (Intercept) 1.761e+09 41967   
-##  Residual             6.173e+09 78569   
+##  Pond     (Intercept) 2.466e+09 49660   
+##  Residual             8.747e+09 93524   
 ## Number of obs: 48, groups:  Pond, 6
 ## 
 ## Fixed effects:
 ##                      Estimate Std. Error         df t value Pr(>|t|)  
-## (Intercept)        -117646.45   79476.82      43.91  -1.480   0.1459  
-## solar_progressOpen  -68519.46   41092.38       4.00  -1.667   0.1708  
-## JDate                  929.74     346.49      41.00   2.683   0.0105 *
+## (Intercept)        -141818.80   94552.27      43.96  -1.500   0.1408  
+## solar_progressOpen  -80714.75   48713.09       4.00  -1.657   0.1729  
+## JDate                 1105.68     412.44      41.00   2.681   0.0105 *
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
 ## Correlation of Fixed Effects:
 ##             (Intr) slr_pO
-## slr_prgrssO -0.259       
+## slr_prgrssO -0.258       
 ## JDate       -0.931  0.000
 ```
 
@@ -3940,15 +3926,15 @@ emmeans::emmeans(asv_44_data_model, pairwise ~ solar_progress) #0.1708
 ```
 ## $emmeans
 ##  solar_progress emmean    SE df lower.CL upper.CL
-##  FPV             80853 29100  4      179   161528
-##  Open            12334 29100  4   -68340    93008
+##  FPV             94244 34400  4    -1392   189880
+##  Open            13529 34400  4   -82106   109165
 ## 
 ## Degrees-of-freedom method: kenward-roger 
 ## Confidence level used: 0.95 
 ## 
 ## $contrasts
 ##  contrast   estimate    SE df t.ratio p.value
-##  FPV - Open    68519 41100  4   1.667  0.1708
+##  FPV - Open    80715 48700  4   1.657  0.1729
 ## 
 ## Degrees-of-freedom method: kenward-roger
 ```
@@ -4043,14 +4029,14 @@ asv_141_sum
 ## # A tibble: 8 × 4
 ##   solar_progress JDate sd_meth mean_meth
 ##   <fct>          <dbl>   <dbl>     <dbl>
-## 1 FPV              172   9552.     9620.
-## 2 FPV              193  60415.    40953.
-## 3 FPV              234  27834.    39058.
-## 4 FPV              255  28316.    33530.
-## 5 Open             172    903.      368.
-## 6 Open             193   9254.     4572.
-## 7 Open             234   3066.     2639.
-## 8 Open             255  14367.     7987.
+## 1 FPV              172   3650.     3620.
+## 2 FPV              193  22512.    15170.
+## 3 FPV              234  11294.    15208.
+## 4 FPV              255  11307.    13213.
+## 5 Open             172    340.      139.
+## 6 Open             193   3362.     1662 
+## 7 Open             234   1135.      973.
+## 8 Open             255   5376.     2996.
 ```
 
 ``` r
@@ -4068,23 +4054,23 @@ summary(asv_141_data_model) #0.000914 ***
 ## Formula: total_abundance ~ solar_progress + JDate + (1 | Pond)
 ##    Data: asv_141_data
 ## 
-## REML criterion at convergence: 1060.7
+## REML criterion at convergence: 973.7
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -1.2765 -0.5622 -0.1295  0.0787  3.9665 
+## -1.3076 -0.5908 -0.1594  0.0996  3.9253 
 ## 
 ## Random effects:
-##  Groups   Name        Variance  Std.Dev.
-##  Pond     (Intercept)         0     0   
-##  Residual             688712781 26243   
+##  Groups   Name        Variance Std.Dev.
+##  Pond     (Intercept)        0    0    
+##  Residual             99685682 9984    
 ## Number of obs: 48, groups:  Pond, 6
 ## 
 ## Fixed effects:
-##                    Estimate Std. Error       df t value Pr(>|t|)    
-## (Intercept)           148.5    25282.8     45.0   0.006 0.995338    
-## solar_progressOpen -26898.2     7575.8     45.0  -3.551 0.000914 ***
-## JDate                 143.5      115.7     45.0   1.240 0.221365    
+##                     Estimate Std. Error        df t value Pr(>|t|)    
+## (Intercept)          -737.30    9618.83     45.00  -0.077 0.939241    
+## solar_progressOpen -10359.96    2882.21     45.00  -3.594 0.000803 ***
+## JDate                  58.73      44.03     45.00   1.334 0.188927    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
@@ -4103,15 +4089,15 @@ emmeans::emmeans(asv_141_data_model, pairwise ~ solar_progress) #0.0238
 ```
 ## $emmeans
 ##  solar_progress emmean   SE df lower.CL upper.CL
-##  FPV             30790 5360  4    15917    45663
-##  Open             3892 5360  4   -10981    18765
+##  FPV             11803 2040  4     6144    17461
+##  Open             1443 2040  4    -4216     7101
 ## 
 ## Degrees-of-freedom method: kenward-roger 
 ## Confidence level used: 0.95 
 ## 
 ## $contrasts
 ##  contrast   estimate   SE df t.ratio p.value
-##  FPV - Open    26898 7580  4   3.551  0.0238
+##  FPV - Open    10360 2880  4   3.594  0.0229
 ## 
 ## Degrees-of-freedom method: kenward-roger
 ```
@@ -4269,16 +4255,15 @@ fig4
 # Save the plot   
 ggsave(fig4, width = 6.5, height = 4.5, dpi = 300,
         filename = "figures/Fig_4/Fig_4.png")
+```
 
-<<<<<<< HEAD
 ```
 ## Error in `ggsave()`:
 ## ! Cannot find directory 'figures/Fig_4'.
 ## ℹ Please supply an existing directory or use `create.dir = TRUE`.
 ```
-=======
->>>>>>> 1bc6f19 (reknit files)
 
+``` r
 #or
 library(ggplot2)
 library(patchwork)
@@ -4796,7 +4781,7 @@ pro
 ## procrustes(X = as.matrix(all_sites2[, c("Axis.1", "Axis.2")]),      Y = as.matrix(mt_only_sites2[, c("Axis.1", "Axis.2")]), symmetric = FALSE) 
 ## 
 ## Procrustes sum of squares:
-## 0.008354
+## 0.0155
 ```
 
 ``` r
@@ -4808,106 +4793,106 @@ fig_s4 <- plot(pro, kind = 1, main = "Procrustes Errors"); fig_s4
 
 ```
 ## $heads
-##              Axis.1       Axis.2
-## site1   0.122391284  0.435744262
-## site2  -0.327246913  0.039890340
-## site3   0.243268076  0.174556872
-## site4   0.122842840  0.042554328
-## site5   0.039865000  0.500842863
-## site6  -0.089638441  0.275439376
-## site7   0.387434527 -0.124913440
-## site8   0.268988387 -0.149237036
-## site9   0.257221689  0.380956109
-## site10 -0.056750994  0.204615058
-## site11  0.278123981 -0.111836731
-## site12  0.019268716 -0.181910128
-## site13 -0.127799959  0.236080129
-## site14 -0.324383631  0.008394102
-## site15 -0.253308034  0.022607439
-## site16 -0.219248214  0.097914890
-## site17  0.393294918  0.115928239
-## site18  0.312900926  0.231311808
-## site19  0.397282939 -0.110492061
-## site20  0.405833829 -0.149954116
-## site21  0.209150847  0.232085697
-## site22  0.257702180 -0.016712684
-## site23  0.110387580  0.059395530
-## site24  0.258892920  0.002697917
-## site25 -0.339157405  0.002949797
-## site26 -0.286079637  0.033420577
-## site27 -0.396765683 -0.047184235
-## site28 -0.372011276 -0.097782713
-## site29 -0.296809355 -0.039656782
-## site30 -0.302530231 -0.038991477
-## site31 -0.022927398 -0.173059412
-## site32  0.180534452 -0.129129800
-## site33 -0.123474118 -0.006570566
-## site34  0.278460900 -0.108266657
-## site35 -0.243866732  0.076125231
-## site36 -0.235169549 -0.032438891
-## site37 -0.363215003 -0.119262961
-## site38 -0.361213080 -0.109232339
-## site39 -0.363120605 -0.015325221
-## site40 -0.194822312  0.159536955
-## site41 -0.286136711 -0.214661494
-## site42 -0.293108326 -0.179509057
-## site43  0.371676047 -0.175011229
-## site44  0.375540874 -0.207607553
-## site45  0.346436155 -0.172036743
-## site46  0.373835397 -0.168867472
-## site47 -0.123996832 -0.268420079
-## site48 -0.008554025 -0.184976641
+##             Axis.1      Axis.2
+## site1   0.17621625  0.44134133
+## site2  -0.35155669  0.03727386
+## site3   0.27155633  0.22905666
+## site4   0.17034807  0.10359210
+## site5   0.09932062  0.49226135
+## site6  -0.04750851  0.26902039
+## site7   0.33552744 -0.17943023
+## site8   0.28369934 -0.16131618
+## site9   0.27695172  0.34249516
+## site10 -0.18544888  0.10781397
+## site11  0.20598454 -0.16365937
+## site12 -0.01137644 -0.13049984
+## site13 -0.07969017  0.22272243
+## site14 -0.34125827 -0.02190803
+## site15 -0.21647733  0.04573621
+## site16 -0.18043473  0.16102766
+## site17  0.39004976  0.10759442
+## site18  0.31461410  0.24311006
+## site19  0.39925973 -0.13139823
+## site20  0.39198481 -0.19347831
+## site21  0.13423186  0.21075645
+## site22  0.15992272 -0.03407098
+## site23  0.11313538  0.06247005
+## site24  0.23178627 -0.01875646
+## site25 -0.34425137  0.02341313
+## site26 -0.29574166  0.05655945
+## site27 -0.40042739 -0.07410269
+## site28 -0.37933801 -0.11421799
+## site29 -0.29946331 -0.02571670
+## site30 -0.30757734 -0.03085387
+## site31  0.05063718 -0.08558304
+## site32  0.19002054 -0.11700544
+## site33 -0.14013339  0.06266474
+## site34  0.24269347 -0.10869640
+## site35 -0.23542290  0.09986018
+## site36 -0.26793958 -0.02766350
+## site37 -0.33673131 -0.17575766
+## site38 -0.33085634 -0.16529816
+## site39 -0.35920983 -0.01920278
+## site40 -0.17513173  0.16933803
+## site41 -0.30422598 -0.21131023
+## site42 -0.30836689 -0.17616577
+## site43  0.40118035 -0.17504656
+## site44  0.39066407 -0.22743159
+## site45  0.34874049 -0.18509980
+## site46  0.37899195 -0.18874869
+## site47 -0.08521191 -0.20776964
+## site48  0.02626301 -0.13791950
 ## 
 ## $points
-##                [,1]         [,2]
-## site1   0.123389478  0.425185942
-## site2  -0.330358025  0.047616771
-## site3   0.243449114  0.175293042
-## site4   0.119526201  0.063794251
-## site5   0.038803391  0.489225409
-## site6  -0.096191784  0.269114321
-## site7   0.381131781 -0.135849633
-## site8   0.276791033 -0.171407867
-## site9   0.255558795  0.380174522
-## site10 -0.060767716  0.196617194
-## site11  0.267654226 -0.116007481
-## site12  0.017286865 -0.164129370
-## site13 -0.128278277  0.218240784
-## site14 -0.331290420 -0.001977323
-## site15 -0.251798355  0.018482280
-## site16 -0.227758023  0.099246615
-## site17  0.396123976  0.119560221
-## site18  0.338378058  0.248869510
-## site19  0.394299734 -0.117150874
-## site20  0.409513317 -0.153770719
-## site21  0.207926689  0.226792847
-## site22  0.252782996 -0.014623504
-## site23  0.105231119  0.066329033
-## site24  0.249001710  0.026453825
-## site25 -0.334977450  0.004386123
-## site26 -0.282286608  0.040170545
-## site27 -0.394314484 -0.056947231
-## site28 -0.372412375 -0.104750161
-## site29 -0.293946330 -0.035599311
-## site30 -0.302364154 -0.034880040
-## site31 -0.019836349 -0.161758732
-## site32  0.204488052 -0.099953227
-## site33 -0.119910013  0.003383573
-## site34  0.271695343 -0.105094483
-## site35 -0.240094598  0.081836834
-## site36 -0.237195408 -0.023979119
-## site37 -0.362938709 -0.131751036
-## site38 -0.365296848 -0.122701309
-## site39 -0.360219066 -0.020779239
-## site40 -0.196814071  0.154315697
-## site41 -0.285680342 -0.214358289
-## site42 -0.295049061 -0.179464352
-## site43  0.374291434 -0.187347189
-## site44  0.378915334 -0.218768925
-## site45  0.341926197 -0.183240399
-## site46  0.370820366 -0.181616745
-## site47 -0.123013565 -0.250565762
-## site48 -0.006193175 -0.166617021
+##               [,1]        [,2]
+## site1   0.17551171  0.42428969
+## site2  -0.35427591  0.04564881
+## site3   0.27151459  0.22372127
+## site4   0.16844414  0.13052545
+## site5   0.09609958  0.47421503
+## site6  -0.05649181  0.25656597
+## site7   0.32329687 -0.19423109
+## site8   0.29120083 -0.19166033
+## site9   0.27411484  0.33773135
+## site10 -0.18954268  0.09209481
+## site11  0.18832064 -0.17737834
+## site12 -0.01436320 -0.11110541
+## site13 -0.08168176  0.20045572
+## site14 -0.34534809 -0.03508106
+## site15 -0.21478316  0.04307973
+## site16 -0.18872354  0.16245652
+## site17  0.39032866  0.11445357
+## site18  0.35579684  0.26508368
+## site19  0.39510457 -0.14206800
+## site20  0.39775638 -0.20492019
+## site21  0.13127278  0.20308574
+## site22  0.14908802 -0.03459805
+## site23  0.10399829  0.06472815
+## site24  0.21784268  0.01082098
+## site25 -0.33823684  0.02500185
+## site26 -0.29069882  0.06466463
+## site27 -0.39626446 -0.08635787
+## site28 -0.37733753 -0.12135405
+## site29 -0.29530109 -0.01884559
+## site30 -0.30620262 -0.02415992
+## site31  0.05339040 -0.06964617
+## site32  0.22426370 -0.07324154
+## site33 -0.13714799  0.07362106
+## site34  0.23141612 -0.10559982
+## site35 -0.23126232  0.10776309
+## site36 -0.26958218 -0.01739912
+## site37 -0.33572542 -0.19084580
+## site38 -0.33481513 -0.18211474
+## site39 -0.35509778 -0.02596831
+## site40 -0.17902047  0.16136894
+## site41 -0.30195843 -0.20884630
+## site42 -0.30920672 -0.17396452
+## site43  0.40385865 -0.18493503
+## site44  0.39892664 -0.23526408
+## site45  0.34259520 -0.18621858
+## site46  0.37464701 -0.19236030
+## site47 -0.08415449 -0.18165808
+## site48  0.02843328 -0.11155374
 ## 
 ## attr(,"class")
 ## [1] "ordiplot"
@@ -4920,7 +4905,8 @@ ggsave(fig_s4, width = 6.5, height = 6.5, dpi = 300,
 ```
 
 ```
-## Error in UseMethod("grid.draw"): no applicable method for 'grid.draw' applied to an object of class "ordiplot"
+## Error in `UseMethod()`:
+## ! no applicable method for 'grid.draw' applied to an object of class "ordiplot"
 ```
 
 ``` r
@@ -4945,8 +4931,8 @@ proc_test
 ## Call:
 ## protest(X = as.matrix(all_sites2[, c("Axis.1", "Axis.2")]), Y = as.matrix(mt_only_sites2[,      c("Axis.1", "Axis.2")]), permutations = 9999) 
 ## 
-## Procrustes Sum of Squares (m12 squared):        0.001626 
-## Correlation in a symmetric Procrustes rotation: 0.9992 
+## Procrustes Sum of Squares (m12 squared):        0.003042 
+## Correlation in a symmetric Procrustes rotation: 0.9985 
 ## Significance:  1e-04 
 ## 
 ## Permutation: free
@@ -5004,12 +4990,12 @@ mantel_res # mantel statistic r = 0.9959 indicating perfect correspondence and i
 ## Call:
 ## mantel(xdis = dist_all_mat, ydis = dist_mt_only_mat, method = "spearman",      permutations = 9999) 
 ## 
-## Mantel statistic r: 0.9959 
+## Mantel statistic r: 0.9933 
 ##       Significance: 1e-04 
 ## 
 ## Upper quantiles of permutations (null model):
 ##    90%    95%  97.5%    99% 
-## 0.0888 0.1154 0.1397 0.1693 
+## 0.0917 0.1165 0.1428 0.1704 
 ## Permutation: free
 ## Number of permutations: 9999
 ```
@@ -5278,20 +5264,12 @@ plot_figS3 <-
 plot_figS3
 ```
 
-<<<<<<< HEAD
 ![](Microbial_Analyses_files/figure-html/plot-FigS4-pcoa-1.png)<!-- -->
-=======
-![](Microbial_Analyses_files/figure-html/plot-FigS3-1.png)<!-- -->
->>>>>>> 1bc6f19 (reknit files)
 
 ``` r
 # Now, actually save the plot   
 ggsave(plot_figS3, width = 6.5, height = 4.5, dpi = 300,
-<<<<<<< HEAD
         filename = "figures/Fig_S4.png")
-=======
-        filename = "figures/Fig_S3/Fig_S3.png")
->>>>>>> 1bc6f19 (reknit files)
 ```
 
 Sediment samples are still distinct from other and separate along first axis
@@ -5335,9 +5313,9 @@ adonis2(sed_gen_bray ~ solar_progress,
 ## 
 ## adonis2(formula = sed_gen_bray ~ solar_progress, data = sed_methanogens_metadata, by = "terms")
 ##                Df SumOfSqs      R2      F Pr(>F)    
-## solar_progress  1  0.33513 0.13516 6.5641  0.001 ***
-## Residual       42  2.14430 0.86484                  
-## Total          43  2.47943 1.00000                  
+## solar_progress  1   0.3218 0.12741 6.1324  0.001 ***
+## Residual       42   2.2039 0.87259                  
+## Total          43   2.5257 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -5355,10 +5333,10 @@ adonis2(sed_gen_bray ~ Pond,
 ## Number of permutations: 999
 ## 
 ## adonis2(formula = sed_gen_bray ~ Pond, data = sed_methanogens_metadata, by = "terms")
-##          Df SumOfSqs      R2      F Pr(>F)    
-## Pond      5   1.0921 0.44047 5.9828  0.001 ***
-## Residual 38   1.3873 0.55953                  
-## Total    43   2.4794 1.00000                  
+##          Df SumOfSqs      R2     F Pr(>F)    
+## Pond      5   1.1096 0.43932 5.955  0.001 ***
+## Residual 38   1.4161 0.56068                 
+## Total    43   2.5257 1.00000                 
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -5377,9 +5355,9 @@ adonis2(sed_gen_bray ~ as.factor(JDate),
 ## 
 ## adonis2(formula = sed_gen_bray ~ as.factor(JDate), data = sed_methanogens_metadata, by = "terms")
 ##                  Df SumOfSqs      R2      F Pr(>F)    
-## as.factor(JDate)  3  0.55555 0.22406 3.8502  0.001 ***
-## Residual         40  1.92389 0.77594                  
-## Total            43  2.47943 1.00000                  
+## as.factor(JDate)  3  0.56103 0.22213 3.8074  0.001 ***
+## Residual         40  1.96470 0.77787                  
+## Total            43  2.52573 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -5403,13 +5381,13 @@ sed_methanogens_permanova
 ## 
 ## adonis2(formula = sed_gen_bray ~ solar_progress * Pond * JDate, data = sed_methanogens_metadata, by = "terms")
 ##                      Df SumOfSqs      R2       F Pr(>F)    
-## solar_progress        1  0.33513 0.13516 12.4010  0.001 ***
-## Pond                  4  0.75699 0.30531  7.0028  0.001 ***
-## JDate                 1  0.24335 0.09815  9.0049  0.001 ***
-## solar_progress:JDate  1  0.08262 0.03332  3.0574  0.012 *  
-## Pond:JDate            4  0.19656 0.07928  1.8184  0.016 *  
-## Residual             32  0.86478 0.34878                   
-## Total                43  2.47943 1.00000                   
+## solar_progress        1  0.32180 0.12741 11.4894  0.001 ***
+## Pond                  4  0.78781 0.31191  7.0320  0.001 ***
+## JDate                 1  0.24408 0.09664  8.7148  0.001 ***
+## solar_progress:JDate  1  0.08547 0.03384  3.0517  0.008 ** 
+## Pond:JDate            4  0.19031 0.07535  1.6987  0.023 *  
+## Residual             32  0.89626 0.35485                   
+## Total                43  2.52573 1.00000                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -5446,9 +5424,9 @@ adonis2(sed_troph_bray ~ solar_progress,
 ## 
 ## adonis2(formula = sed_troph_bray ~ solar_progress, data = sed_methanotrophs_metadata, by = "terms")
 ##                Df SumOfSqs      R2      F Pr(>F)    
-## solar_progress  1   0.4677 0.13085 6.3233  0.001 ***
-## Residual       42   3.1064 0.86915                  
-## Total          43   3.5741 1.00000                  
+## solar_progress  1   0.5656 0.13967 6.8187  0.001 ***
+## Residual       42   3.4841 0.86033                  
+## Total          43   4.0497 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -5467,9 +5445,9 @@ adonis2(sed_troph_bray ~ Pond,
 ## 
 ## adonis2(formula = sed_troph_bray ~ Pond, data = sed_methanotrophs_metadata, by = "terms")
 ##          Df SumOfSqs      R2      F Pr(>F)    
-## Pond      5   1.2923 0.36158 4.3044  0.001 ***
-## Residual 38   2.2818 0.63842                  
-## Total    43   3.5741 1.00000                  
+## Pond      5   1.5484 0.38236 4.7048  0.001 ***
+## Residual 38   2.5013 0.61764                  
+## Total    43   4.0497 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -5488,9 +5466,9 @@ adonis2(sed_troph_bray ~ as.factor(JDate),
 ## 
 ## adonis2(formula = sed_troph_bray ~ as.factor(JDate), data = sed_methanotrophs_metadata, by = "terms")
 ##                  Df SumOfSqs      R2      F Pr(>F)    
-## as.factor(JDate)  3   0.9148 0.25596 4.5868  0.001 ***
-## Residual         40   2.6593 0.74404                  
-## Total            43   3.5741 1.00000                  
+## as.factor(JDate)  3   1.0290 0.25409 4.5419  0.001 ***
+## Residual         40   3.0207 0.74591                  
+## Total            43   4.0497 1.00000                  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -5514,13 +5492,13 @@ sed_methanotrophs_permanova
 ## 
 ## adonis2(formula = sed_troph_bray ~ solar_progress * Pond * JDate, data = sed_methanotrophs_metadata, by = "terms")
 ##                      Df SumOfSqs      R2       F Pr(>F)    
-## solar_progress        1   0.4677 0.13085 10.5132  0.001 ***
-## Pond                  4   0.8246 0.23072  4.6343  0.001 ***
-## JDate                 1   0.4746 0.13279 10.6688  0.001 ***
-## solar_progress:JDate  1   0.0707 0.01977  1.5884  0.126    
-## Pond:JDate            4   0.3130 0.08757  1.7589  0.018 *  
-## Residual             32   1.4235 0.39829                   
-## Total                43   3.5741 1.00000                   
+## solar_progress        1   0.5656 0.13967 11.3670  0.001 ***
+## Pond                  4   0.9828 0.24268  4.9375  0.001 ***
+## JDate                 1   0.4902 0.12103  9.8500  0.001 ***
+## solar_progress:JDate  1   0.0717 0.01770  1.4402  0.153    
+## Pond:JDate            4   0.3471 0.08570  1.7437  0.013 *  
+## Residual             32   1.5924 0.39321                   
+## Total                43   4.0497 1.00000                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -5576,9 +5554,9 @@ permutest(betadispr_sed_methanogens_pond) # not significant p = 0.659
 ## Number of permutations: 999
 ## 
 ## Response: Distances
-##           Df   Sum Sq   Mean Sq     F N.Perm Pr(>F)
-## Groups     5 0.029297 0.0058594 0.809    999  0.557
-## Residuals 38 0.275224 0.0072427
+##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
+## Groups     5 0.028167 0.0056335 0.8054    999  0.558
+## Residuals 38 0.265794 0.0069946
 ```
 
 ``` r
@@ -5592,9 +5570,9 @@ permutest(betadispr_sed_methanogens_solar) # not significant p = 0.067
 ## Number of permutations: 999
 ## 
 ## Response: Distances
-##           Df  Sum Sq   Mean Sq     F N.Perm Pr(>F)
-## Groups     1 0.00951 0.0095101 2.917    999  0.106
-## Residuals 42 0.13693 0.0032602
+##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
+## Groups     1 0.009152 0.0091520 2.6864    999  0.112
+## Residuals 42 0.143088 0.0034069
 ```
 
 ``` r
@@ -5609,8 +5587,8 @@ permutest(betadispr_sed_methanogens_JDate) # not significant p = 0.44
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     3 0.006703 0.0022343 1.0343    999  0.413
-## Residuals 40 0.086412 0.0021603
+## Groups     3 0.005044 0.0016813 0.6919    999  0.599
+## Residuals 40 0.097192 0.0024298
 ```
 
 ### Sediment Methanotrophs
@@ -5642,8 +5620,8 @@ permutest(betadispr_sed_methanotrophs_pond) # not significant p = 0.515
 ## 
 ## Response: Distances
 ##           Df  Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     5 0.03100 0.0062006 0.7229    999  0.601
-## Residuals 38 0.32593 0.0085771
+## Groups     5 0.01640 0.0032807 0.3896    999  0.831
+## Residuals 38 0.31995 0.0084198
 ```
 
 ``` r
@@ -5658,8 +5636,8 @@ permutest(betadispr_sed_methanotrophs_solar) # not significant p = 0.682
 ## 
 ## Response: Distances
 ##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)
-## Groups     1 0.000028 0.0000282 0.0043    999  0.937
-## Residuals 42 0.274034 0.0065246
+## Groups     1 0.000132 0.0001323 0.0233    999  0.869
+## Residuals 42 0.238635 0.0056818
 ```
 
 ``` r
@@ -5673,9 +5651,9 @@ permutest(betadispr_sed_methanotrophs_JDate) # significant p = 0.011 *
 ## Number of permutations: 999
 ## 
 ## Response: Distances
-##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)   
-## Groups     3 0.031681 0.0105604 4.1329    999  0.009 **
-## Residuals 40 0.102208 0.0025552                        
+##           Df   Sum Sq   Mean Sq      F N.Perm Pr(>F)  
+## Groups     3 0.023534 0.0078447 3.2561    999  0.027 *
+## Residuals 40 0.096370 0.0024093                       
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -5720,7 +5698,7 @@ order_genus_summary
 ##  7 Archaea  Methanobacteriota_A_1229 Methanobacteria     Methanobacteriales       Methanobacteriaceae      "Methanobacterium_A, Methanobacterium_B_963, Methanobacterium_D_1054, Methanobacterium_F_900, Methanobrevibacter_D, Methanosphaera"
 ##  8 Archaea  Methanobacteriota_B      Thermococci         Methanofastidiosales     Methanofastidiosaceae    "Methanofastidiosum"                                                                                                               
 ##  9 Bacteria Methylomirabilota        Methylomirabilia    Methylomirabilales       2-02-FULL-66-22          "2-02-FULL-66-22"                                                                                                                  
-## 10 Bacteria Pseudomonadota           Alphaproteobacteria Rhizobiales_505101       Beijerinckiaceae         "Methylocystis, Methylosinus"                                                                                                      
+## 10 Bacteria Pseudomonadota           Alphaproteobacteria Rhizobiales_505101       Beijerinckiaceae         "Methylocystis"                                                                                                                    
 ## 11 Bacteria Pseudomonadota           Gammaproteobacteria Methylococcales          Methylococcaceae         "Methylococcus, Methylomagnum, Methyloparacoccus, Methyloterricola, Methylotetracoccus, UBA6136"                                   
 ## 12 Bacteria Pseudomonadota           Gammaproteobacteria Methylococcales          Methylomonadaceae        "Crenothrix, Methylobacter_C_601048, Methylobacter_C_601751, Methyloglobulus, Methylomonas, Methylosoma, Methylovulum, UBA4132"    
 ## 13 Archaea  Thermoplasmatota         Thermoplasmata_1773 Methanomassiliicoccales  Methanomassiliicoccaceae "Methanomassiliicoccus_A_1624"                                                                                                     
@@ -6179,18 +6157,14 @@ devtools::session_info()
 ## ─ Session info ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ##  setting  value
 ##  version  R version 4.3.3 (2024-02-29)
-##  os       Rocky Linux 9.5 (Blue Onyx)
+##  os       Rocky Linux 9.8 (Blue Onyx)
 ##  system   x86_64, linux-gnu
 ##  ui       X11
 ##  language (EN)
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
 ##  tz       America/New_York
-<<<<<<< HEAD
-##  date     2026-01-30
-=======
-##  date     2026-01-29
->>>>>>> 1bc6f19 (reknit files)
+##  date     2026-07-31
 ##  pandoc   3.1.1 @ /usr/lib/rstudio-server/bin/quarto/bin/tools/ (via rmarkdown)
 ##  quarto   1.3.450 @ /usr/lib/rstudio-server/bin/quarto/bin/quarto
 ## 
@@ -6250,7 +6224,7 @@ devtools::session_info()
 ##  dplyr                    * 1.1.4      2023-11-17 [1] CRAN (R 4.3.2)
 ##  e1071                      1.7-16     2024-09-16 [1] CRAN (R 4.3.2)
 ##  ellipsis                   0.3.2      2021-04-29 [2] CRAN (R 4.3.3)
-##  emmeans                    2.0.0      2025-10-29 [1] CRAN (R 4.3.3)
+##  emmeans                    2.0.1      2025-12-16 [1] CRAN (R 4.3.3)
 ##  energy                     1.7-12     2024-08-24 [1] CRAN (R 4.3.3)
 ##  estimability               1.5.1      2024-05-12 [1] CRAN (R 4.3.3)
 ##  evaluate                   1.0.5      2025-08-27 [1] CRAN (R 4.3.3)
@@ -6268,15 +6242,15 @@ devtools::session_info()
 ##  GenomeInfoDbData           1.2.11     2024-11-25 [2] Bioconductor
 ##  GenomicRanges              1.54.1     2023-10-29 [2] Bioconductor
 ##  ggbeeswarm                 0.7.3      2025-11-29 [1] CRAN (R 4.3.3)
-##  ggh4x                    * 0.3.1.9000 2025-12-17 [1] Github (teunbrand/ggh4x@63c91b7)
-##  ggplot2                  * 4.0.1.9000 2025-12-19 [1] Github (tidyverse/ggplot2@4ea78a4)
-##  ggpubr                   * 0.6.0      2023-02-10 [1] CRAN (R 4.3.3)
+##  ggh4x                      0.3.1.9000 2025-12-17 [1] Github (teunbrand/ggh4x@63c91b7)
+##  ggplot2                  * 3.5.2      2025-04-09 [1] CRAN (R 4.3.3)
+##  ggpubr                   * 0.6.2      2025-10-17 [1] CRAN (R 4.3.3)
 ##  ggrepel                    0.9.6      2024-09-07 [1] CRAN (R 4.3.3)
 ##  ggsignif                   0.6.4      2022-10-13 [1] CRAN (R 4.3.2)
 ##  ggtext                   * 0.1.2      2022-09-16 [1] CRAN (R 4.3.3)
 ##  gld                        2.6.8      2025-09-14 [1] CRAN (R 4.3.3)
 ##  glue                       1.8.0      2024-09-30 [1] CRAN (R 4.3.2)
-##  gmp                        0.7-5      2024-08-23 [1] CRAN (R 4.3.3)
+##  gmp                        0.7-5.1    2026-02-09 [1] CRAN (R 4.3.3)
 ##  gridExtra                  2.3        2017-09-09 [2] CRAN (R 4.3.3)
 ##  gridtext                   0.1.5      2022-09-16 [1] CRAN (R 4.3.3)
 ##  gsl                        2.1-8      2023-01-24 [1] CRAN (R 4.3.3)
@@ -6295,7 +6269,7 @@ devtools::session_info()
 ##  iterators                  1.0.14     2022-02-05 [1] CRAN (R 4.3.3)
 ##  jquerylib                  0.1.4      2021-04-26 [2] CRAN (R 4.3.3)
 ##  jsonlite                   2.0.0      2025-03-27 [1] CRAN (R 4.3.3)
-##  knitr                      1.50       2025-03-16 [1] CRAN (R 4.3.3)
+##  knitr                      1.51       2025-12-20 [1] CRAN (R 4.3.3)
 ##  labeling                   0.4.3      2023-08-29 [2] CRAN (R 4.3.3)
 ##  lattice                    0.22-5     2023-10-24 [2] CRAN (R 4.3.3)
 ##  lazyeval                   0.2.2      2019-03-15 [2] CRAN (R 4.3.3)
@@ -6324,30 +6298,25 @@ devtools::session_info()
 ##  nloptr                     2.2.1      2025-03-17 [1] CRAN (R 4.3.3)
 ##  nnet                       7.3-19     2023-05-03 [2] CRAN (R 4.3.3)
 ##  numDeriv                   2016.8-1.1 2019-06-06 [1] CRAN (R 4.3.2)
+##  otel                       0.2.0      2025-08-29 [1] CRAN (R 4.3.3)
 ##  pacman                     0.5.1      2019-03-11 [1] CRAN (R 4.3.2)
-<<<<<<< HEAD
-##  patchwork                * 1.3.2.9000 2026-01-23 [1] Github (thomasp85/patchwork@6b1d88c)
-##  pbkrtest                   0.5.4      2025-04-28 [1] CRAN (R 4.3.3)
-##  permute                  * 0.9-7      2022-01-27 [1] CRAN (R 4.3.2)
-=======
 ##  patchwork                * 1.3.2.9000 2025-12-19 [1] Github (thomasp85/patchwork@6b1d88c)
 ##  pbkrtest                   0.5.5      2025-07-18 [1] CRAN (R 4.3.3)
-##  permute                  * 0.9-8      2025-06-25 [1] CRAN (R 4.3.3)
->>>>>>> 1bc6f19 (reknit files)
+##  permute                  * 0.9-10     2026-02-06 [1] CRAN (R 4.3.3)
 ##  phyloseq                 * 1.46.0     2023-10-24 [1] Bioconductor
 ##  pillar                     1.11.1     2025-09-17 [1] CRAN (R 4.3.3)
 ##  pkgbuild                   1.4.8      2025-05-26 [1] CRAN (R 4.3.3)
 ##  pkgconfig                  2.0.3      2019-09-22 [2] CRAN (R 4.3.3)
 ##  pkgload                    1.4.1      2025-09-23 [1] CRAN (R 4.3.3)
 ##  plyr                       1.8.9      2023-10-02 [2] CRAN (R 4.3.3)
-##  proxy                      0.4-27     2022-06-09 [1] CRAN (R 4.3.2)
+##  proxy                      0.4-29     2025-12-29 [1] CRAN (R 4.3.3)
 ##  purrr                    * 1.2.0      2025-11-04 [1] CRAN (R 4.3.3)
 ##  R6                         2.6.1      2025-02-15 [1] CRAN (R 4.3.3)
 ##  ragg                       1.5.0      2025-09-02 [1] CRAN (R 4.3.3)
 ##  rappdirs                   0.3.3      2021-01-31 [2] CRAN (R 4.3.3)
-##  rbibutils                  2.4        2025-11-07 [1] CRAN (R 4.3.3)
+##  rbibutils                  2.4.1      2026-01-21 [1] CRAN (R 4.3.3)
 ##  RColorBrewer               1.1-3      2022-04-03 [2] CRAN (R 4.3.3)
-##  Rcpp                       1.1.0      2025-07-02 [1] CRAN (R 4.3.3)
+##  Rcpp                       1.1.1      2026-01-10 [1] CRAN (R 4.3.3)
 ##  RCurl                      1.98-1.16  2024-07-11 [2] CRAN (R 4.3.3)
 ##  Rdpack                     2.6.4      2025-04-09 [1] CRAN (R 4.3.3)
 ##  readr                    * 2.1.6      2025-11-14 [1] CRAN (R 4.3.3)
@@ -6358,7 +6327,7 @@ devtools::session_info()
 ##  rhdf5                      2.46.1     2023-11-29 [1] Bioconductor 3.18 (R 4.3.2)
 ##  rhdf5filters               1.14.1     2023-11-06 [1] Bioconductor
 ##  Rhdf5lib                   1.24.2     2024-02-07 [1] Bioconductor 3.18 (R 4.3.2)
-##  rlang                      1.1.6      2025-04-11 [1] CRAN (R 4.3.3)
+##  rlang                      1.1.7      2026-01-09 [1] CRAN (R 4.3.3)
 ##  rmarkdown                  2.30       2025-09-28 [1] CRAN (R 4.3.3)
 ##  Rmpfr                      1.1-2      2025-10-27 [1] CRAN (R 4.3.3)
 ##  rngtools                   1.5.2      2021-09-20 [1] CRAN (R 4.3.3)
@@ -6370,7 +6339,6 @@ devtools::session_info()
 ##  rsvd                       1.0.5      2021-04-16 [1] CRAN (R 4.3.3)
 ##  S4Arrays                   1.2.1      2024-03-04 [2] Bioconductor 3.18 (R 4.3.3)
 ##  S4Vectors                * 0.40.2     2023-11-23 [2] Bioconductor 3.18 (R 4.3.3)
-##  S7                         0.2.1      2025-11-14 [1] CRAN (R 4.3.3)
 ##  sandwich                   3.1-1      2024-09-15 [1] CRAN (R 4.3.3)
 ##  sass                       0.4.10     2025-04-11 [1] CRAN (R 4.3.3)
 ##  ScaledMatrix               1.10.0     2023-10-24 [1] Bioconductor
@@ -6394,7 +6362,7 @@ devtools::session_info()
 ##  tidyselect                 1.2.1      2024-03-11 [1] CRAN (R 4.3.2)
 ##  tidytree                   0.4.6      2023-12-12 [1] CRAN (R 4.3.2)
 ##  tidyverse                * 2.0.0      2023-02-22 [1] CRAN (R 4.3.3)
-##  timechange                 0.3.0      2024-01-18 [1] CRAN (R 4.3.2)
+##  timechange                 0.4.0      2026-01-29 [1] CRAN (R 4.3.3)
 ##  treeio                     1.26.0     2023-10-24 [1] Bioconductor
 ##  TreeSummarizedExperiment   2.10.0     2023-10-24 [1] Bioconductor
 ##  tzdb                       0.5.0      2025-03-15 [1] CRAN (R 4.3.3)
